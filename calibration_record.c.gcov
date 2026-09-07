@@ -1,0 +1,201 @@
+        -:    0:Source:/home/runner/work/Arm_Sensor_Hub/Arm_Sensor_Hub/App/Src/calibration_record.c
+        -:    1:#include "calibration_record.h"
+        -:    2:
+        -:    3:#include <stdbool.h>
+        -:    4:
+function Calibration_HasSameIdentity called 2 returned 100% blocks executed 83%
+        2:    5:static bool Calibration_HasSameIdentity(const Calibration_Record *first, const Calibration_Record *second)
+        -:    6:{
+       4*:    7:    return (first->logical_sensor_id == second->logical_sensor_id) &&
+branch  0 taken 2 (fallthrough)
+branch  1 taken 0
+        2:    8:           (first->logical_joint_id == second->logical_joint_id);
+branch  0 taken 2 (fallthrough)
+branch  1 taken 0
+        -:    9:}
+        -:   10:
+function Calibration_IsGenerationNewer called 1 returned 100% blocks executed 83%
+        1:   11:static bool Calibration_IsGenerationNewer(uint32_t candidate, uint32_t previous)
+        -:   12:{
+       2*:   13:    return (candidate != previous) &&
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+        1:   14:           ((uint32_t)(candidate - previous) < UINT32_C(0x80000000));
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+        -:   15:}
+        -:   16:
+function Calibration_ValidateRecord called 7 returned 100% blocks executed 68%
+        7:   17:Calibration_Result Calibration_ValidateRecord(const Calibration_Record *record, uint32_t computed_crc32)
+        -:   18:{
+        7:   19:    if (record == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 7
+        -:   20:    {
+    #####:   21:        return CALIBRATION_RESULT_INVALID_ARGUMENT;
+        -:   22:    }
+        -:   23:
+        7:   24:    if (record->schema_version != CALIBRATION_SCHEMA_VERSION)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 6
+        -:   25:    {
+        1:   26:        return CALIBRATION_RESULT_UNSUPPORTED_SCHEMA;
+        -:   27:    }
+        -:   28:
+        6:   29:    if ((record->logical_sensor_id > CALIBRATION_MAX_LOGICAL_ID) ||
+branch  0 taken 6 (fallthrough)
+branch  1 taken 0
+        6:   30:        (record->logical_joint_id > CALIBRATION_MAX_LOGICAL_ID))
+branch  0 taken 0 (fallthrough)
+branch  1 taken 6
+        -:   31:    {
+    #####:   32:        return CALIBRATION_RESULT_INVALID_IDENTITY;
+        -:   33:    }
+        -:   34:
+       6*:   35:    if ((record->scale_ppm == 0) || ((record->direction != 1) && (record->direction != -1)))
+branch  0 taken 6 (fallthrough)
+branch  1 taken 0
+branch  2 taken 0 (fallthrough)
+branch  3 taken 6
+branch  4 never executed (fallthrough)
+branch  5 never executed
+        -:   36:    {
+    #####:   37:        return CALIBRATION_RESULT_INVALID_PARAMETERS;
+        -:   38:    }
+        -:   39:
+        6:   40:    if (record->generation == 0u)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 6
+        -:   41:    {
+    #####:   42:        return CALIBRATION_RESULT_INVALID_GENERATION;
+        -:   43:    }
+        -:   44:
+        6:   45:    if (record->validity_marker != CALIBRATION_VALIDITY_MARKER)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 6
+        -:   46:    {
+    #####:   47:        return CALIBRATION_RESULT_INVALID_MARKER;
+        -:   48:    }
+        -:   49:
+        6:   50:    if (record->record_crc32 != computed_crc32)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 5
+        -:   51:    {
+        1:   52:        return CALIBRATION_RESULT_CRC_MISMATCH;
+        -:   53:    }
+        -:   54:
+        5:   55:    return CALIBRATION_RESULT_OK;
+        -:   56:}
+        -:   57:
+function Calibration_ValidateUniqueIdentities called 1 returned 100% blocks executed 78%
+        1:   58:Calibration_Result Calibration_ValidateUniqueIdentities(const Calibration_Record *records,
+        -:   59:                                                         const uint32_t *computed_crc32,
+        -:   60:                                                         size_t record_count)
+        -:   61:{
+        -:   62:    size_t record_index;
+        -:   63:    size_t prior_index;
+        -:   64:
+        1:   65:    if ((records == NULL) || (computed_crc32 == NULL) || (record_count == 0u))
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+branch  2 taken 1 (fallthrough)
+branch  3 taken 0
+branch  4 taken 0 (fallthrough)
+branch  5 taken 1
+        -:   66:    {
+    #####:   67:        return CALIBRATION_RESULT_INVALID_ARGUMENT;
+        -:   68:    }
+        -:   69:
+        2:   70:    for (record_index = 0u; record_index < record_count; ++record_index)
+branch  0 taken 2
+branch  1 taken 0 (fallthrough)
+        -:   71:    {
+        2:   72:        Calibration_Result result = Calibration_ValidateRecord(&records[record_index], computed_crc32[record_index]);
+call    0 returned 2
+        2:   73:        if (result != CALIBRATION_RESULT_OK)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 2
+        -:   74:        {
+    #####:   75:            return result;
+        -:   76:        }
+        -:   77:
+       2*:   78:        for (prior_index = 0u; prior_index < record_index; ++prior_index)
+branch  0 taken 1
+branch  1 taken 1 (fallthrough)
+        -:   79:        {
+        1:   80:            if (Calibration_HasSameIdentity(&records[record_index], &records[prior_index]))
+call    0 returned 1
+branch  1 taken 1 (fallthrough)
+branch  2 taken 0
+        -:   81:            {
+        1:   82:                return CALIBRATION_RESULT_DUPLICATE_IDENTITY;
+        -:   83:            }
+        -:   84:        }
+        -:   85:    }
+        -:   86:
+    #####:   87:    return CALIBRATION_RESULT_OK;
+        -:   88:}
+        -:   89:
+function Calibration_SelectNewer called 1 returned 100% blocks executed 71%
+        1:   90:Calibration_Result Calibration_SelectNewer(const Calibration_Record *first,
+        -:   91:                                           uint32_t first_computed_crc32,
+        -:   92:                                           const Calibration_Record *second,
+        -:   93:                                           uint32_t second_computed_crc32,
+        -:   94:                                           Calibration_ActiveVersion *active_version)
+        -:   95:{
+        -:   96:    Calibration_Result result;
+        -:   97:    const Calibration_Record *selected;
+        -:   98:
+        1:   99:    if ((first == NULL) || (second == NULL) || (active_version == NULL))
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+branch  2 taken 1 (fallthrough)
+branch  3 taken 0
+branch  4 taken 0 (fallthrough)
+branch  5 taken 1
+        -:  100:    {
+    #####:  101:        return CALIBRATION_RESULT_INVALID_ARGUMENT;
+        -:  102:    }
+        -:  103:
+        1:  104:    result = Calibration_ValidateRecord(first, first_computed_crc32);
+call    0 returned 1
+        1:  105:    if (result != CALIBRATION_RESULT_OK)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:  106:    {
+    #####:  107:        return result;
+        -:  108:    }
+        -:  109:
+        1:  110:    result = Calibration_ValidateRecord(second, second_computed_crc32);
+call    0 returned 1
+        1:  111:    if (result != CALIBRATION_RESULT_OK)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:  112:    {
+    #####:  113:        return result;
+        -:  114:    }
+        -:  115:
+        1:  116:    if (!Calibration_HasSameIdentity(first, second))
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+        -:  117:    {
+    #####:  118:        return CALIBRATION_RESULT_IDENTITY_MISMATCH;
+        -:  119:    }
+        -:  120:
+        1:  121:    if (first->generation == second->generation)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:  122:    {
+    #####:  123:        return CALIBRATION_RESULT_AMBIGUOUS_GENERATION;
+        -:  124:    }
+        -:  125:
+       1*:  126:    selected = Calibration_IsGenerationNewer(second->generation, first->generation) ? second : first;
+call    0 returned 1
+branch  1 taken 1 (fallthrough)
+branch  2 taken 0
+        1:  127:    active_version->record = *selected;
+        1:  128:    active_version->active_schema_version = selected->schema_version;
+        1:  129:    active_version->active_generation = selected->generation;
+        1:  130:    return CALIBRATION_RESULT_OK;
+        -:  131:}

@@ -1,0 +1,1016 @@
+        -:    0:Source:/home/runner/work/Arm_Sensor_Hub/Arm_Sensor_Hub/tests/host/protocol_test_main.c
+        -:    1:#include <assert.h>
+        -:    2:#include <stdint.h>
+        -:    3:#include <string.h>
+        -:    4:
+        -:    5:#include "calibration_record.h"
+        -:    6:#include "can_tx_policy.h"
+        -:    7:#include "crc32_iso_hdlc.h"
+        -:    8:#include "joint_mapping.h"
+        -:    9:#include "motor_latest_value.h"
+        -:   10:#include "sensor_latest_value.h"
+        -:   11:#include "snapshot_builder.h"
+        -:   12:#include "spi_payload_layout.h"
+        -:   13:#include "spi_protocol.h"
+        -:   14:#include "spi_data_ready.h"
+        -:   15:#include "time_service.h"
+        -:   16:
+function ReadCounter called 12 returned 100% blocks executed 100%
+       12:   17:static uint32_t ReadCounter(void *context)
+        -:   18:{
+       12:   19:    return *(uint32_t *)context;
+        -:   20:}
+        -:   21:
+function TestWrapExtension called 1 returned 100% blocks executed 71%
+        1:   22:static void TestWrapExtension(void)
+        -:   23:{
+        -:   24:    TimeService_State state;
+        1:   25:    uint32_t counter = UINT32_C(0xFFFFFFFE);
+        -:   26:
+        1:   27:    TimeService_StateInit(&state, ReadCounter, &counter);
+call    0 returned 1
+       1*:   28:    assert(TimeService_StateNowUs(&state) == UINT64_C(0xFFFFFFFE));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:   29:
+        1:   30:    counter = UINT32_MAX;
+       1*:   31:    assert(TimeService_StateNowUs(&state) == UINT64_C(0xFFFFFFFF));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:   32:
+        1:   33:    counter = 0u;
+       1*:   34:    assert(TimeService_StateNowUs(&state) == (UINT64_C(1) << 32u));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:   35:
+        1:   36:    counter = 42u;
+       1*:   37:    assert(TimeService_StateNowUs(&state) == ((UINT64_C(1) << 32u) + 42u));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:   38:}
+        -:   39:
+function TestMonotonicAcrossMultipleWraps called 1 returned 100% blocks executed 79%
+        1:   40:static void TestMonotonicAcrossMultipleWraps(void)
+        -:   41:{
+        -:   42:    TimeService_State state;
+        1:   43:    uint32_t counter = UINT32_C(0xFFFFFFF0);
+        -:   44:    uint64_t previous;
+        -:   45:
+        1:   46:    TimeService_StateInit(&state, ReadCounter, &counter);
+call    0 returned 1
+        1:   47:    previous = TimeService_StateNowUs(&state);
+call    0 returned 1
+        -:   48:
+        1:   49:    counter = 5u;
+       1*:   50:    assert(TimeService_StateNowUs(&state) > previous);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:   51:    previous = TimeService_StateNowUs(&state);
+call    0 returned 1
+        -:   52:
+        1:   53:    counter = UINT32_MAX;
+       1*:   54:    assert(TimeService_StateNowUs(&state) > previous);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:   55:    previous = TimeService_StateNowUs(&state);
+call    0 returned 1
+        -:   56:
+        1:   57:    counter = 7u;
+       1*:   58:    assert(TimeService_StateNowUs(&state) > previous);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:   59:}
+        -:   60:
+function TestSyncConfig called 2 returned 100% blocks executed 100%
+        2:   61:static TimeService_SyncConfig TestSyncConfig(void)
+        -:   62:{
+        -:   63:    TimeService_SyncConfig config;
+        -:   64:
+        2:   65:    config.initial_offset_limit_us = INT64_C(10000000);
+        2:   66:    config.runtime_offset_step_limit_us = INT64_C(1000000);
+        2:   67:    config.validity_timeout_us = UINT64_C(5000000);
+        2:   68:    return config;
+        -:   69:}
+        -:   70:
+function TestInitialAcceptanceAndRuntimeRejection called 1 returned 100% blocks executed 65%
+        1:   71:static void TestInitialAcceptanceAndRuntimeRejection(void)
+        -:   72:{
+        -:   73:    TimeService_SyncState state;
+        1:   74:    TimeService_SyncConfig config = TestSyncConfig();
+call    0 returned 1
+        -:   75:    TimeService_SyncSnapshot snapshot;
+        -:   76:
+        1:   77:    TimeService_SyncStateInit(&state, &config);
+call    0 returned 1
+       1*:   78:    assert(TimeService_SyncStateAccept(&state, UINT64_C(6000000), 10u, UINT64_C(1000000)) ==
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:   79:           TIME_SERVICE_SYNC_ACCEPTED);
+        1:   80:    TimeService_SyncStateGetSnapshot(&state, UINT64_C(1000000), &snapshot);
+call    0 returned 1
+       1*:   81:    assert(snapshot.valid);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:   82:    assert(snapshot.quality == TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:   83:    assert(snapshot.time_offset_us == INT64_C(5000000));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:   84:
+       1*:   85:    assert(TimeService_SyncStateAccept(&state, UINT64_C(8000001), 11u, UINT64_C(2000000)) ==
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:   86:           TIME_SERVICE_SYNC_REJECTED_OFFSET);
+        1:   87:    TimeService_SyncStateGetSnapshot(&state, UINT64_C(2000000), &snapshot);
+call    0 returned 1
+       1*:   88:    assert(snapshot.valid);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:   89:    assert(snapshot.time_offset_us == INT64_C(5000000));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:   90:    assert(snapshot.last_sync_sequence == 10u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        1:   91:}
+        -:   92:
+function TestTimeoutResetAndRecovery called 1 returned 100% blocks executed 65%
+        1:   93:static void TestTimeoutResetAndRecovery(void)
+        -:   94:{
+        -:   95:    TimeService_SyncState state;
+        1:   96:    TimeService_SyncConfig config = TestSyncConfig();
+call    0 returned 1
+        -:   97:    TimeService_SyncSnapshot snapshot;
+        -:   98:
+        1:   99:    TimeService_SyncStateInit(&state, &config);
+call    0 returned 1
+       1*:  100:    assert(TimeService_SyncStateAccept(&state, UINT64_C(4000000), 1u, UINT64_C(1000000)) ==
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  101:           TIME_SERVICE_SYNC_ACCEPTED);
+        1:  102:    TimeService_SyncStateGetSnapshot(&state, UINT64_C(5999999), &snapshot);
+call    0 returned 1
+       1*:  103:    assert(snapshot.valid);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  104:    assert(snapshot.age_us == UINT64_C(4999999));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  105:
+        1:  106:    TimeService_SyncStateGetSnapshot(&state, UINT64_C(6000000), &snapshot);
+call    0 returned 1
+       1*:  107:    assert(!snapshot.valid);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  108:    assert(snapshot.quality == TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  109:    assert(snapshot.time_offset_us == INT64_C(3000000));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  110:
+        1:  111:    TimeService_SyncStateReset(&state);
+call    0 returned 1
+        1:  112:    TimeService_SyncStateGetSnapshot(&state, UINT64_C(7000000), &snapshot);
+call    0 returned 1
+       1*:  113:    assert(!snapshot.valid);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  114:    assert(snapshot.time_offset_us == 0);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  115:    assert(snapshot.age_us == UINT64_MAX);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  116:
+       1*:  117:    assert(TimeService_SyncStateAccept(&state, UINT64_C(10000000), 2u, UINT64_C(7000000)) ==
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  118:           TIME_SERVICE_SYNC_ACCEPTED);
+        1:  119:    TimeService_SyncStateGetSnapshot(&state, UINT64_C(7000000), &snapshot);
+call    0 returned 1
+       1*:  120:    assert(snapshot.valid);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  121:    assert(snapshot.time_offset_us == INT64_C(3000000));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        1:  122:}
+        -:  123:
+function TestCalibrationRecord called 5 returned 100% blocks executed 100%
+        5:  124:static Calibration_Record TestCalibrationRecord(uint8_t sensor_id, uint8_t joint_id, uint32_t generation)
+        -:  125:{
+        5:  126:    Calibration_Record record = {
+        -:  127:        .schema_version = CALIBRATION_SCHEMA_VERSION,
+        -:  128:        .logical_sensor_id = sensor_id,
+        -:  129:        .logical_joint_id = joint_id,
+        -:  130:        .zero_offset_mdeg = -1200,
+        -:  131:        .scale_ppm = 1000000,
+        -:  132:        .direction = 1,
+        -:  133:        .reserved = {0u, 0u, 0u},
+        -:  134:        .generation = generation,
+        -:  135:        .record_crc32 = UINT32_C(0xA5A55A5A),
+        -:  136:        .validity_marker = CALIBRATION_VALIDITY_MARKER
+        -:  137:    };
+        -:  138:
+        5:  139:    return record;
+        -:  140:}
+        -:  141:
+function TestCalibrationRecordValidation called 1 returned 100% blocks executed 73%
+        1:  142:static void TestCalibrationRecordValidation(void)
+        -:  143:{
+        1:  144:    Calibration_Record record = TestCalibrationRecord(0u, 0u, 1u);
+call    0 returned 1
+        -:  145:
+       1*:  146:    assert(Calibration_ValidateRecord(&record, record.record_crc32) == CALIBRATION_RESULT_OK);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  147:    assert(Calibration_ValidateRecord(&record, record.record_crc32 ^ 1u) == CALIBRATION_RESULT_CRC_MISMATCH);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  148:
+        1:  149:    record.schema_version++;
+       1*:  150:    assert(Calibration_ValidateRecord(&record, record.record_crc32) == CALIBRATION_RESULT_UNSUPPORTED_SCHEMA);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:  151:}
+        -:  152:
+function TestCalibrationDuplicateIdentity called 1 returned 100% blocks executed 83%
+        1:  153:static void TestCalibrationDuplicateIdentity(void)
+        -:  154:{
+        -:  155:    Calibration_Record records[2] = {
+        1:  156:        TestCalibrationRecord(1u, 1u, 1u),
+call    0 returned 1
+        1:  157:        TestCalibrationRecord(1u, 1u, 2u)
+call    0 returned 1
+        -:  158:    };
+        1:  159:    uint32_t computed_crc32[2] = {records[0].record_crc32, records[1].record_crc32};
+        -:  160:
+       1*:  161:    assert(Calibration_ValidateUniqueIdentities(records, computed_crc32, 2u) ==
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  162:           CALIBRATION_RESULT_DUPLICATE_IDENTITY);
+        1:  163:}
+        -:  164:
+function TestCalibrationGenerationSelection called 1 returned 100% blocks executed 67%
+        1:  165:static void TestCalibrationGenerationSelection(void)
+        -:  166:{
+        1:  167:    Calibration_Record older = TestCalibrationRecord(2u, 2u, 4u);
+call    0 returned 1
+        1:  168:    Calibration_Record newer = TestCalibrationRecord(2u, 2u, 5u);
+call    0 returned 1
+        -:  169:    Calibration_ActiveVersion active_version;
+        -:  170:
+       1*:  171:    assert(Calibration_SelectNewer(&older,
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  172:                                   older.record_crc32,
+        -:  173:                                   &newer,
+        -:  174:                                   newer.record_crc32,
+        -:  175:                                   &active_version) == CALIBRATION_RESULT_OK);
+       1*:  176:    assert(active_version.active_schema_version == CALIBRATION_SCHEMA_VERSION);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  177:    assert(active_version.active_generation == 5u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  178:    assert(active_version.record.generation == 5u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        1:  179:}
+        -:  180:
+function TestJointMappingRecord called 5 returned 100% blocks executed 100%
+        5:  181:static JointMapping_Record TestJointMappingRecord(uint8_t joint_id, uint8_t sensor_id,
+        -:  182:                                                   uint8_t motor_index, uint16_t can_id)
+        -:  183:{
+        5:  184:    JointMapping_Record record = {
+        -:  185:        .schema_version = JOINT_MAPPING_SCHEMA_VERSION,
+        -:  186:        .logical_joint_id = joint_id,
+        -:  187:        .as5600_sensor_id = sensor_id,
+        -:  188:        .motor_index = motor_index,
+        -:  189:        .can_id = can_id,
+        -:  190:        .direction = 1,
+        -:  191:        .zero_offset_mdeg = 0,
+        -:  192:        .transmission_ratio_numerator = 1u,
+        -:  193:        .transmission_ratio_denominator = 1u
+        -:  194:    };
+        -:  195:
+        5:  196:    return record;
+        -:  197:}
+        -:  198:
+function TestJointMappingValidation called 1 returned 100% blocks executed 75%
+        1:  199:static void TestJointMappingValidation(void)
+        -:  200:{
+        -:  201:    JointMapping_Record records[2] = {
+        1:  202:        TestJointMappingRecord(0u, 0u, 0u, 1u),
+call    0 returned 1
+        1:  203:        TestJointMappingRecord(1u, 1u, 1u, 2u)
+call    0 returned 1
+        -:  204:    };
+        -:  205:
+       1*:  206:    assert(JointMapping_Validate(records, 2u) == JOINT_MAPPING_RESULT_OK);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  207:    assert(JointMapping_FindByJoint(records, 2u, 1u) == &records[1]);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  208:
+        1:  209:    records[1].as5600_sensor_id = 0u;
+       1*:  210:    assert(JointMapping_Validate(records, 2u) == JOINT_MAPPING_RESULT_DUPLICATE_SENSOR_ID);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  211:
+        1:  212:    records[1] = TestJointMappingRecord(1u, 1u, 1u, 1u);
+call    0 returned 1
+       1*:  213:    assert(JointMapping_Validate(records, 2u) == JOINT_MAPPING_RESULT_DUPLICATE_CAN_ID);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:  214:}
+        -:  215:
+function TestJointMappingInvalidRatioAndRevision called 1 returned 100% blocks executed 78%
+        1:  216:static void TestJointMappingInvalidRatioAndRevision(void)
+        -:  217:{
+        1:  218:    JointMapping_Record record = TestJointMappingRecord(0u, 0u, 0u, 1u);
+call    0 returned 1
+        -:  219:
+        1:  220:    record.transmission_ratio_denominator = 0u;
+       1*:  221:    assert(JointMapping_Validate(&record, 1u) == JOINT_MAPPING_RESULT_INVALID_RATIO);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  222:
+        1:  223:    record = TestJointMappingRecord(0u, 0u, 0u, 1u);
+call    0 returned 1
+        1:  224:    record.schema_version++;
+       1*:  225:    assert(JointMapping_Validate(&record, 1u) == JOINT_MAPPING_RESULT_UNSUPPORTED_SCHEMA);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:  226:}
+        -:  227:
+function TestSensorLatestValue called 1 returned 100% blocks executed 55%
+        1:  228:static void TestSensorLatestValue(void)
+        -:  229:{
+        -:  230:    Sensor_LatestValue record;
+        -:  231:
+        1:  232:    SensorLatestValue_Init(&record, 3u, 4u, 7u);
+call    0 returned 1
+       1*:  233:    assert(record.logical_joint_id == 3u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  234:    assert(record.sensor_id == 4u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  235:    assert(record.freshness == SENSOR_FRESHNESS_INVALID);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  236:    assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  237:
+        1:  238:    SensorLatestValue_SetValid(&record,
+call    0 returned 1
+        -:  239:                               1234u,
+        -:  240:                               108457,
+        -:  241:                               UINT8_C(0x20),
+        -:  242:                               UINT64_C(1000),
+        -:  243:                               TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED,
+        -:  244:                               8u);
+       1*:  245:    assert(record.raw_angle_counts == 1234u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  246:    assert(record.processed_angle_mdeg == 108457);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  247:    assert(record.measurement_timestamp_us == UINT64_C(1000));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  248:    assert(record.synchronization_quality == TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  249:    assert(record.calibration_version == 8u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  250:    assert(record.freshness == SENSOR_FRESHNESS_FRESH);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  251:    assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) != 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  252:    assert((record.validity_flags & SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED) != 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  253:
+        1:  254:    SensorLatestValue_SetInvalid(&record,
+call    0 returned 1
+        -:  255:                                 0u,
+        -:  256:                                 SENSOR_VALIDITY_COMMUNICATION_ERROR,
+        -:  257:                                 UINT64_C(2000));
+       1*:  258:    assert(record.raw_angle_counts == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  259:    assert(record.processed_angle_mdeg == 0);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  260:    assert(record.measurement_timestamp_us == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  261:    assert(record.last_update_timestamp_us == UINT64_C(2000));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  262:    assert(record.freshness == SENSOR_FRESHNESS_INVALID);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  263:    assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  264:    assert((record.validity_flags & SENSOR_VALIDITY_COMMUNICATION_ERROR) != 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        1:  265:}
+        -:  266:
+function TestMotorLatestValue called 1 returned 100% blocks executed 55%
+        1:  267:static void TestMotorLatestValue(void)
+        -:  268:{
+        -:  269:    Motor_LatestValue record;
+        1:  270:    uint8_t payload[2] = {UINT8_C(0x12), UINT8_C(0x34)};
+        -:  271:
+        1:  272:    MotorLatestValue_Init(&record, 2u, 3u, UINT16_C(0x123), 4u);
+call    0 returned 1
+       1*:  273:    assert(record.logical_joint_id == 2u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  274:    assert(record.motor_index == 3u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  275:    assert(record.can_id == UINT16_C(0x123));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  276:    assert(record.freshness == MOTOR_FRESHNESS_INVALID);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  277:
+        1:  278:    MotorLatestValue_SetValid(&record,
+call    0 returned 1
+        -:  279:                              UINT8_C(0x30),
+        -:  280:                              payload,
+        -:  281:                              2u,
+        -:  282:                              1u,
+        -:  283:                              true,
+        -:  284:                              UINT64_C(1000),
+        -:  285:                              TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED,
+        -:  286:                              5u);
+       1*:  287:    assert(record.command_code == UINT8_C(0x30));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  288:    assert(record.payload[0] == UINT8_C(0x12));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  289:    assert(record.payload_length == 2u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  290:    assert(record.acquisition_timestamp_us == UINT64_C(1000));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  291:    assert(record.calibration_version == 5u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  292:    assert(record.freshness == MOTOR_FRESHNESS_FRESH);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  293:    assert(record.rx_ok_count == 1u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  294:    assert((record.validity_flags & MOTOR_VALIDITY_FEEDBACK_VALID) != 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  295:    assert((record.validity_flags & MOTOR_VALIDITY_TIMESTAMP_SYNCHRONIZED) != 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  296:
+        1:  297:    MotorLatestValue_MarkStale(&record, UINT64_C(2000));
+call    0 returned 1
+       1*:  298:    assert(record.freshness == MOTOR_FRESHNESS_STALE);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  299:    assert(record.last_update_timestamp_us == UINT64_C(2000));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  300:    assert(record.rx_decode_error_count == 1u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  301:    assert((record.validity_flags & MOTOR_VALIDITY_FEEDBACK_VALID) == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        1:  302:}
+        -:  303:
+function TestSnapshotLayout called 1 returned 100% blocks executed 100%
+        1:  304:static void TestSnapshotLayout(void)
+        -:  305:{
+        -:  306:    assert(SPI_FRAME_MAX_BYTES == 512u);
+        -:  307:    assert(SPI_FRAME_HEADER_BYTES == 18u);
+        -:  308:    assert(SPI_FRAME_CRC_BYTES == 4u);
+        -:  309:    assert(SPI_PAYLOAD_MAX_BYTES == 490u);
+        -:  310:    assert(SPI_FRAME_OFFSET_PAYLOAD == 18u);
+        -:  311:    assert(SPI_FRAME_CRC_OFFSET(SPI_PAYLOAD_MAX_BYTES) == 508u);
+        -:  312:    assert(SPI_SNAPSHOT_PREFIX_BYTES == 12u);
+        -:  313:    assert(SPI_SENSOR_RECORD_BYTES == 24u);
+        -:  314:    assert(SPI_MOTOR_RECORD_BYTES == 24u);
+        -:  315:    assert(SPI_SNAPSHOT_SENSOR_RECORD_COUNT == 6u);
+        -:  316:    assert(SPI_SNAPSHOT_MOTOR_RECORD_MAX_COUNT == 8u);
+        -:  317:    assert(SPI_SNAPSHOT_PAYLOAD_BYTES(1u) == 180u);
+        -:  318:    assert(SPI_SNAPSHOT_MAX_PAYLOAD_BYTES == 348u);
+        -:  319:    assert(SPI_SNAPSHOT_MAX_FRAME_BYTES == 370u);
+        -:  320:    assert(SPI_SNAPSHOT_MAX_FRAME_BYTES <= SPI_FRAME_MAX_BYTES);
+        1:  321:}
+        -:  322:
+function SerializeTestFrame called 3 returned 100% blocks executed 83%
+        3:  323:static bool SerializeTestFrame(uint8_t *frame_buffer,
+        -:  324:                               uint16_t frame_capacity,
+        -:  325:                               uint16_t *frame_length,
+        -:  326:                               void *context)
+        -:  327:{
+        3:  328:    const uint8_t *value = context;
+        -:  329:
+        3:  330:    if ((frame_capacity < 2u) || (frame_length == NULL) || (value == NULL))
+branch  0 taken 3 (fallthrough)
+branch  1 taken 0
+branch  2 taken 3 (fallthrough)
+branch  3 taken 0
+branch  4 taken 0 (fallthrough)
+branch  5 taken 3
+        -:  331:    {
+    #####:  332:        return false;
+        -:  333:    }
+        -:  334:
+        3:  335:    frame_buffer[0] = *value;
+        3:  336:    frame_buffer[1] = 0u;
+        3:  337:    *frame_length = 2u;
+        3:  338:    return true;
+        -:  339:}
+        -:  340:
+function TestSnapshotFrameOwnership called 1 returned 100% blocks executed 64%
+        1:  341:static void TestSnapshotFrameOwnership(void)
+        -:  342:{
+        -:  343:    SnapshotFrame_Pool pool;
+        -:  344:    const SnapshotFrame_Diagnostics *diagnostics;
+        -:  345:    const uint8_t *dma_frame;
+        -:  346:    const uint8_t *staged_frame;
+        -:  347:    uint16_t frame_length;
+        1:  348:    uint8_t first_value = UINT8_C(0xA1);
+        1:  349:    uint8_t replacement_value = UINT8_C(0xB2);
+        1:  350:    uint8_t invalid_record_flag = 0u;
+        -:  351:
+        1:  352:    SnapshotFramePool_Init(&pool);
+call    0 returned 1
+       1*:  353:    assert(SnapshotBuilder_Stage(&pool, SerializeTestFrame, &first_value) == SNAPSHOT_BUILD_OK);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  354:    assert(SnapshotFramePool_BeginDma(&pool, &dma_frame, &frame_length));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  355:    assert(frame_length == 2u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  356:    assert(dma_frame[0] == first_value);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  357:
+       1*:  358:    assert(SnapshotBuilder_Stage(&pool, SerializeTestFrame, &replacement_value) == SNAPSHOT_BUILD_OK);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  359:    assert(dma_frame[0] == first_value);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  360:    assert(!SnapshotFramePool_BeginDma(&pool, &staged_frame, &frame_length));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  361:
+       1*:  362:    assert(SnapshotBuilder_Stage(&pool, SerializeTestFrame, &invalid_record_flag) == SNAPSHOT_BUILD_OK);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:  363:    staged_frame = SnapshotFramePool_GetStagedFrame(&pool, &frame_length);
+call    0 returned 1
+       1*:  364:    assert(staged_frame != NULL);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  365:    assert(staged_frame[0] == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  366:
+        1:  367:    diagnostics = SnapshotFramePool_GetDiagnostics(&pool);
+call    0 returned 1
+       1*:  368:    assert(diagnostics->replaced_unread_frame_count == 1u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  369:    assert(diagnostics->dropped_frame_count == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        -:  370:
+       1*:  371:    assert(SnapshotFramePool_CompleteDma(&pool));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  372:    assert(SnapshotFramePool_BeginDma(&pool, &dma_frame, &frame_length));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  373:    assert(dma_frame[0] == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  374:    assert(SnapshotFramePool_CompleteDma(&pool));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:  375:}
+        -:  376:
+function TestCrc32IsoHdlc called 1 returned 100% blocks executed 70%
+        1:  377:static void TestCrc32IsoHdlc(void)
+        -:  378:{
+        -:  379:    static const uint8_t known_text[] = "123456789";
+        1:  380:    uint8_t frame[] = {
+        -:  381:        0x5Au, 0xA5u, 0x01u, 0x01u, 0x03u, 0x00u, 0x34u, 0x12u, 0x00u, 0x00u,
+        -:  382:        0x88u, 0x77u, 0x66u, 0x55u, 0x44u, 0x33u, 0x22u, 0x11u, 0xAAu, 0xBBu, 0xCCu
+        -:  383:    };
+        -:  384:    uint8_t crc_field[4];
+        -:  385:    uint32_t crc32;
+        -:  386:
+       1*:  387:    assert(Crc32IsoHdlc_Compute(NULL, 0u) == 0u);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  388:    assert(Crc32IsoHdlc_Compute(known_text, sizeof(known_text) - 1u) == UINT32_C(0xCBF43926));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  389:
+        1:  390:    crc32 = Crc32IsoHdlc_Compute(frame, sizeof(frame));
+call    0 returned 1
+       1*:  391:    assert(crc32 == UINT32_C(0x049705F5));
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        1:  392:    Crc32IsoHdlc_WriteLittleEndian(crc32, crc_field);
+call    0 returned 1
+       1*:  393:    assert(Crc32IsoHdlc_ReadLittleEndian(crc_field) == crc32);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  394:    assert(Crc32IsoHdlc_Verify(frame, sizeof(frame), crc_field));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        -:  395:
+        1:  396:    frame[18] ^= 0x01u;
+       1*:  397:    assert(!Crc32IsoHdlc_Verify(frame, sizeof(frame), crc_field));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:  398:}
+        -:  399:
+function BuildRequest called 3 returned 100% blocks executed 100%
+        3:  400:static void BuildRequest(uint8_t frame[SPI_FRAME_MAX_BYTES], uint8_t type, uint16_t length, uint32_t sequence)
+        -:  401:{
+        -:  402:    uint32_t crc32;
+        3:  403:    memset(frame, 0, SPI_FRAME_MAX_BYTES);
+        3:  404:    frame[0] = 0x5Au; frame[1] = 0xA5u; frame[2] = SPI_PROTOCOL_VERSION; frame[3] = type;
+        3:  405:    frame[4] = (uint8_t)length; frame[5] = (uint8_t)(length >> 8u);
+        3:  406:    frame[6] = (uint8_t)sequence; frame[7] = (uint8_t)(sequence >> 8u); frame[8] = (uint8_t)(sequence >> 16u); frame[9] = (uint8_t)(sequence >> 24u);
+        3:  407:    if ((SPI_FRAME_CRC_OFFSET(length) + SPI_FRAME_CRC_BYTES) <= SPI_FRAME_MAX_BYTES) {
+branch  0 taken 2 (fallthrough)
+branch  1 taken 1
+        2:  408:        crc32 = Crc32IsoHdlc_Compute(frame, SPI_FRAME_HEADER_BYTES + length);
+call    0 returned 2
+        2:  409:        Crc32IsoHdlc_WriteLittleEndian(crc32, &frame[SPI_FRAME_CRC_OFFSET(length)]);
+call    0 returned 2
+        -:  410:    }
+        3:  411:}
+        -:  412:
+function TestSpiProtocolState called 1 returned 100% blocks executed 67%
+        1:  413:static void TestSpiProtocolState(void)
+        -:  414:{
+        1:  415:    SpiProtocol_State state; uint8_t request[SPI_FRAME_MAX_BYTES]; uint8_t response[SPI_FRAME_MAX_BYTES]; uint8_t snapshot[SPI_SNAPSHOT_PREFIX_BYTES] = {1u};
+       1*:  416:    SpiProtocol_Init(&state); assert(SpiProtocol_BuildBootStatus(&state, response) == SPI_PROTOCOL_OK); assert(response[3] == SPI_MESSAGE_STATUS);
+call    0 returned 1
+call    1 returned 1
+branch  2 taken 0 (fallthrough)
+branch  3 taken 1
+call    4 never executed
+branch  5 taken 0 (fallthrough)
+branch  6 taken 1
+call    7 never executed
+       1*:  417:    assert(SpiProtocol_SetUnsolicitedSnapshot(&state, snapshot, sizeof(snapshot)));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+        1:  418:    BuildRequest(request, SPI_MESSAGE_GET_SNAPSHOT, 0u, 10u);
+call    0 returned 1
+       1*:  419:    assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_OK); assert(response[3] == SPI_MESSAGE_SNAPSHOT);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+branch  4 taken 0 (fallthrough)
+branch  5 taken 1
+call    6 never executed
+       1*:  420:    assert(response[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE] == 10u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  421:    assert(response[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE + 1u] == 0u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+       1*:  422:    request[0] ^= 1u; assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_MAGIC); assert(response[3] == SPI_MESSAGE_NACK);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+branch  4 taken 0 (fallthrough)
+branch  5 taken 1
+call    6 never executed
+       1*:  423:    BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 10u); assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_SEQUENCE);
+call    0 returned 1
+call    1 returned 1
+branch  2 taken 0 (fallthrough)
+branch  3 taken 1
+call    4 never executed
+       1*:  424:    BuildRequest(request, SPI_MESSAGE_GET_STATUS, 491u, 11u); assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_LENGTH);
+call    0 returned 1
+call    1 returned 1
+branch  2 taken 0 (fallthrough)
+branch  3 taken 1
+call    4 never executed
+        1:  425:}
+        -:  426:
+function TestDataReadyState called 1 returned 100% blocks executed 71%
+        1:  427:static void TestDataReadyState(void)
+        -:  428:{
+        -:  429:    SpiDataReady_State state;
+        1:  430:    SpiDataReady_Init(&state);
+call    0 returned 1
+       1*:  431:    assert(SpiDataReady_OnFrameStaged(&state, 10u));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  432:    assert(state.high && state.notification_count == 1u);
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+branch  2 taken 1 (fallthrough)
+branch  3 taken 0
+call    4 never executed
+       1*:  433:    assert(SpiDataReady_OnFrameConsumed(&state));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  434:    assert(SpiDataReady_Poll(&state, true, 11u, 100u));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  435:    assert(state.high && state.poll_recovery_count == 1u);
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+branch  2 taken 1 (fallthrough)
+branch  3 taken 0
+call    4 never executed
+       1*:  436:    assert(!SpiDataReady_Poll(&state, true, 111u, 100u));
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+       1*:  437:    assert(state.host_stall_count == 1u);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+call    2 never executed
+        1:  438:}
+        -:  439:
+function TestCanTxAndRecoveryPolicy called 1 returned 100% blocks executed 68%
+        1:  440:static void TestCanTxAndRecoveryPolicy(void)
+        -:  441:{
+        1:  442:    CanTx_Queue queue; CanTx_Entry entry; CanBusOff_State bus_off; CanTx_Frame frame = {.id = 1u, .dlc = 0u};
+       1*:  443:    CanTxQueue_Init(&queue); assert(CanTxQueue_Enqueue(&queue, &frame, CAN_TX_PRIORITY_POLL)); assert(CanTxQueue_Enqueue(&queue, &frame, CAN_TX_PRIORITY_SAFETY));
+call    0 returned 1
+call    1 returned 1
+branch  2 taken 0 (fallthrough)
+branch  3 taken 1
+call    4 never executed
+call    5 returned 1
+branch  6 taken 0 (fallthrough)
+branch  7 taken 1
+call    8 never executed
+       1*:  444:    assert(CanTxQueue_Dequeue(&queue, &entry)); assert(entry.priority == CAN_TX_PRIORITY_SAFETY);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+branch  4 taken 0 (fallthrough)
+branch  5 taken 1
+call    6 never executed
+       1*:  445:	entry.retry_count = 1u; assert(CanTxQueue_Requeue(&queue, &entry)); assert(CanTxQueue_Dequeue(&queue, &entry)); assert(entry.retry_count == 1u);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+call    4 returned 1
+branch  5 taken 0 (fallthrough)
+branch  6 taken 1
+call    7 never executed
+branch  8 taken 0 (fallthrough)
+branch  9 taken 1
+call   10 never executed
+       1*:  446:    CanBusOff_Init(&bus_off); assert(!CanBusOff_Record(&bus_off, 1u)); assert(CanBusOff_RecoveryDue(&bus_off, 101u)); CanBusOff_RecoveryResult(&bus_off, false, 101u);
+call    0 returned 1
+call    1 returned 1
+branch  2 taken 0 (fallthrough)
+branch  3 taken 1
+call    4 never executed
+call    5 returned 1
+branch  6 taken 0 (fallthrough)
+branch  7 taken 1
+call    8 never executed
+call    9 returned 1
+       1*:  447:	assert(!CanBusOff_Record(&bus_off, 200u)); assert(CanBusOff_Record(&bus_off, 300u)); assert(bus_off.normal_commands_inhibited); CanBusOff_AllowNormalCommands(&bus_off); assert(!bus_off.normal_commands_inhibited);
+call    0 returned 1
+branch  1 taken 0 (fallthrough)
+branch  2 taken 1
+call    3 never executed
+call    4 returned 1
+branch  5 taken 0 (fallthrough)
+branch  6 taken 1
+call    7 never executed
+branch  8 taken 0 (fallthrough)
+branch  9 taken 1
+call   10 never executed
+call   11 returned 1
+branch 12 taken 0 (fallthrough)
+branch 13 taken 1
+call   14 never executed
+        1:  448:}
+        -:  449:
+function main called 1 returned 100% blocks executed 100%
+        1:  450:int main(void)
+        -:  451:{
+        1:  452:    TestWrapExtension();
+call    0 returned 1
+        1:  453:    TestMonotonicAcrossMultipleWraps();
+call    0 returned 1
+        1:  454:    TestInitialAcceptanceAndRuntimeRejection();
+call    0 returned 1
+        1:  455:    TestTimeoutResetAndRecovery();
+call    0 returned 1
+        1:  456:    TestCalibrationRecordValidation();
+call    0 returned 1
+        1:  457:    TestCalibrationDuplicateIdentity();
+call    0 returned 1
+        1:  458:    TestCalibrationGenerationSelection();
+call    0 returned 1
+        1:  459:    TestJointMappingValidation();
+call    0 returned 1
+        1:  460:    TestJointMappingInvalidRatioAndRevision();
+call    0 returned 1
+        1:  461:    TestSensorLatestValue();
+call    0 returned 1
+        1:  462:    TestMotorLatestValue();
+call    0 returned 1
+        1:  463:    TestSnapshotLayout();
+call    0 returned 1
+        1:  464:    TestSnapshotFrameOwnership();
+call    0 returned 1
+        1:  465:    TestCrc32IsoHdlc();
+call    0 returned 1
+        1:  466:    TestSpiProtocolState();
+call    0 returned 1
+        1:  467:    TestDataReadyState();
+call    0 returned 1
+        1:  468:    TestCanTxAndRecoveryPolicy();
+call    0 returned 1
+        1:  469:    return 0;
+        -:  470:}

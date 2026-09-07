@@ -1,0 +1,111 @@
+        -:    0:Source:/home/runner/work/Arm_Sensor_Hub/Arm_Sensor_Hub/App/Src/can_tx_policy.c
+        -:    1:#include "can_tx_policy.h"
+        -:    2:
+        -:    3:#include <stddef.h>
+        -:    4:#include <string.h>
+        -:    5:
+        -:    6:#define CAN_BUS_OFF_WINDOW_MS UINT32_C(60000)
+        -:    7:#define CAN_BUS_OFF_INITIAL_DELAY_MS UINT32_C(100)
+        -:    8:#define CAN_BUS_OFF_MAX_DELAY_MS UINT32_C(1000)
+        -:    9:
+function CanTxQueue_Init called 1 returned 100% blocks executed 100%
+        1:   10:void CanTxQueue_Init(CanTx_Queue *queue) { if (queue != NULL) { memset(queue, 0, sizeof(*queue)); } }
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+function CanTxQueue_Enqueue called 2 returned 100% blocks executed 86%
+        2:   11:bool CanTxQueue_Enqueue(CanTx_Queue *queue, const CanTx_Frame *frame, CanTx_Priority priority)
+        -:   12:{
+        -:   13:    uint8_t index;
+       2*:   14:    if ((queue == NULL) || (frame == NULL) || (frame->dlc > 8u) || (priority > CAN_TX_PRIORITY_POLL)) { return false; }
+branch  0 taken 2 (fallthrough)
+branch  1 taken 0
+branch  2 taken 2 (fallthrough)
+branch  3 taken 0
+branch  4 taken 2 (fallthrough)
+branch  5 taken 0
+branch  6 taken 0 (fallthrough)
+branch  7 taken 2
+       2*:   15:    if (queue->count == CAN_TX_QUEUE_CAPACITY) { queue->dropped_count++; return false; }
+branch  0 taken 0 (fallthrough)
+branch  1 taken 2
+        2:   16:    index = queue->count++;
+        3:   17:    while ((index > 0u) && (priority < queue->entries[index - 1u].priority)) { queue->entries[index] = queue->entries[index - 1u]; --index; }
+branch  0 taken 1 (fallthrough)
+branch  1 taken 2
+branch  2 taken 1
+branch  3 taken 0 (fallthrough)
+        2:   18:    queue->entries[index] = (CanTx_Entry){.frame = *frame, .priority = priority, .retry_count = 0u}; return true;
+        -:   19:}
+function CanTxQueue_Requeue called 1 returned 100% blocks executed 90%
+        1:   20:bool CanTxQueue_Requeue(CanTx_Queue *queue, const CanTx_Entry *entry)
+        -:   21:{
+        -:   22:    uint8_t index;
+       1*:   23:    if ((queue == NULL) || (entry == NULL) || (queue->count == CAN_TX_QUEUE_CAPACITY)) { return false; }
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+branch  2 taken 1 (fallthrough)
+branch  3 taken 0
+branch  4 taken 0 (fallthrough)
+branch  5 taken 1
+        1:   24:    index = queue->count++;
+        2:   25:    while ((index > 0u) && (entry->priority < queue->entries[index - 1u].priority)) { queue->entries[index] = queue->entries[index - 1u]; --index; }
+branch  0 taken 1 (fallthrough)
+branch  1 taken 1
+branch  2 taken 1
+branch  3 taken 0 (fallthrough)
+        1:   26:    queue->entries[index] = *entry;
+        1:   27:    return true;
+        -:   28:}
+function CanTxQueue_Dequeue called 2 returned 100% blocks executed 83%
+        2:   29:bool CanTxQueue_Dequeue(CanTx_Queue *queue, CanTx_Entry *entry)
+        -:   30:{
+       2*:   31:    if ((queue == NULL) || (entry == NULL) || (queue->count == 0u)) { return false; }
+branch  0 taken 2 (fallthrough)
+branch  1 taken 0
+branch  2 taken 2 (fallthrough)
+branch  3 taken 0
+branch  4 taken 0 (fallthrough)
+branch  5 taken 2
+        2:   32:    *entry = queue->entries[0]; memmove(&queue->entries[0], &queue->entries[1], (queue->count - 1u) * sizeof(queue->entries[0])); queue->count--; return true;
+        -:   33:}
+function CanBusOff_Init called 1 returned 100% blocks executed 100%
+        1:   34:void CanBusOff_Init(CanBusOff_State *state) { if (state != NULL) { *state = (CanBusOff_State){.recovery_delay_ms = CAN_BUS_OFF_INITIAL_DELAY_MS}; } }
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+function CanBusOff_Record called 3 returned 100% blocks executed 67%
+        3:   35:bool CanBusOff_Record(CanBusOff_State *state, uint32_t now_ms)
+        -:   36:{
+       3*:   37:    if (state == NULL) { return true; }
+branch  0 taken 0 (fallthrough)
+branch  1 taken 3
+       3*:   38:    if ((now_ms - state->window_start_ms) > CAN_BUS_OFF_WINDOW_MS) { state->window_start_ms = now_ms; state->bus_off_events = 0u; state->recovery_delay_ms = CAN_BUS_OFF_INITIAL_DELAY_MS; }
+branch  0 taken 0 (fallthrough)
+branch  1 taken 3
+        3:   39:    state->normal_commands_inhibited = true; state->bus_off_events++; state->next_recovery_ms = now_ms + state->recovery_delay_ms; state->recovery_due = true;
+        3:   40:    return state->bus_off_events >= 3u;
+        -:   41:}
+function CanBusOff_RecoveryDue called 1 returned 100% blocks executed 86%
+       1*:   42:bool CanBusOff_RecoveryDue(const CanBusOff_State *state, uint32_t now_ms) { return (state != NULL) && state->recovery_due && ((int32_t)(now_ms - state->next_recovery_ms) >= 0); }
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+branch  2 taken 1 (fallthrough)
+branch  3 taken 0
+branch  4 taken 1 (fallthrough)
+branch  5 taken 0
+function CanBusOff_RecoveryResult called 1 returned 100% blocks executed 75%
+        1:   43:void CanBusOff_RecoveryResult(CanBusOff_State *state, bool recovered, uint32_t now_ms)
+        -:   44:{
+       1*:   45:    if (state == NULL) { return; }
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        1:   46:    state->recovery_due = !recovered;
+       1*:   47:    if (!recovered) { state->recovery_delay_ms = (state->recovery_delay_ms < CAN_BUS_OFF_MAX_DELAY_MS / 2u) ? state->recovery_delay_ms * 2u : CAN_BUS_OFF_MAX_DELAY_MS; state->next_recovery_ms = now_ms + state->recovery_delay_ms; }
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+branch  2 taken 1 (fallthrough)
+branch  3 taken 0
+        -:   48:}
+function CanBusOff_AllowNormalCommands called 1 returned 100% blocks executed 100%
+        1:   49:void CanBusOff_AllowNormalCommands(CanBusOff_State *state) { if (state != NULL) { state->normal_commands_inhibited = false; } }
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0

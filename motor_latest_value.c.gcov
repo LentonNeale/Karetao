@@ -1,0 +1,118 @@
+        -:    0:Source:/home/runner/work/Arm_Sensor_Hub/Arm_Sensor_Hub/App/Src/motor_latest_value.c
+        -:    1:#include "motor_latest_value.h"
+        -:    2:
+        -:    3:#include <stddef.h>
+        -:    4:#include <string.h>
+        -:    5:
+function MotorLatestValue_Init called 1 returned 100% blocks executed 75%
+        1:    6:void MotorLatestValue_Init(Motor_LatestValue *record,
+        -:    7:                           uint8_t logical_joint_id,
+        -:    8:                           uint8_t motor_index,
+        -:    9:                           uint16_t can_id,
+        -:   10:                           uint32_t configuration_version)
+        -:   11:{
+        1:   12:    if (record == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:   13:    {
+    #####:   14:        return;
+        -:   15:    }
+        -:   16:
+        1:   17:    record->logical_joint_id = logical_joint_id;
+        1:   18:    record->motor_index = motor_index;
+        1:   19:    record->can_id = can_id;
+        1:   20:    record->command_code = 0u;
+        1:   21:    record->controller_status = 0u;
+        1:   22:    record->controller_status_valid = false;
+        1:   23:    memset(record->payload, 0, sizeof(record->payload));
+        1:   24:    record->payload_length = 0u;
+        1:   25:    record->validity_flags = 0u;
+        1:   26:    record->acquisition_timestamp_us = 0u;
+        1:   27:    record->last_update_timestamp_us = 0u;
+        1:   28:    record->synchronization_quality = TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED;
+        1:   29:    record->calibration_version = 0u;
+        1:   30:    record->configuration_version = configuration_version;
+        1:   31:    record->freshness = MOTOR_FRESHNESS_INVALID;
+        1:   32:    record->rx_ok_count = 0u;
+        1:   33:    record->rx_decode_error_count = 0u;
+        -:   34:}
+        -:   35:
+function MotorLatestValue_SetValid called 1 returned 100% blocks executed 92%
+        1:   36:void MotorLatestValue_SetValid(Motor_LatestValue *record,
+        -:   37:                               uint8_t command_code,
+        -:   38:                               const uint8_t *payload,
+        -:   39:                               uint8_t payload_length,
+        -:   40:                               uint8_t controller_status,
+        -:   41:                               bool controller_status_valid,
+        -:   42:                               uint64_t acquisition_timestamp_us,
+        -:   43:                               TimeService_SyncQuality synchronization_quality,
+        -:   44:                               uint32_t calibration_version)
+        -:   45:{
+        1:   46:    if ((record == NULL) || (payload_length > sizeof(record->payload)) ||
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+branch  2 taken 1 (fallthrough)
+branch  3 taken 0
+branch  4 taken 1 (fallthrough)
+branch  5 taken 0
+        1:   47:        ((payload_length > 0u) && (payload == NULL)))
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:   48:    {
+    #####:   49:        return;
+        -:   50:    }
+        -:   51:
+        1:   52:    record->command_code = command_code;
+        1:   53:    record->controller_status = controller_status;
+        1:   54:    record->controller_status_valid = controller_status_valid;
+        1:   55:    memset(record->payload, 0, sizeof(record->payload));
+        1:   56:    if (payload_length > 0u)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+        -:   57:    {
+        1:   58:        memcpy(record->payload, payload, payload_length);
+        -:   59:    }
+        -:   60:
+        1:   61:    record->payload_length = payload_length;
+        1:   62:    record->validity_flags = MOTOR_VALIDITY_FEEDBACK_VALID;
+        1:   63:    if (controller_status_valid)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+        -:   64:    {
+        1:   65:        record->validity_flags |= MOTOR_VALIDITY_CONTROLLER_STATUS_VALID;
+        -:   66:    }
+        -:   67:
+        1:   68:    if (synchronization_quality == TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+        -:   69:    {
+        1:   70:        record->validity_flags |= MOTOR_VALIDITY_TIMESTAMP_SYNCHRONIZED;
+        -:   71:    }
+        -:   72:
+        1:   73:    record->acquisition_timestamp_us = acquisition_timestamp_us;
+        1:   74:    record->last_update_timestamp_us = acquisition_timestamp_us;
+        1:   75:    record->synchronization_quality = synchronization_quality;
+        1:   76:    record->calibration_version = calibration_version;
+        1:   77:    record->freshness = MOTOR_FRESHNESS_FRESH;
+        1:   78:    record->rx_ok_count++;
+        -:   79:}
+        -:   80:
+function MotorLatestValue_MarkStale called 1 returned 100% blocks executed 71%
+        1:   81:void MotorLatestValue_MarkStale(Motor_LatestValue *record, uint64_t update_timestamp_us)
+        -:   82:{
+        1:   83:    if (record == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:   84:    {
+    #####:   85:        return;
+        -:   86:    }
+        -:   87:
+        1:   88:    record->validity_flags &= ~MOTOR_VALIDITY_FEEDBACK_VALID;
+        1:   89:    record->last_update_timestamp_us = update_timestamp_us;
+        2:   90:    record->freshness = (record->acquisition_timestamp_us == 0u)
+        -:   91:                            ? MOTOR_FRESHNESS_INVALID
+       1*:   92:                            : MOTOR_FRESHNESS_STALE;
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        1:   93:    record->rx_decode_error_count++;
+        -:   94:}

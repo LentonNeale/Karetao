@@ -1,0 +1,420 @@
+        -:    0:Source:/home/runner/work/Arm_Sensor_Hub/Arm_Sensor_Hub/App/Src/time_service.c
+        -:    1:#include "time_service.h"
+        -:    2:
+        -:    3:#include <stddef.h>
+        -:    4:
+        -:    5:#ifndef TIME_SERVICE_HOST_TEST
+        -:    6:#include "main.h"
+        -:    7:
+        -:    8:extern TIM_HandleTypeDef htim2;
+        -:    9:
+        -:   10:static TimeService_State s_tim2_state;
+        -:   11:static TimeService_SyncState s_sync_state;
+        -:   12:
+        -:   13:static uint32_t TimeService_ReadTim2(void *context)
+        -:   14:{
+        -:   15:    TIM_HandleTypeDef *timer = context;
+        -:   16:
+        -:   17:    return __HAL_TIM_GET_COUNTER(timer);
+        -:   18:}
+        -:   19:#endif
+        -:   20:
+function TimeService_StateInit called 2 returned 100% blocks executed 83%
+        2:   21:void TimeService_StateInit(TimeService_State *state,
+        -:   22:                           TimeService_CounterReader read_counter,
+        -:   23:                           void *reader_context)
+        -:   24:{
+        2:   25:    if (state == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 2
+        -:   26:    {
+    #####:   27:        return;
+        -:   28:    }
+        -:   29:
+        2:   30:    state->read_counter = read_counter;
+        2:   31:    state->reader_context = reader_context;
+        2:   32:    state->last_counter = 0u;
+        2:   33:    state->wrap_base_us = 0u;
+        2:   34:    state->initialized = false;
+        -:   35:
+        2:   36:    if (read_counter != NULL)
+branch  0 taken 2 (fallthrough)
+branch  1 taken 0
+        -:   37:    {
+        2:   38:        state->last_counter = read_counter(reader_context);
+call    0 returned 2
+        2:   39:        state->initialized = true;
+        -:   40:    }
+        -:   41:}
+        -:   42:
+function TimeService_StateNowUs called 10 returned 100% blocks executed 89%
+       10:   43:uint64_t TimeService_StateNowUs(TimeService_State *state)
+        -:   44:{
+        -:   45:    uint32_t current_counter;
+        -:   46:
+       10:   47:    if ((state == NULL) || !state->initialized || (state->read_counter == NULL))
+branch  0 taken 10 (fallthrough)
+branch  1 taken 0
+branch  2 taken 10 (fallthrough)
+branch  3 taken 0
+branch  4 taken 0 (fallthrough)
+branch  5 taken 10
+        -:   48:    {
+    #####:   49:        return 0u;
+        -:   50:    }
+        -:   51:
+       10:   52:    current_counter = state->read_counter(state->reader_context);
+call    0 returned 10
+       10:   53:    if (current_counter < state->last_counter)
+branch  0 taken 3 (fallthrough)
+branch  1 taken 7
+        -:   54:    {
+        3:   55:        state->wrap_base_us += (UINT64_C(1) << 32u);
+        -:   56:    }
+        -:   57:
+       10:   58:    state->last_counter = current_counter;
+       10:   59:    return state->wrap_base_us + current_counter;
+        -:   60:}
+        -:   61:
+function TimeService_DefaultSyncConfig called 0 returned 0% blocks executed 0%
+    #####:   62:static TimeService_SyncConfig TimeService_DefaultSyncConfig(void)
+        -:   63:{
+        -:   64:    TimeService_SyncConfig config;
+        -:   65:
+    #####:   66:    config.initial_offset_limit_us = TIME_SERVICE_DEFAULT_INITIAL_OFFSET_LIMIT_US;
+    #####:   67:    config.runtime_offset_step_limit_us = TIME_SERVICE_DEFAULT_RUNTIME_OFFSET_STEP_LIMIT_US;
+    #####:   68:    config.validity_timeout_us = TIME_SERVICE_DEFAULT_VALIDITY_TIMEOUT_US;
+    #####:   69:    return config;
+        -:   70:}
+        -:   71:
+function TimeService_AbsInt64 called 5 returned 100% blocks executed 75%
+        5:   72:static uint64_t TimeService_AbsInt64(int64_t value)
+        -:   73:{
+        5:   74:    if (value >= 0)
+branch  0 taken 5 (fallthrough)
+branch  1 taken 0
+        -:   75:    {
+        5:   76:        return (uint64_t)value;
+        -:   77:    }
+        -:   78:
+    #####:   79:    return (uint64_t)(-(value + 1)) + 1u;
+        -:   80:}
+        -:   81:
+function TimeService_OffsetWithinLimit called 3 returned 100% blocks executed 86%
+        3:   82:static bool TimeService_OffsetWithinLimit(int64_t offset_us, int64_t limit_us)
+        -:   83:{
+       3*:   84:    return (limit_us >= 0) && (TimeService_AbsInt64(offset_us) <= (uint64_t)limit_us);
+branch  0 taken 3 (fallthrough)
+branch  1 taken 0
+call    2 returned 3
+branch  3 taken 3 (fallthrough)
+branch  4 taken 0
+        -:   85:}
+        -:   86:
+function TimeService_OffsetStepWithinLimit called 1 returned 100% blocks executed 53%
+        1:   87:static bool TimeService_OffsetStepWithinLimit(int64_t current_offset_us,
+        -:   88:                                               int64_t candidate_offset_us,
+        -:   89:                                               int64_t limit_us)
+        -:   90:{
+        -:   91:    uint64_t current_magnitude;
+        -:   92:    uint64_t candidate_magnitude;
+        -:   93:
+        1:   94:    if (limit_us < 0)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:   95:    {
+    #####:   96:        return false;
+        -:   97:    }
+        -:   98:
+        1:   99:    current_magnitude = TimeService_AbsInt64(current_offset_us);
+call    0 returned 1
+        1:  100:    candidate_magnitude = TimeService_AbsInt64(candidate_offset_us);
+call    0 returned 1
+        -:  101:
+        1:  102:    if ((current_offset_us < 0) != (candidate_offset_us < 0))
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:  103:    {
+    #####:  104:        return (candidate_magnitude <= (uint64_t)limit_us) &&
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:  105:               (current_magnitude <= ((uint64_t)limit_us - candidate_magnitude));
+branch  0 never executed (fallthrough)
+branch  1 never executed
+        -:  106:    }
+        -:  107:
+        -:  108:    return (current_magnitude >= candidate_magnitude)
+    #####:  109:               ? ((current_magnitude - candidate_magnitude) <= (uint64_t)limit_us)
+       1*:  110:               : ((candidate_magnitude - current_magnitude) <= (uint64_t)limit_us);
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:  111:}
+        -:  112:
+function TimeService_CalculateOffset called 4 returned 100% blocks executed 38%
+        4:  113:static bool TimeService_CalculateOffset(uint64_t pi_time_us,
+        -:  114:                                        uint64_t local_time_us,
+        -:  115:                                        int64_t *offset_us)
+        -:  116:{
+        -:  117:    uint64_t difference;
+        -:  118:
+        4:  119:    if (offset_us == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 4
+        -:  120:    {
+    #####:  121:        return false;
+        -:  122:    }
+        -:  123:
+        4:  124:    if (pi_time_us >= local_time_us)
+branch  0 taken 4 (fallthrough)
+branch  1 taken 0
+        -:  125:    {
+        4:  126:        difference = pi_time_us - local_time_us;
+        4:  127:        if (difference > INT64_MAX)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 4
+        -:  128:        {
+    #####:  129:            return false;
+        -:  130:        }
+        -:  131:
+        4:  132:        *offset_us = (int64_t)difference;
+        4:  133:        return true;
+        -:  134:    }
+        -:  135:
+    #####:  136:    difference = local_time_us - pi_time_us;
+    #####:  137:    if (difference > (UINT64_C(1) << 63u))
+branch  0 never executed (fallthrough)
+branch  1 never executed
+        -:  138:    {
+    #####:  139:        return false;
+        -:  140:    }
+        -:  141:
+    #####:  142:    if (difference == (UINT64_C(1) << 63u))
+branch  0 never executed (fallthrough)
+branch  1 never executed
+        -:  143:    {
+    #####:  144:        *offset_us = INT64_MIN;
+        -:  145:    }
+        -:  146:    else
+        -:  147:    {
+    #####:  148:        *offset_us = -(int64_t)difference;
+        -:  149:    }
+        -:  150:
+    #####:  151:    return true;
+        -:  152:}
+        -:  153:
+function TimeService_IsSequenceNewer called 1 returned 100% blocks executed 83%
+        1:  154:static bool TimeService_IsSequenceNewer(uint32_t candidate, uint32_t previous)
+        -:  155:{
+       2*:  156:    return (candidate != previous) &&
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+        1:  157:           ((uint32_t)(candidate - previous) < UINT32_C(0x80000000));
+branch  0 taken 1 (fallthrough)
+branch  1 taken 0
+        -:  158:}
+        -:  159:
+function TimeService_SyncStateInit called 2 returned 100% blocks executed 73%
+        2:  160:void TimeService_SyncStateInit(TimeService_SyncState *state, const TimeService_SyncConfig *config)
+        -:  161:{
+        2:  162:    if (state == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 2
+        -:  163:    {
+    #####:  164:        return;
+        -:  165:    }
+        -:  166:
+       2*:  167:    state->config = (config == NULL) ? TimeService_DefaultSyncConfig() : *config;
+branch  0 taken 0 (fallthrough)
+branch  1 taken 2
+call    2 never executed
+        2:  168:    if ((state->config.initial_offset_limit_us < 0) ||
+branch  0 taken 2 (fallthrough)
+branch  1 taken 0
+        2:  169:        (state->config.runtime_offset_step_limit_us < 0) ||
+branch  0 taken 2 (fallthrough)
+branch  1 taken 0
+        2:  170:        (state->config.validity_timeout_us == 0u))
+branch  0 taken 0 (fallthrough)
+branch  1 taken 2
+        -:  171:    {
+    #####:  172:        state->config = TimeService_DefaultSyncConfig();
+call    0 never executed
+        -:  173:    }
+        -:  174:
+        2:  175:    TimeService_SyncStateReset(state);
+call    0 returned 2
+        -:  176:}
+        -:  177:
+function TimeService_SyncStateReset called 3 returned 100% blocks executed 75%
+        3:  178:void TimeService_SyncStateReset(TimeService_SyncState *state)
+        -:  179:{
+        3:  180:    if (state == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 3
+        -:  181:    {
+    #####:  182:        return;
+        -:  183:    }
+        -:  184:
+        3:  185:    state->time_offset_us = 0;
+        3:  186:    state->last_sync_sequence = 0u;
+        3:  187:    state->last_sync_local_time_us = 0u;
+        3:  188:    state->has_accepted_sync = false;
+        3:  189:    state->valid = false;
+        3:  190:    state->quality = TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED;
+        -:  191:}
+        -:  192:
+function TimeService_SyncStateAccept called 4 returned 100% blocks executed 89%
+        4:  193:TimeService_SyncResult TimeService_SyncStateAccept(TimeService_SyncState *state,
+        -:  194:                                                    uint64_t pi_time_us,
+        -:  195:                                                    uint32_t sync_sequence,
+        -:  196:                                                    uint64_t local_time_us)
+        -:  197:{
+        -:  198:    int64_t candidate_offset_us;
+        -:  199:
+        4:  200:    if ((state == NULL) || !TimeService_CalculateOffset(pi_time_us, local_time_us, &candidate_offset_us))
+branch  0 taken 4 (fallthrough)
+branch  1 taken 0
+call    2 returned 4
+branch  3 taken 0 (fallthrough)
+branch  4 taken 4
+        -:  201:    {
+    #####:  202:        return TIME_SERVICE_SYNC_REJECTED_ARGUMENT;
+        -:  203:    }
+        -:  204:
+        4:  205:    if (state->has_accepted_sync && !TimeService_IsSequenceNewer(sync_sequence, state->last_sync_sequence))
+branch  0 taken 1 (fallthrough)
+branch  1 taken 3
+call    2 returned 1
+branch  3 taken 0 (fallthrough)
+branch  4 taken 1
+        -:  206:    {
+    #####:  207:        return TIME_SERVICE_SYNC_REJECTED_SEQUENCE;
+        -:  208:    }
+        -:  209:
+        4:  210:    if ((!state->has_accepted_sync &&
+branch  0 taken 3 (fallthrough)
+branch  1 taken 1
+        3:  211:         !TimeService_OffsetWithinLimit(candidate_offset_us, state->config.initial_offset_limit_us)) ||
+call    0 returned 3
+branch  1 taken 3 (fallthrough)
+branch  2 taken 0
+        4:  212:        (state->has_accepted_sync &&
+branch  0 taken 1 (fallthrough)
+branch  1 taken 3
+        1:  213:         !TimeService_OffsetStepWithinLimit(state->time_offset_us,
+call    0 returned 1
+branch  1 taken 1 (fallthrough)
+branch  2 taken 0
+        -:  214:                                            candidate_offset_us,
+        -:  215:                                            state->config.runtime_offset_step_limit_us)))
+        -:  216:    {
+        1:  217:        return TIME_SERVICE_SYNC_REJECTED_OFFSET;
+        -:  218:    }
+        -:  219:
+        3:  220:    state->time_offset_us = candidate_offset_us;
+        3:  221:    state->last_sync_sequence = sync_sequence;
+        3:  222:    state->last_sync_local_time_us = local_time_us;
+        3:  223:    state->has_accepted_sync = true;
+        3:  224:    state->valid = true;
+        3:  225:    state->quality = TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED;
+        3:  226:    return TIME_SERVICE_SYNC_ACCEPTED;
+        -:  227:}
+        -:  228:
+function TimeService_SyncStateRefresh called 6 returned 100% blocks executed 100%
+        6:  229:void TimeService_SyncStateRefresh(TimeService_SyncState *state, uint64_t local_time_us)
+        -:  230:{
+        6:  231:    if ((state == NULL) || !state->valid || (local_time_us < state->last_sync_local_time_us))
+branch  0 taken 6 (fallthrough)
+branch  1 taken 0
+branch  2 taken 5 (fallthrough)
+branch  3 taken 1
+branch  4 taken 0 (fallthrough)
+branch  5 taken 5
+        -:  232:    {
+        1:  233:        return;
+        -:  234:    }
+        -:  235:
+        5:  236:    if ((local_time_us - state->last_sync_local_time_us) >= state->config.validity_timeout_us)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 4
+        -:  237:    {
+        1:  238:        state->valid = false;
+        1:  239:        state->quality = TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED;
+        -:  240:    }
+        -:  241:}
+        -:  242:
+function TimeService_SyncStateGetSnapshot called 6 returned 100% blocks executed 82%
+        6:  243:void TimeService_SyncStateGetSnapshot(TimeService_SyncState *state,
+        -:  244:                                      uint64_t local_time_us,
+        -:  245:                                      TimeService_SyncSnapshot *snapshot)
+        -:  246:{
+        6:  247:    if (snapshot == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 6
+        -:  248:    {
+    #####:  249:        return;
+        -:  250:    }
+        -:  251:
+        6:  252:    if (state == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 6
+        -:  253:    {
+    #####:  254:        snapshot->time_offset_us = 0;
+    #####:  255:        snapshot->last_sync_sequence = 0u;
+    #####:  256:        snapshot->last_sync_local_time_us = 0u;
+    #####:  257:        snapshot->age_us = UINT64_MAX;
+    #####:  258:        snapshot->valid = false;
+    #####:  259:        snapshot->quality = TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED;
+    #####:  260:        return;
+        -:  261:    }
+        -:  262:
+        6:  263:    TimeService_SyncStateRefresh(state, local_time_us);
+call    0 returned 6
+        6:  264:    snapshot->time_offset_us = state->time_offset_us;
+        6:  265:    snapshot->last_sync_sequence = state->last_sync_sequence;
+        6:  266:    snapshot->last_sync_local_time_us = state->last_sync_local_time_us;
+        5:  267:    snapshot->age_us = state->has_accepted_sync && (local_time_us >= state->last_sync_local_time_us)
+branch  0 taken 5 (fallthrough)
+branch  1 taken 0
+        5:  268:                           ? (local_time_us - state->last_sync_local_time_us)
+       11:  269:                           : UINT64_MAX;
+branch  0 taken 5 (fallthrough)
+branch  1 taken 1
+        6:  270:    snapshot->valid = state->valid;
+        6:  271:    snapshot->quality = state->quality;
+        -:  272:}
+        -:  273:
+        -:  274:#ifndef TIME_SERVICE_HOST_TEST
+        -:  275:void TimeService_Init(void)
+        -:  276:{
+        -:  277:    (void)HAL_TIM_Base_Start(&htim2);
+        -:  278:    TimeService_StateInit(&s_tim2_state, TimeService_ReadTim2, &htim2);
+        -:  279:    TimeService_SyncInit(NULL);
+        -:  280:}
+        -:  281:
+        -:  282:uint64_t TimeService_NowUs(void)
+        -:  283:{
+        -:  284:    return TimeService_StateNowUs(&s_tim2_state);
+        -:  285:}
+        -:  286:
+        -:  287:void TimeService_SyncInit(const TimeService_SyncConfig *config)
+        -:  288:{
+        -:  289:    TimeService_SyncStateInit(&s_sync_state, config);
+        -:  290:}
+        -:  291:
+        -:  292:TimeService_SyncResult TimeService_AcceptSync(uint64_t pi_time_us, uint32_t sync_sequence)
+        -:  293:{
+        -:  294:    return TimeService_SyncStateAccept(&s_sync_state, pi_time_us, sync_sequence, TimeService_NowUs());
+        -:  295:}
+        -:  296:
+        -:  297:bool TimeService_IsSyncValid(void)
+        -:  298:{
+        -:  299:    TimeService_SyncStateRefresh(&s_sync_state, TimeService_NowUs());
+        -:  300:    return s_sync_state.valid;
+        -:  301:}
+        -:  302:
+        -:  303:void TimeService_GetSyncSnapshot(TimeService_SyncSnapshot *snapshot)
+        -:  304:{
+        -:  305:    TimeService_SyncStateGetSnapshot(&s_sync_state, TimeService_NowUs(), snapshot);
+        -:  306:}
+        -:  307:#endif

@@ -1,0 +1,148 @@
+        -:    0:Source:/home/runner/work/Arm_Sensor_Hub/Arm_Sensor_Hub/App/Src/joint_mapping.c
+        -:    1:#include "joint_mapping.h"
+        -:    2:
+        -:    3:#include <stdbool.h>
+        -:    4:
+function JointMapping_ValidateRecord called 8 returned 100% blocks executed 80%
+        8:    5:static JointMapping_Result JointMapping_ValidateRecord(const JointMapping_Record *record)
+        -:    6:{
+        8:    7:    if (record->schema_version != JOINT_MAPPING_SCHEMA_VERSION)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 7
+        -:    8:    {
+        1:    9:        return JOINT_MAPPING_RESULT_UNSUPPORTED_SCHEMA;
+        -:   10:    }
+        -:   11:
+        7:   12:    if ((record->logical_joint_id > JOINT_MAPPING_MAX_SENSOR_ID) ||
+branch  0 taken 7 (fallthrough)
+branch  1 taken 0
+        7:   13:        (record->as5600_sensor_id > JOINT_MAPPING_MAX_SENSOR_ID) ||
+branch  0 taken 7 (fallthrough)
+branch  1 taken 0
+        7:   14:        (record->motor_index > JOINT_MAPPING_MAX_MOTOR_INDEX) ||
+branch  0 taken 7 (fallthrough)
+branch  1 taken 0
+        7:   15:        (record->can_id > JOINT_MAPPING_MAX_CAN_ID))
+branch  0 taken 0 (fallthrough)
+branch  1 taken 7
+        -:   16:    {
+    #####:   17:        return JOINT_MAPPING_RESULT_INVALID_ID;
+        -:   18:    }
+        -:   19:
+       7*:   20:    if ((record->direction != 1) && (record->direction != -1))
+branch  0 taken 0 (fallthrough)
+branch  1 taken 7
+branch  2 never executed (fallthrough)
+branch  3 never executed
+        -:   21:    {
+    #####:   22:        return JOINT_MAPPING_RESULT_INVALID_DIRECTION;
+        -:   23:    }
+        -:   24:
+        7:   25:    if ((record->transmission_ratio_numerator == 0u) ||
+branch  0 taken 7 (fallthrough)
+branch  1 taken 0
+        7:   26:        (record->transmission_ratio_denominator == 0u))
+branch  0 taken 1 (fallthrough)
+branch  1 taken 6
+        -:   27:    {
+        1:   28:        return JOINT_MAPPING_RESULT_INVALID_RATIO;
+        -:   29:    }
+        -:   30:
+        6:   31:    return JOINT_MAPPING_RESULT_OK;
+        -:   32:}
+        -:   33:
+function JointMapping_Validate called 5 returned 100% blocks executed 87%
+        5:   34:JointMapping_Result JointMapping_Validate(const JointMapping_Record *records, size_t record_count)
+        -:   35:{
+        -:   36:    size_t record_index;
+        -:   37:    size_t prior_index;
+        -:   38:
+        5:   39:    if ((records == NULL) || (record_count == 0u) || (record_count > JOINT_MAPPING_MAX_ENTRIES))
+branch  0 taken 5 (fallthrough)
+branch  1 taken 0
+branch  2 taken 5 (fallthrough)
+branch  3 taken 0
+branch  4 taken 0 (fallthrough)
+branch  5 taken 5
+        -:   40:    {
+    #####:   41:        return JOINT_MAPPING_RESULT_INVALID_ARGUMENT;
+        -:   42:    }
+        -:   43:
+        9:   44:    for (record_index = 0u; record_index < record_count; ++record_index)
+branch  0 taken 8
+branch  1 taken 1 (fallthrough)
+        -:   45:    {
+        8:   46:        JointMapping_Result result = JointMapping_ValidateRecord(&records[record_index]);
+call    0 returned 8
+        8:   47:        if (result != JOINT_MAPPING_RESULT_OK)
+branch  0 taken 2 (fallthrough)
+branch  1 taken 6
+        -:   48:        {
+        2:   49:            return result;
+        -:   50:        }
+        -:   51:
+        7:   52:        for (prior_index = 0u; prior_index < record_index; ++prior_index)
+branch  0 taken 3
+branch  1 taken 4 (fallthrough)
+        -:   53:        {
+        3:   54:            if (records[record_index].logical_joint_id == records[prior_index].logical_joint_id)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 3
+        -:   55:            {
+    #####:   56:                return JOINT_MAPPING_RESULT_DUPLICATE_JOINT_ID;
+        -:   57:            }
+        -:   58:
+        3:   59:            if (records[record_index].as5600_sensor_id == records[prior_index].as5600_sensor_id)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 2
+        -:   60:            {
+        1:   61:                return JOINT_MAPPING_RESULT_DUPLICATE_SENSOR_ID;
+        -:   62:            }
+        -:   63:
+        2:   64:            if (records[record_index].motor_index == records[prior_index].motor_index)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 2
+        -:   65:            {
+    #####:   66:                return JOINT_MAPPING_RESULT_DUPLICATE_MOTOR_INDEX;
+        -:   67:            }
+        -:   68:
+        2:   69:            if (records[record_index].can_id == records[prior_index].can_id)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 1
+        -:   70:            {
+        1:   71:                return JOINT_MAPPING_RESULT_DUPLICATE_CAN_ID;
+        -:   72:            }
+        -:   73:        }
+        -:   74:    }
+        -:   75:
+        1:   76:    return JOINT_MAPPING_RESULT_OK;
+        -:   77:}
+        -:   78:
+function JointMapping_FindByJoint called 1 returned 100% blocks executed 78%
+        1:   79:const JointMapping_Record *JointMapping_FindByJoint(const JointMapping_Record *records,
+        -:   80:                                                    size_t record_count,
+        -:   81:                                                    uint8_t logical_joint_id)
+        -:   82:{
+        -:   83:    size_t record_index;
+        -:   84:
+        1:   85:    if (records == NULL)
+branch  0 taken 0 (fallthrough)
+branch  1 taken 1
+        -:   86:    {
+    #####:   87:        return NULL;
+        -:   88:    }
+        -:   89:
+        2:   90:    for (record_index = 0u; record_index < record_count; ++record_index)
+branch  0 taken 2
+branch  1 taken 0 (fallthrough)
+        -:   91:    {
+        2:   92:        if (records[record_index].logical_joint_id == logical_joint_id)
+branch  0 taken 1 (fallthrough)
+branch  1 taken 1
+        -:   93:        {
+        1:   94:            return &records[record_index];
+        -:   95:        }
+        -:   96:    }
+        -:   97:
+    #####:   98:    return NULL;
+        -:   99:}
