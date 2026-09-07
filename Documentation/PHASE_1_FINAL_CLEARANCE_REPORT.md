@@ -66,7 +66,6 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 
 | File / symbol | Type | Evidence | Remediation |
 | --- | --- | --- | --- |
-| `App/Src/time_service.c`: `TimeService_AcceptSync`, `TimeService_IsSyncValid` | Public API with no production caller | only definitions and header declarations are present; no runtime call sites were found | Wire `TIME_SYNC` acceptance through live SPI command handling or demote the API from claimed runtime readiness |
 | `App/Src/i2c_manager.c`: `I2CManager_SubmitAsync`, `I2CManager_SetEventHook`, `I2CManager_SetEventQueue`, `I2CManager_SetTaskNotifyTarget` | Unintegrated async surface | declarations/definitions exist, but no application call sites were found | Either integrate async I2C ownership into a task flow or remove/de-scope the API until needed |
 | `App/Src/spi_slave_service.c`: `SpiSlaveService_BeginDmaTransfer`, `SpiSlaveService_CompleteDmaTransfer`, `SpiSlaveService_ProcessRequestFrame` | Hardware integration surface with no caller | only self-reference and documentation references were found | Complete DMA/NSS/request wiring or explicitly keep these functions in “integration target only” status |
 | `App/Src/can_service.c`: motor command APIs | Unused control surface | command entrypoints are defined and documented but are not called by any current first-party module | Keep as provisional API only if a near-term MotorService/client exists; otherwise treat as unexercised surface requiring tests before use |
@@ -75,20 +74,19 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 
 | ID | Severity | Rule / source | Impacted files | Technical concern | Scope |
 | --- | --- | --- | --- | --- | --- |
-| ASH-AUD-001 | High | Integration gap | `App/Src/time_service.c:292-305`, `App/Src/spi_slave_service.c:115-125` | `TimeService_AcceptSync()` and live sync validity APIs still have no production SPI request-dispatch caller, so time synchronization remains host-tested state without transport integration | Repo-visible integration contract issue |
-| ASH-AUD-002 | Medium | Coverage boundary | `tests/host/CMakeLists.txt:27-58` | service smoke coverage now exists for all first-party modules, but several hardware-failure, retry, and recovery branches remain shallow by design | Repo-wide |
-| ASH-AUD-003 | Medium | Architecture debt | `App/Src/i2c_manager.c:375-415`, `App/Src/tca9548a_mux.c:92-117` | the composite mux+sensor ownership window is implemented specifically for the AS5600 path; broader multi-device arbitration policy is still not generalized | Localized |
-| ASH-AUD-004 | Medium | Build evidence gap | `Documentation/BUILD_CONTRACT.md:44-59`, `Documentation/CONTRACT_STATUS.md:25` | host coverage is available, but embedded target build evidence still depends on external toolchain availability | Repo-wide |
-| ASH-AUD-005 | Low | Verification depth | `tests/host/service_test_main.c` | new service smoke tests validate core paths and required negative paths, but they intentionally do not replace later hardware-integration or richer failure-mode suites | Repo-wide |
-| ASH-AUD-006 | Medium | Coverage smell | `tests/host/CMakeLists.txt:1-45` vs `CMakeLists.txt:61-81` | host coverage now includes protocol primitives plus minimal service smoke coverage, but negative-path depth remains intentionally shallow for several hardware-facing services | Repo-wide |
+| ASH-AUD-001 | Medium | Coverage boundary | `tests/host/CMakeLists.txt:27-58` | service smoke coverage now exists for all first-party modules, but several hardware-failure, retry, and recovery branches remain shallow by design | Repo-wide |
+| ASH-AUD-002 | Medium | Architecture debt | `App/Src/i2c_manager.c:375-415`, `App/Src/tca9548a_mux.c:92-117` | the composite mux+sensor ownership window is implemented specifically for the AS5600 path; broader multi-device arbitration policy is still not generalized | Localized |
+| ASH-AUD-003 | Medium | Build evidence gap | `Documentation/BUILD_CONTRACT.md:44-59`, `Documentation/CONTRACT_STATUS.md:25` | host coverage is available, but embedded target build evidence still depends on external toolchain availability | Repo-wide |
+| ASH-AUD-004 | Low | Verification depth | `tests/host/service_test_main.c` | new service smoke tests validate core paths and required negative paths, but they intentionally do not replace later hardware-integration or richer failure-mode suites | Repo-wide |
+| ASH-AUD-005 | Medium | Coverage smell | `tests/host/CMakeLists.txt:1-45` vs `CMakeLists.txt:61-81` | host coverage now includes protocol primitives plus minimal service smoke coverage, but negative-path depth remains intentionally shallow for several hardware-facing services | Repo-wide |
 
 ## Section E — Loose Ends / Technical Debt Ledger
 
 | Source | Affected functionality | Current state | Test state | Release risk |
 | --- | --- | --- | --- | --- |
-| `Documentation/CONTRACT_STATUS.md:13-25` | SPI/CAN/snapshot/time-sync integration | multiple rows still marked host-tested only, scaffold, absent, or gated | host primitives tested; end-to-end target flows absent | High |
+| `Documentation/CONTRACT_STATUS.md:13-25` | SPI/CAN/snapshot/time-sync integration | multiple rows still marked host-tested only, scaffold, or gated pending target validation | host primitives tested; end-to-end target flows absent | High |
 | `Documentation/HEALTH_MONITOR_CONTRACT.md:22-51` | aggregate health model | read-only snapshot baseline is implemented; host publication, thresholds, and acknowledgement policy remain open | protocol and service smoke coverage exist | Medium |
-| `Documentation/TIMESTAMP_SYNC_CONTRACT.md:28-59` | `TIME_SYNC` acceptance and stale-sync gating | sync state exists, but no live SPI dispatch path calls `TimeService_AcceptSync()` | unit-level host coverage only | High |
+| `Documentation/TIMESTAMP_SYNC_CONTRACT.md:28-59` | `TIME_SYNC` acceptance and stale-sync gating | live SPI dispatch now validates and forwards TIME_SYNC to `TimeService_AcceptSync()` in task context; target-hardware validation remains | protocol plus service smoke coverage exist | Medium |
 | `Documentation/I2C_MANAGER_CONTRACT.md:56-69` | mux selection + sensor transaction atomicity | composite mux+sensor write/read path is now implemented for AS5600 access; broader arbitration policy remains open | basic host smoke coverage exists; contention depth remains limited | Medium |
 | `Documentation/CAN_SERVICE_CONTRACT.md:44-46,78-89,125-133` | duplicate CAN IDs, RX overflow, command ordering, hardware recovery proof | documented as open decisions or future validation | host-only queue/policy tests | High |
 | `Documentation/SPI_SERVICE_CONTRACT.md:78-135` | DMA/NSS callbacks and aborted transaction handling | contract exists; runtime wiring absent | host protocol and service smoke coverage exist; no target-hardware validation | High |
@@ -99,14 +97,14 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 
 | Module | Current test vehicle | Line coverage | Branch coverage | Gap |
 | --- | --- | ---: | ---: | --- |
-| `time_service.c` | `sprint1_protocol_tests` | 71.67% | 90.70% | global/runtime wrappers not covered; no live `TIME_SYNC` ingress caller |
+| `time_service.c` | `sprint1_protocol_tests` | 71.67% | 90.70% | global/runtime wrappers still rely on host harness coverage; target-hardware ingress remains unvalidated |
 | `calibration_record.c` | `sprint1_protocol_tests` | 75.00% | 96.55% | additional invalid-record permutations missing |
 | `joint_mapping.c` | `sprint1_protocol_tests` | 81.58% | 95.45% | negative-path permutations incomplete |
 | `sensor_latest_value.c` | `sprint1_protocol_tests` | 80.00% | 66.67% | stale/freshness edge branches under-covered |
 | `motor_latest_value.c` | `sprint1_protocol_tests` | 94.00% | 100.00% | remaining branch-taken paths are narrow |
 | `snapshot_builder.c` | `sprint1_protocol_tests` | 78.26% | 96.15% | no-buffer and replacement combinations only partially exercised |
 | `crc32_iso_hdlc.c` | `sprint1_protocol_tests` | 88.89% | 100.00% | minor branch residue |
-| `spi_protocol.c` | `sprint1_protocol_tests` | 97.67% | 92.00% | some invalid-message combinations absent |
+| `spi_protocol.c` | `sprint1_protocol_tests` | 97.67% | 92.00% | broader invalid-message permutations remain available for deeper follow-up |
 | `spi_data_ready.c` | `sprint1_protocol_tests` | 100.00% | 100.00% | clear |
 | `can_tx_policy.c` | `sprint1_protocol_tests` | 100.00% | 100.00% | clear |
 
@@ -121,7 +119,7 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 | `as5600.c` | `service_smoke_tests` | bad-arg and composite status-read path covered |
 | `sensor_task.c` | `service_smoke_tests` | bring-up communication-failure path covered |
 | `can_service.c` | `service_smoke_tests` | invalid registration and inactive/active request gating covered |
-| `spi_slave_service.c` | `service_smoke_tests` | inactive rejection, staged-frame handoff, and bad-request path covered |
+| `spi_slave_service.c` | `service_smoke_tests` | inactive TIME_SYNC acceptance, staged-frame handoff, and bad-request path covered |
 | `health_monitor.c` | `sprint1_protocol_tests`, `service_smoke_tests` | snapshot baseline covered |
 
 ## Section G — Critical Defect Punch-List
@@ -129,7 +127,6 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 | Priority | Issue | Evidence | Owner | Phase 2 status |
 | --- | --- | --- | --- | --- |
 | P1 | Re-establish target build evidence in CI/runner | `cmake --preset Debug` fails without `arm-none-eabi-gcc/g++` in this environment | Build/CI | Blocking |
-| P1 | Wire live SPI TIME_SYNC dispatch to `TimeService_AcceptSync()` | `TimeService_AcceptSync()` still has no production caller | Firmware application | Blocking |
 | P2 | Deepen negative-path coverage for hardware-facing service flows beyond smoke level | `service_smoke_tests` now cover core behavior, but several failure/recovery branches remain unexercised | Firmware + verification | Non-blocking follow-up |
 
 ## Section H — Clearance Decision
@@ -139,4 +136,3 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 ### Gate reasons
 
 - target-build evidence unavailable in current runner due missing embedded toolchain
-- live SPI `TIME_SYNC` dispatch is still not wired into production command handling

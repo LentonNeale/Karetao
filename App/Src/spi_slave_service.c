@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "main.h"
+#include "time_service.h"
 
 static Lifecycle_Record s_lifecycle;
 static SnapshotFrame_Pool s_frame_pool;
@@ -34,6 +35,26 @@ static bool SpiSlaveService_SerializeResponse(uint8_t *frame_buffer,
 	memcpy(frame_buffer, s_response_frame, SPI_FRAME_MAX_BYTES);
 	*frame_length = SPI_FRAME_MAX_BYTES;
 	return true;
+}
+
+static bool SpiSlaveService_RequestAllowed(uint8_t request_type)
+{
+	Lifecycle_State state = Lifecycle_GetState(&s_lifecycle);
+
+	if (request_type == SPI_MESSAGE_TIME_SYNC) {
+		return (state == LIFECYCLE_STATE_INACTIVE) || (state == LIFECYCLE_STATE_ACTIVE);
+	}
+
+	return state == LIFECYCLE_STATE_ACTIVE;
+}
+
+static void SpiSlaveService_StageResponseFrame(void)
+{
+	if (SnapshotBuilder_Stage(&s_frame_pool, SpiSlaveService_SerializeResponse, NULL) == SNAPSHOT_BUILD_OK &&
+		Lifecycle_IsActive(&s_lifecycle) &&
+		SpiDataReady_OnFrameStaged(&s_data_ready, HAL_GetTick())) {
+		SpiSlaveService_SetDataReadyPin(true);
+	}
 }
 
 void SpiSlaveService_Init(void)
@@ -114,13 +135,33 @@ bool SpiSlaveService_SetUnsolicitedSnapshot(const uint8_t *payload, uint16_t pay
 
 SpiProtocol_Result SpiSlaveService_ProcessRequestFrame(const uint8_t request[SPI_FRAME_MAX_BYTES])
 {
+	SpiProtocol_TimeSyncRequest time_sync;
 	SpiProtocol_Result result;
+	TimeService_SyncResult sync_result;
+	uint8_t request_type;
 
-	if (!Lifecycle_IsActive(&s_lifecycle)) {
+	if (request == NULL) {
+		return SPI_PROTOCOL_BAD_MESSAGE;
+	}
+
+	request_type = request[3];
+	if (!SpiSlaveService_RequestAllowed(request_type)) {
 		return SPI_PROTOCOL_BAD_MESSAGE;
 	}
 
 	result = SpiProtocol_ProcessRequest(&s_protocol, request, s_response_frame);
-	(void)SpiSlaveService_StageSnapshot(SpiSlaveService_SerializeResponse, NULL);
+	if ((result == SPI_PROTOCOL_OK) && (request_type == SPI_MESSAGE_TIME_SYNC)) {
+		result = SpiProtocol_ParseTimeSyncRequest(request, &time_sync);
+		if (result == SPI_PROTOCOL_OK) {
+			sync_result = TimeService_AcceptSync(time_sync.pi_time_us, time_sync.sync_sequence);
+			if (sync_result != TIME_SERVICE_SYNC_ACCEPTED) {
+				SpiProtocol_BuildCommandReply(&s_protocol, SPI_MESSAGE_NACK, request_type,
+											  time_sync.request_sequence, SPI_PROTOCOL_BAD_TIME_SYNC,
+											  (uint32_t)sync_result, s_response_frame);
+				result = SPI_PROTOCOL_BAD_TIME_SYNC;
+			}
+		}
+	}
+	SpiSlaveService_StageResponseFrame();
 	return result;
 }

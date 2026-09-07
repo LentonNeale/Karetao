@@ -63,7 +63,7 @@ DMA mode details must support the fixed frame limit; maximum SPI clock remains t
 
 ## Protocol State
 
-`SpiProtocol_ProcessRequest()` validates the fixed 512-byte request frame, magic, version, little-endian payload length, CRC over header plus payload, request sequence, and supported message type. It returns a fixed-frame NACK without accepting invalid input. `GET_SNAPSHOT` consumes a queued unsolicited snapshot as a correlated `SNAPSHOT` response and writes `response_to_seq`; this takes priority over unsolicited publication. `GET_STATUS` receives an ACK. The boot response is a fixed status frame.
+`SpiProtocol_ProcessRequest()` validates the fixed 512-byte request frame, magic, version, little-endian payload length, CRC over header plus payload, request sequence, and supported message type. It returns a fixed-frame NACK without accepting invalid input. `GET_SNAPSHOT` consumes a queued unsolicited snapshot as a correlated `SNAPSHOT` response and writes `response_to_seq`; this takes priority over unsolicited publication. `GET_STATUS` receives an ACK. `TIME_SYNC` receives payload validation in the protocol layer and is applied in task context through `TimeService_AcceptSync()` before the staged ACK/NACK reply is published. The boot response is a fixed status frame.
 
 ## DATA_READY
 

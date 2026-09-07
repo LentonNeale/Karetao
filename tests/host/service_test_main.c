@@ -46,6 +46,10 @@ typedef struct
 static uint32_t s_hal_tick;
 static uint64_t s_time_now_us;
 static TimeService_SyncSnapshot s_time_sync_snapshot;
+static TimeService_SyncResult s_time_sync_result;
+static uint32_t s_time_sync_accept_count;
+static uint64_t s_last_time_sync_pi_time_us;
+static uint32_t s_last_time_sync_sequence;
 static GPIO_PinState s_last_gpio_state;
 static uint32_t s_gpio_write_count;
 static bool s_force_semaphore_timeout;
@@ -92,6 +96,10 @@ static void ResetHalState(void)
     s_hal_tick = 0u;
     s_time_now_us = 0u;
     s_time_sync_snapshot = (TimeService_SyncSnapshot){0};
+    s_time_sync_result = TIME_SERVICE_SYNC_ACCEPTED;
+    s_time_sync_accept_count = 0u;
+    s_last_time_sync_pi_time_us = 0u;
+    s_last_time_sync_sequence = 0u;
     s_last_gpio_state = GPIO_PIN_RESET;
     s_gpio_write_count = 0u;
     s_force_semaphore_timeout = false;
@@ -149,6 +157,12 @@ void TimeService_SyncInit(const TimeService_SyncConfig *config)
 
 TimeService_SyncResult TimeService_AcceptSync(uint64_t pi_time_us, uint32_t sync_sequence)
 {
+    s_time_sync_accept_count++;
+    s_last_time_sync_pi_time_us = pi_time_us;
+    s_last_time_sync_sequence = sync_sequence;
+    if (s_time_sync_result != TIME_SERVICE_SYNC_ACCEPTED) {
+        return s_time_sync_result;
+    }
     s_time_sync_snapshot.time_offset_us = (int64_t)pi_time_us - (int64_t)s_time_now_us;
     s_time_sync_snapshot.last_sync_sequence = sync_sequence;
     s_time_sync_snapshot.last_sync_local_time_us = s_time_now_us;
@@ -571,6 +585,34 @@ static void BuildRequest(uint8_t frame[SPI_FRAME_MAX_BYTES], uint8_t type, uint1
     Crc32IsoHdlc_WriteLittleEndian(crc32, &frame[SPI_FRAME_CRC_OFFSET(length)]);
 }
 
+static void BuildTimeSyncRequest(uint8_t frame[SPI_FRAME_MAX_BYTES],
+                                 uint32_t request_sequence,
+                                 uint64_t pi_time_us,
+                                 uint32_t sync_sequence)
+{
+    uint32_t crc32;
+
+    BuildRequest(frame, SPI_MESSAGE_TIME_SYNC, SPI_TIME_SYNC_PAYLOAD_BYTES, request_sequence);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 0u] = SPI_TIME_SYNC_SCHEMA_VERSION;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 1u] = 0u;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 2u] = 0u;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 3u] = 0u;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 4u] = (uint8_t)pi_time_us;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 5u] = (uint8_t)(pi_time_us >> 8u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 6u] = (uint8_t)(pi_time_us >> 16u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 7u] = (uint8_t)(pi_time_us >> 24u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 8u] = (uint8_t)(pi_time_us >> 32u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 9u] = (uint8_t)(pi_time_us >> 40u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 10u] = (uint8_t)(pi_time_us >> 48u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 11u] = (uint8_t)(pi_time_us >> 56u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 12u] = (uint8_t)sync_sequence;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 13u] = (uint8_t)(sync_sequence >> 8u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 14u] = (uint8_t)(sync_sequence >> 16u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 15u] = (uint8_t)(sync_sequence >> 24u);
+    crc32 = Crc32IsoHdlc_Compute(frame, SPI_FRAME_HEADER_BYTES + SPI_TIME_SYNC_PAYLOAD_BYTES);
+    Crc32IsoHdlc_WriteLittleEndian(crc32, &frame[SPI_FRAME_CRC_OFFSET(SPI_TIME_SYNC_PAYLOAD_BYTES)]);
+}
+
 static void TestI2CManagerCore(void)
 {
     uint8_t data = 0x12u;
@@ -678,6 +720,13 @@ static void TestSpiSlaveServiceCore(void)
     SpiSlaveService_Init();
     assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_NOT_READY);
     assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_MESSAGE);
+    s_time_now_us = 500u;
+    BuildTimeSyncRequest(request, 2u, 900u, 7u);
+    assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_OK);
+    assert(s_time_sync_accept_count == 1u);
+    assert(s_last_time_sync_pi_time_us == 900u);
+    assert(s_last_time_sync_sequence == 7u);
+    assert(TimeService_IsSyncValid());
     assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
     assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_OK);
     assert(s_last_gpio_state == GPIO_PIN_SET);
@@ -690,6 +739,20 @@ static void TestSpiSlaveServiceCore(void)
     BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 7u);
     request[0] ^= 1u;
     assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_MAGIC);
+
+    BuildRequest(request, SPI_MESSAGE_TIME_SYNC, 0u, 8u);
+    assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_TIME_SYNC);
+    assert(s_time_sync_accept_count == 1u);
+
+    BuildTimeSyncRequest(request, 9u, 950u, 7u);
+    s_time_sync_result = TIME_SERVICE_SYNC_REJECTED_SEQUENCE;
+    assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_TIME_SYNC);
+    assert(s_time_sync_accept_count == 2u);
+
+    BuildTimeSyncRequest(request, 10u, 1000u, 8u);
+    s_time_sync_result = TIME_SERVICE_SYNC_REJECTED_OFFSET;
+    assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_TIME_SYNC);
+    assert(s_time_sync_accept_count == 3u);
 }
 
 static void TestAppInitCore(void)

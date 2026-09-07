@@ -533,18 +533,61 @@ static void BuildRequest(uint8_t frame[SPI_FRAME_MAX_BYTES], uint8_t type, uint1
     }
 }
 
+static void BuildTimeSyncRequest(uint8_t frame[SPI_FRAME_MAX_BYTES],
+                                 uint32_t request_sequence,
+                                 uint64_t pi_time_us,
+                                 uint32_t sync_sequence)
+{
+    uint32_t crc32;
+
+    BuildRequest(frame, SPI_MESSAGE_TIME_SYNC, SPI_TIME_SYNC_PAYLOAD_BYTES, request_sequence);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 0u] = SPI_TIME_SYNC_SCHEMA_VERSION;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 1u] = 0u;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 2u] = 0u;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 3u] = 0u;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 4u] = (uint8_t)pi_time_us;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 5u] = (uint8_t)(pi_time_us >> 8u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 6u] = (uint8_t)(pi_time_us >> 16u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 7u] = (uint8_t)(pi_time_us >> 24u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 8u] = (uint8_t)(pi_time_us >> 32u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 9u] = (uint8_t)(pi_time_us >> 40u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 10u] = (uint8_t)(pi_time_us >> 48u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 11u] = (uint8_t)(pi_time_us >> 56u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 12u] = (uint8_t)sync_sequence;
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 13u] = (uint8_t)(sync_sequence >> 8u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 14u] = (uint8_t)(sync_sequence >> 16u);
+    frame[SPI_FRAME_OFFSET_PAYLOAD + 15u] = (uint8_t)(sync_sequence >> 24u);
+    crc32 = Crc32IsoHdlc_Compute(frame, SPI_FRAME_HEADER_BYTES + SPI_TIME_SYNC_PAYLOAD_BYTES);
+    Crc32IsoHdlc_WriteLittleEndian(crc32, &frame[SPI_FRAME_CRC_OFFSET(SPI_TIME_SYNC_PAYLOAD_BYTES)]);
+}
+
 static void TestSpiProtocolState(void)
 {
+    uint32_t crc32;
     SpiProtocol_State state; uint8_t request[SPI_FRAME_MAX_BYTES]; uint8_t response[SPI_FRAME_MAX_BYTES]; uint8_t snapshot[SPI_SNAPSHOT_PREFIX_BYTES] = {1u};
+    SpiProtocol_TimeSyncRequest time_sync;
     SpiProtocol_Init(&state); assert(SpiProtocol_BuildBootStatus(&state, response) == SPI_PROTOCOL_OK); assert(response[3] == SPI_MESSAGE_STATUS);
     assert(SpiProtocol_SetUnsolicitedSnapshot(&state, snapshot, sizeof(snapshot)));
     BuildRequest(request, SPI_MESSAGE_GET_SNAPSHOT, 0u, 10u);
     assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_OK); assert(response[3] == SPI_MESSAGE_SNAPSHOT);
     assert(response[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE] == 10u);
     assert(response[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE + 1u] == 0u);
+    BuildTimeSyncRequest(request, 11u, UINT64_C(123456789), 3u);
+    assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_OK);
+    assert(response[3] == SPI_MESSAGE_ACK);
+    assert(SpiProtocol_ParseTimeSyncRequest(request, &time_sync) == SPI_PROTOCOL_OK);
+    assert(time_sync.request_sequence == 11u);
+    assert(time_sync.pi_time_us == UINT64_C(123456789));
+    assert(time_sync.sync_sequence == 3u);
     request[0] ^= 1u; assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_MAGIC); assert(response[3] == SPI_MESSAGE_NACK);
-    BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 10u); assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_SEQUENCE);
-    BuildRequest(request, SPI_MESSAGE_GET_STATUS, 491u, 11u); assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_LENGTH);
+    BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 11u); assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_SEQUENCE);
+    BuildRequest(request, SPI_MESSAGE_GET_STATUS, 491u, 12u); assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_LENGTH);
+    BuildRequest(request, SPI_MESSAGE_TIME_SYNC, 15u, 13u); assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_TIME_SYNC);
+    BuildTimeSyncRequest(request, 13u, UINT64_C(123456789), 4u);
+    request[SPI_FRAME_OFFSET_PAYLOAD] = 2u;
+    crc32 = Crc32IsoHdlc_Compute(request, SPI_FRAME_HEADER_BYTES + SPI_TIME_SYNC_PAYLOAD_BYTES);
+    Crc32IsoHdlc_WriteLittleEndian(crc32, &request[SPI_FRAME_CRC_OFFSET(SPI_TIME_SYNC_PAYLOAD_BYTES)]);
+    assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_TIME_SYNC);
 }
 
 static void TestDataReadyState(void)
