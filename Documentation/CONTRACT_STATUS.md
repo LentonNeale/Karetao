@@ -1,0 +1,32 @@
+# Contract Status Matrix
+
+This matrix tracks project-level contracts across three independent dimensions:
+
+- **Document status:** whether the contract document exists and is maintained.
+- **Implementation status:** how much of the documented behavior exists in firmware.
+- **Freeze status:** whether the contract is approved for implementation or still has integration gates.
+
+| Contract | Owner | Boundary | Document status | Implementation status | Freeze status | Dependencies | Next action |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [Contract v1.0 freeze](CONTRACT_V1_FREEZE.md) | System architecture | Cross-contract decisions | Exists | Reconciliation baseline | Approved baseline; integration/release gates remain | All contracts, Pi review | Complete named CAN, SPI, motor, and safety gates |
+| [Lifecycle](LIFECYCLE_CONTRACT.md) | Application/system | App services and system sequencing | Exists | Configuration reaches INACTIVE after kernel initialization; one-shot dependency activation runs from default task context | Approved baseline | FreeRTOS task context, configuration/calibration/time/safety prerequisites | Implement prerequisite validation and explicit post-recovery activation request |
+| [SPI host](SPI_CONTRACT.md) | System/Pi + STM32 | Raspberry Pi <-> SPI3 wire protocol | Exists | Fixed-frame validation, CRC, request/response priority, DATA_READY state, and reference vectors host-tested; hardware DMA/NSS absent | Approved baseline; maximum SPI clock gate remains | Payload schema, SPI service | Implement final snapshot serialization and validate the 5 MHz initial maximum with Pi, DMA, GPIO, and signal-integrity tests |
+| [CAN service](CAN_SERVICE_CONTRACT.md) | CanService | App <-> CAN/MKS transport | Exists | Task-owned bounded priority TX queue, bounded retry policy, latest-value cache, and bus-off policy host-tested; HAL recovery path compiles but is unvalidated | Approved baseline; CAN integration gate remains | Lifecycle, MKS codec, HAL CAN | Validate exact controller, transceiver/topology/termination, candidate timing, measured load, retry timing, and recovery behavior |
+| [SPI payload](SPI_PAYLOAD_SCHEMA.md) | Application data model | Application records <-> SPI payload | Exists | Fixed offsets and maximum snapshot sizing host-tested; no encoder | Approved baseline | SPI host contract, timestamps | Implement encoder against frozen layout constants and reject oversize payloads |
+| [Snapshot coherency](SNAPSHOT_COHERENCY_CONTRACT.md) | Sensor/CAN/SPI | Producers <-> SPI-owned snapshot | Exists | Two-buffer ownership and replacement diagnostics host-tested; final serializer absent | Approved baseline | Multi-sensor, SPI service | Serialize producer caches against frozen offsets and CRC coverage |
+| [SPI service](SPI_SERVICE_CONTRACT.md) | SpiSlaveService | App payload <-> SPI3 DMA | Exists | Host-tested request/response, frame ownership, DATA_READY notification state, and 1 ms poll recovery; hardware DMA/NSS absent | Approved baseline; maximum SPI clock gate remains | Payload, coherency, HAL DMA | Connect DMA/NSS events and complete documented Pi/DMA/GPIO clock acceptance testing |
+| [I2C manager](I2C_MANAGER_CONTRACT.md) | I2CManager | App <-> I2C1 HAL | Exists | Public API/lifecycle exist; composite operation absent | Approved baseline | Lifecycle, mux | Implement mux-plus-sensor ownership boundary |
+| [Multi-sensor](MULTI_SENSOR_CONTRACT.md) | SensorTask/TCA9548A | Six AS5600 channels <-> sensor model | Exists | Six stable latest-value records initialized; channel 0 updates with shared-time metadata | Approved baseline | I2C, snapshot, mapping, calibration | Implement complete six-channel scan and bind commissioned mapping/calibration versions |
+| [Timestamp sync](TIMESTAMP_SYNC_CONTRACT.md) | System/SPI | STM32 monotonic time <-> Pi time | Exists | 64-bit TIM2 service and runtime sync state host-tested; SPI TIME_SYNC dispatch absent | Approved baseline | SPI transport, TIM2 | Wire validated SPI TIME_SYNC frames to the task-context acceptance API and command gating |
+| [Calibration records](CALIBRATION_CONTRACT.md) | Application configuration | Offline calibration -> validated STM32 parameters | Exists | Versioned record validation and generation selection host-tested; persistence absent | Approved baseline | Shared CRC helper, mapping, lifecycle | Define canonical CRC serialization and flash persistence/power-loss handling |
+| [Joint mapping](JOINT_MAPPING_CONTRACT.md) | Application configuration | Logical joints -> AS5600 and CAN motor identities | Exists | Versioned one-to-one mapping validation host-tested; startup blocks dependent activation when invalid | Approved baseline | Calibration, SensorTask, future MotorService | Commission complete physical mapping and bind it to persisted configuration |
+| [Error handling](ERROR_HANDLING_STRATEGY.md) | System | Service faults <-> lifecycle/health/host | Exists | Local statuses/counters exist | Approved baseline | Lifecycle, Health Monitor | Implement response-level events and bounded recovery escalation |
+| [Health monitor](HEALTH_MONITOR_CONTRACT.md) | HealthMonitor | Service diagnostics -> system health | Exists | Init/process scaffold only | Approved baseline | All services, error strategy | Define health snapshot using firmware response levels only |
+| [Build/configuration](BUILD_CONTRACT.md) | Buildsystem | Developer environment -> firmware | Exists | CMake presets/toolchain exist | Approved baseline | CMake, CubeMX, toolchain | Run Debug/Release builds and retain validation evidence |
+| [Motor service](MOTOR_SERVICE_CONTRACT.md) | Future MotorService | Joint API -> CanService | Exists | No separate MotorService exists | Integration gate: exact controller behavior and commissioned commands | Define only when needed | Verify exact controller behavior before freezing command semantics |
+
+## Review Rules
+
+- A contract must not claim an implementation exists when the corresponding service is still a scaffold.
+- Remaining gates must be explicitly marked: CAN bitrate and physical/retry/TX policy; maximum SPI clock acceptance; exact motor-controller behavior; and independent safety validation/machine risk assessment. The 1 Mbps CAN target and 5 MHz initial SPI maximum are configuration baselines, not approvals for production use. Approved v1.0 values must not be described as open.
+- Implementation changes that alter a contract require updating the contract and this matrix in the same change.
