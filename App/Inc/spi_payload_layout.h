@@ -1,22 +1,40 @@
+/**
+ * @file spi_payload_layout.h
+ * @brief Wire-format sizes and offsets for SPI frames and snapshot payloads.
+ */
+
 #ifndef SPI_PAYLOAD_LAYOUT_H
 #define SPI_PAYLOAD_LAYOUT_H
 
 #include <stdint.h>
 
+/** Fixed on-wire frame size for every SPI transaction. */
 #define SPI_FRAME_MAX_BYTES UINT16_C(512)
+/** Bytes in the fixed transport header before the payload starts. */
 #define SPI_FRAME_HEADER_BYTES UINT16_C(18)
+/** Bytes reserved for the CRC field at the end of each frame. */
 #define SPI_FRAME_CRC_BYTES UINT16_C(4)
+/** Maximum payload capacity after accounting for the fixed header and CRC. */
 #define SPI_PAYLOAD_MAX_BYTES UINT16_C(490)
 
+/** Magic field offset used to reject misaligned or malformed frames. */
 #define SPI_FRAME_OFFSET_MAGIC UINT16_C(0)
+/** Transport protocol version carried in every frame. */
 #define SPI_FRAME_OFFSET_PROTOCOL_VERSION UINT16_C(2)
+/** Message type selector for request/response routing. */
 #define SPI_FRAME_OFFSET_MESSAGE_TYPE UINT16_C(3)
+/** Little-endian payload length field. */
 #define SPI_FRAME_OFFSET_PAYLOAD_LENGTH UINT16_C(4)
+/** Per-frame transport sequence number. */
 #define SPI_FRAME_OFFSET_SEQUENCE UINT16_C(6)
+/** Frame assembly timestamp in the synchronized hub time domain. */
 #define SPI_FRAME_OFFSET_TIME_US UINT16_C(10)
+/** Start of the message-specific payload area. */
 #define SPI_FRAME_OFFSET_PAYLOAD SPI_FRAME_HEADER_BYTES
+/** Start offset of the CRC for a payload of the supplied length. */
 #define SPI_FRAME_CRC_OFFSET(payload_length) (SPI_FRAME_HEADER_BYTES + (payload_length))
 
+/** Snapshot prefix shared by all snapshot payload instances. */
 #define SPI_SNAPSHOT_PREFIX_BYTES UINT16_C(12)
 #define SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION UINT16_C(0)
 #define SPI_SNAPSHOT_OFFSET_SENSOR_COUNT UINT16_C(1)
@@ -26,6 +44,7 @@
 #define SPI_SNAPSHOT_OFFSET_DROPPED_SNAPSHOT_COUNT_LOW UINT16_C(6)
 #define SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE UINT16_C(8)
 
+/** Serialized size of one fixed-width sensor record within a snapshot. */
 #define SPI_SENSOR_RECORD_BYTES UINT16_C(24)
 #define SPI_SENSOR_RECORD_OFFSET_SENSOR_ID UINT16_C(0)
 #define SPI_SENSOR_RECORD_OFFSET_STATUS UINT16_C(1)
@@ -38,6 +57,7 @@
 #define SPI_SENSOR_RECORD_OFFSET_RESERVED UINT16_C(21)
 #define SPI_SENSOR_RECORD_OFFSET_RESERVED_2 UINT16_C(22)
 
+/** Serialized size of one fixed-width motor record within a snapshot. */
 #define SPI_MOTOR_RECORD_BYTES UINT16_C(24)
 #define SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX UINT16_C(0)
 #define SPI_MOTOR_RECORD_OFFSET_STATUS UINT16_C(1)
@@ -48,12 +68,17 @@
 #define SPI_MOTOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US UINT16_C(8)
 #define SPI_MOTOR_RECORD_OFFSET_PAYLOAD UINT16_C(16)
 
+/** Number of logical joint sensor records published in each snapshot. */
 #define SPI_SNAPSHOT_SENSOR_RECORD_COUNT UINT16_C(6)
+/** Maximum number of motor records that can fit in a snapshot payload. */
 #define SPI_SNAPSHOT_MOTOR_RECORD_MAX_COUNT UINT16_C(8)
+/** Compute the serialized payload size for a snapshot with the given motor count. */
 #define SPI_SNAPSHOT_PAYLOAD_BYTES(motor_count) \
     (SPI_SNAPSHOT_PREFIX_BYTES + (SPI_SNAPSHOT_SENSOR_RECORD_COUNT * SPI_SENSOR_RECORD_BYTES) + \
      ((motor_count) * SPI_MOTOR_RECORD_BYTES))
+/** Largest payload this snapshot schema can emit. */
 #define SPI_SNAPSHOT_MAX_PAYLOAD_BYTES SPI_SNAPSHOT_PAYLOAD_BYTES(SPI_SNAPSHOT_MOTOR_RECORD_MAX_COUNT)
+/** Largest complete frame emitted by the current snapshot schema. */
 #define SPI_SNAPSHOT_MAX_FRAME_BYTES \
     (SPI_FRAME_HEADER_BYTES + SPI_SNAPSHOT_MAX_PAYLOAD_BYTES + SPI_FRAME_CRC_BYTES)
 
