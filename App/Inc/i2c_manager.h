@@ -34,11 +34,11 @@ typedef enum
 typedef struct
 {
     I2CManager_EventType type;
-    uint32_t timestamp_us;
+    uint64_t timestamp_us;
     uint32_t error_code;
 } I2CManager_Event;
 
-typedef void (*I2CManager_CompletionCallback)(I2CManager_Status status, void *context, uint32_t timestamp_us);
+typedef void (*I2CManager_CompletionCallback)(I2CManager_Status status, void *context, uint64_t timestamp_us);
 
 typedef void (*I2CManager_EventHook)(const I2CManager_Event *event, bool from_isr);
 

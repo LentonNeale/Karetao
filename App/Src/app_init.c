@@ -110,3 +110,13 @@ void App_Start(void)
         g_app_lifecycle_activation_failures_dbg++;
     }
 }
+
+uint32_t App_GetMksRegisterFailureCount(void)
+{
+    return g_app_mks_register_failures_dbg;
+}
+
+uint32_t App_GetLifecycleActivationFailureCount(void)
+{
+    return g_app_lifecycle_activation_failures_dbg;
+}

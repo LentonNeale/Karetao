@@ -4,6 +4,7 @@
 #include "queue.h"
 #include "semphr.h"
 #include "task.h"
+#include "time_service.h"
 
 typedef enum
 {
@@ -34,9 +35,64 @@ static uint32_t s_notify_bits;
 static I2CManager_Transfer s_active_transfer;
 static bool s_has_active_transfer;
 
-static uint32_t I2CManager_GetTimestampUs(void)
+typedef struct
 {
-    return __HAL_TIM_GET_COUNTER(&htim2);
+    I2CManager_EventType event_type;
+    uint32_t error_code;
+    I2CManager_Status completion_status;
+    I2CManager_CompletionCallback completion_cb;
+    void *completion_context;
+    bool has_completion;
+} I2CManager_DispatchItem;
+
+#define I2C_MANAGER_DISPATCH_QUEUE_CAPACITY 4u
+
+static I2CManager_DispatchItem s_dispatch_queue[I2C_MANAGER_DISPATCH_QUEUE_CAPACITY];
+static volatile uint8_t s_dispatch_head;
+static volatile uint8_t s_dispatch_tail;
+
+static void I2CManager_QueueDispatchFromIsr(I2CManager_EventType event_type,
+                                            uint32_t error_code,
+                                            I2CManager_Status completion_status,
+                                            I2CManager_CompletionCallback completion_cb,
+                                            void *completion_context,
+                                            bool has_completion)
+{
+    UBaseType_t saved_interrupt_status;
+    uint8_t head;
+    uint8_t next_head;
+
+    saved_interrupt_status = taskENTER_CRITICAL_FROM_ISR();
+    head = s_dispatch_head;
+    next_head = (uint8_t)((head + 1u) % I2C_MANAGER_DISPATCH_QUEUE_CAPACITY);
+    if (next_head != s_dispatch_tail) {
+        s_dispatch_queue[head].event_type = event_type;
+        s_dispatch_queue[head].error_code = error_code;
+        s_dispatch_queue[head].completion_status = completion_status;
+        s_dispatch_queue[head].completion_cb = completion_cb;
+        s_dispatch_queue[head].completion_context = completion_context;
+        s_dispatch_queue[head].has_completion = has_completion;
+        s_dispatch_head = next_head;
+    }
+    taskEXIT_CRITICAL_FROM_ISR(saved_interrupt_status);
+}
+
+static bool I2CManager_PopDispatch(I2CManager_DispatchItem *item)
+{
+    bool has_item = false;
+
+    if (item == NULL) {
+        return false;
+    }
+
+    taskENTER_CRITICAL();
+    if (s_dispatch_tail != s_dispatch_head) {
+        *item = s_dispatch_queue[s_dispatch_tail];
+        s_dispatch_tail = (uint8_t)((s_dispatch_tail + 1u) % I2C_MANAGER_DISPATCH_QUEUE_CAPACITY);
+        has_item = true;
+    }
+    taskEXIT_CRITICAL();
+    return has_item;
 }
 
 static I2CManager_Status I2CManager_MapHalStatus(HAL_StatusTypeDef hal_status)
@@ -55,34 +111,38 @@ static I2CManager_Status I2CManager_MapHalStatus(HAL_StatusTypeDef hal_status)
     }
 }
 
-static void I2CManager_EmitEventFromIsr(I2CManager_EventType event_type, uint32_t error_code)
+static void I2CManager_DispatchEvent(const I2CManager_DispatchItem *item)
 {
-    BaseType_t higher_priority_task_woken = pdFALSE;
     I2CManager_Event event;
+    uint64_t timestamp_us;
 
-    event.type = event_type;
-    event.timestamp_us = I2CManager_GetTimestampUs();
-    event.error_code = error_code;
+    if (item == NULL) {
+        return;
+    }
+
+    timestamp_us = TimeService_NowUs();
+    event.type = item->event_type;
+    event.timestamp_us = timestamp_us;
+    event.error_code = item->error_code;
 
     if (s_event_hook != NULL)
     {
-        s_event_hook(&event, true);
+        s_event_hook(&event, false);
     }
 
     if (s_event_queue != NULL)
     {
-        (void)xQueueSendFromISR(s_event_queue, &event, &higher_priority_task_woken);
+        (void)xQueueSend(s_event_queue, &event, 0u);
     }
 
     if (s_notify_task != NULL)
     {
-        (void)xTaskNotifyFromISR(s_notify_task,
-                                 s_notify_bits,
-                                 eSetBits,
-                                 &higher_priority_task_woken);
+        (void)xTaskNotify(s_notify_task, s_notify_bits, eSetBits);
     }
 
-    portYIELD_FROM_ISR(higher_priority_task_woken);
+    if (item->has_completion && (item->completion_cb != NULL)) {
+        item->completion_cb(item->completion_status, item->completion_context, timestamp_us);
+    }
 }
 
 void I2CManager_Init(void)
@@ -103,6 +163,8 @@ void I2CManager_Init(void)
     }
 
     s_has_active_transfer = false;
+    s_dispatch_head = 0u;
+    s_dispatch_tail = 0u;
     s_success_count = 0u;
     s_error_count = 0u;
     s_timeout_count = 0u;
@@ -124,10 +186,16 @@ Lifecycle_State I2CManager_GetLifecycleState(void)
 
 void I2CManager_Process(void)
 {
+    I2CManager_DispatchItem item;
+
     if (s_fault_pending)
     {
         s_fault_pending = false;
         (void)Lifecycle_Fail(&s_lifecycle, s_pending_fault_code);
+    }
+
+    while (I2CManager_PopDispatch(&item)) {
+        I2CManager_DispatchEvent(&item);
     }
 }
 
@@ -344,17 +412,14 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 
     s_state = I2C_MANAGER_STATE_IDLE;
     s_success_count++;
-
-    if (s_has_active_transfer && (s_active_transfer.completion_cb != NULL))
-    {
-        s_active_transfer.completion_cb(I2C_MANAGER_STATUS_OK,
-                                        s_active_transfer.context,
-                                        I2CManager_GetTimestampUs());
-    }
-
+    I2CManager_QueueDispatchFromIsr(I2C_MANAGER_EVENT_TX_COMPLETE,
+                                    0u,
+                                    I2C_MANAGER_STATUS_OK,
+                                    s_has_active_transfer ? s_active_transfer.completion_cb : NULL,
+                                    s_has_active_transfer ? s_active_transfer.context : NULL,
+                                    s_has_active_transfer);
     s_has_active_transfer = false;
     (void)xSemaphoreGiveFromISR(s_i2c_mutex, NULL);
-    I2CManager_EmitEventFromIsr(I2C_MANAGER_EVENT_TX_COMPLETE, 0u);
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
@@ -366,17 +431,14 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
 
     s_state = I2C_MANAGER_STATE_IDLE;
     s_success_count++;
-
-    if (s_has_active_transfer && (s_active_transfer.completion_cb != NULL))
-    {
-        s_active_transfer.completion_cb(I2C_MANAGER_STATUS_OK,
-                                        s_active_transfer.context,
-                                        I2CManager_GetTimestampUs());
-    }
-
+    I2CManager_QueueDispatchFromIsr(I2C_MANAGER_EVENT_RX_COMPLETE,
+                                    0u,
+                                    I2C_MANAGER_STATUS_OK,
+                                    s_has_active_transfer ? s_active_transfer.completion_cb : NULL,
+                                    s_has_active_transfer ? s_active_transfer.context : NULL,
+                                    s_has_active_transfer);
     s_has_active_transfer = false;
     (void)xSemaphoreGiveFromISR(s_i2c_mutex, NULL);
-    I2CManager_EmitEventFromIsr(I2C_MANAGER_EVENT_RX_COMPLETE, 0u);
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
@@ -390,17 +452,14 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
     s_pending_fault_code = HAL_I2C_GetError(hi2c);
     s_fault_pending = true;
     s_error_count++;
-
-    if (s_has_active_transfer && (s_active_transfer.completion_cb != NULL))
-    {
-        s_active_transfer.completion_cb(I2C_MANAGER_STATUS_ERROR,
-                                        s_active_transfer.context,
-                                        I2CManager_GetTimestampUs());
-    }
-
+    I2CManager_QueueDispatchFromIsr(I2C_MANAGER_EVENT_ERROR,
+                                    s_pending_fault_code,
+                                    I2C_MANAGER_STATUS_ERROR,
+                                    s_has_active_transfer ? s_active_transfer.completion_cb : NULL,
+                                    s_has_active_transfer ? s_active_transfer.context : NULL,
+                                    s_has_active_transfer);
     s_has_active_transfer = false;
     (void)xSemaphoreGiveFromISR(s_i2c_mutex, NULL);
-    I2CManager_EmitEventFromIsr(I2C_MANAGER_EVENT_ERROR, HAL_I2C_GetError(hi2c));
 }
 
 void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef *hi2c)
@@ -411,15 +470,12 @@ void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef *hi2c)
     }
 
     s_state = I2C_MANAGER_STATE_IDLE;
-
-    if (s_has_active_transfer && (s_active_transfer.completion_cb != NULL))
-    {
-        s_active_transfer.completion_cb(I2C_MANAGER_STATUS_ERROR,
-                                        s_active_transfer.context,
-                                        I2CManager_GetTimestampUs());
-    }
-
+    I2CManager_QueueDispatchFromIsr(I2C_MANAGER_EVENT_ABORT,
+                                    0u,
+                                    I2C_MANAGER_STATUS_ERROR,
+                                    s_has_active_transfer ? s_active_transfer.completion_cb : NULL,
+                                    s_has_active_transfer ? s_active_transfer.context : NULL,
+                                    s_has_active_transfer);
     s_has_active_transfer = false;
     (void)xSemaphoreGiveFromISR(s_i2c_mutex, NULL);
-    I2CManager_EmitEventFromIsr(I2C_MANAGER_EVENT_ABORT, 0u);
 }

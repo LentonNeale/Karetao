@@ -5,18 +5,141 @@
 #include "calibration_record.h"
 #include "can_tx_policy.h"
 #include "crc32_iso_hdlc.h"
+#include "health_monitor.h"
 #include "joint_mapping.h"
+#include "lifecycle.h"
 #include "motor_latest_value.h"
 #include "sensor_latest_value.h"
+#include "sensor_task.h"
 #include "snapshot_builder.h"
 #include "spi_payload_layout.h"
 #include "spi_protocol.h"
 #include "spi_data_ready.h"
 #include "time_service.h"
 
+static uint64_t s_test_now_us;
+static TimeService_SyncSnapshot s_test_sync_snapshot;
+static Lifecycle_State s_test_i2c_state;
+static Lifecycle_State s_test_sensor_state;
+static Lifecycle_State s_test_can_state;
+static Lifecycle_State s_test_spi_state;
+static SensorTask_BringupSnapshot s_test_sensor_snapshot;
+static SnapshotFrame_Diagnostics s_test_spi_diagnostics;
+static uint32_t s_test_i2c_success_count;
+static uint32_t s_test_i2c_error_count;
+static uint32_t s_test_i2c_timeout_count;
+static uint32_t s_test_can_tx_queue_drop_count;
+static uint32_t s_test_can_tx_retry_exhausted_count;
+static uint32_t s_test_can_bus_off_count;
+static uint32_t s_test_app_mks_register_failures;
+static uint32_t s_test_app_lifecycle_activation_failures;
+
+uint64_t TimeService_NowUs(void)
+{
+    return s_test_now_us;
+}
+
+void TimeService_GetSyncSnapshot(TimeService_SyncSnapshot *snapshot)
+{
+    if (snapshot != NULL) {
+        *snapshot = s_test_sync_snapshot;
+    }
+}
+
+Lifecycle_State I2CManager_GetLifecycleState(void)
+{
+    return s_test_i2c_state;
+}
+
+uint32_t I2CManager_GetSuccessCount(void)
+{
+    return s_test_i2c_success_count;
+}
+
+uint32_t I2CManager_GetErrorCount(void)
+{
+    return s_test_i2c_error_count;
+}
+
+uint32_t I2CManager_GetTimeoutCount(void)
+{
+    return s_test_i2c_timeout_count;
+}
+
+Lifecycle_State SensorTask_GetLifecycleState(void)
+{
+    return s_test_sensor_state;
+}
+
+const SensorTask_BringupSnapshot *SensorTask_GetBringupSnapshot(void)
+{
+    return &s_test_sensor_snapshot;
+}
+
+Lifecycle_State CanService_GetLifecycleState(void)
+{
+    return s_test_can_state;
+}
+
+uint32_t CanService_GetTxQueueDropCount(void)
+{
+    return s_test_can_tx_queue_drop_count;
+}
+
+uint32_t CanService_GetTxRetryExhaustedCount(void)
+{
+    return s_test_can_tx_retry_exhausted_count;
+}
+
+uint32_t CanService_GetBusOffCount(void)
+{
+    return s_test_can_bus_off_count;
+}
+
+Lifecycle_State SpiSlaveService_GetLifecycleState(void)
+{
+    return s_test_spi_state;
+}
+
+const SnapshotFrame_Diagnostics *SpiSlaveService_GetSnapshotDiagnostics(void)
+{
+    return &s_test_spi_diagnostics;
+}
+
+uint32_t App_GetMksRegisterFailureCount(void)
+{
+    return s_test_app_mks_register_failures;
+}
+
+uint32_t App_GetLifecycleActivationFailureCount(void)
+{
+    return s_test_app_lifecycle_activation_failures;
+}
+
 static uint32_t ReadCounter(void *context)
 {
     return *(uint32_t *)context;
+}
+
+static void ResetHealthMonitorInputs(void)
+{
+    s_test_now_us = 0u;
+    s_test_sync_snapshot = (TimeService_SyncSnapshot){0};
+    s_test_i2c_state = LIFECYCLE_STATE_UNCONFIGURED;
+    s_test_sensor_state = LIFECYCLE_STATE_UNCONFIGURED;
+    s_test_can_state = LIFECYCLE_STATE_UNCONFIGURED;
+    s_test_spi_state = LIFECYCLE_STATE_UNCONFIGURED;
+    s_test_sensor_snapshot = (SensorTask_BringupSnapshot){0};
+    s_test_sensor_snapshot.result = SENSOR_TASK_BRINGUP_UNKNOWN;
+    s_test_spi_diagnostics = (SnapshotFrame_Diagnostics){0};
+    s_test_i2c_success_count = 0u;
+    s_test_i2c_error_count = 0u;
+    s_test_i2c_timeout_count = 0u;
+    s_test_can_tx_queue_drop_count = 0u;
+    s_test_can_tx_retry_exhausted_count = 0u;
+    s_test_can_bus_off_count = 0u;
+    s_test_app_mks_register_failures = 0u;
+    s_test_app_lifecycle_activation_failures = 0u;
 }
 
 static void TestWrapExtension(void)
@@ -447,6 +570,71 @@ static void TestCanTxAndRecoveryPolicy(void)
 	assert(!CanBusOff_Record(&bus_off, 200u)); assert(CanBusOff_Record(&bus_off, 300u)); assert(bus_off.normal_commands_inhibited); CanBusOff_AllowNormalCommands(&bus_off); assert(!bus_off.normal_commands_inhibited);
 }
 
+static void TestLifecycleTransitions(void)
+{
+    Lifecycle_Record record;
+
+    Lifecycle_Init(&record, "test");
+    assert(record.state == LIFECYCLE_STATE_UNCONFIGURED);
+    assert(Lifecycle_Apply(&record, LIFECYCLE_TRANSITION_CONFIGURE, true, 0u) == LIFECYCLE_RESULT_OK);
+    assert(record.state == LIFECYCLE_STATE_INACTIVE);
+    assert(Lifecycle_Apply(&record, LIFECYCLE_TRANSITION_ACTIVATE, true, 0u) == LIFECYCLE_RESULT_OK);
+    assert(record.state == LIFECYCLE_STATE_ACTIVE);
+    assert(Lifecycle_Apply(&record, LIFECYCLE_TRANSITION_DEACTIVATE, true, 0u) == LIFECYCLE_RESULT_OK);
+    assert(record.state == LIFECYCLE_STATE_INACTIVE);
+    assert(Lifecycle_Apply(&record, LIFECYCLE_TRANSITION_ACTIVATE, false, 7u) == LIFECYCLE_RESULT_OPERATION_FAILED);
+    assert(record.state == LIFECYCLE_STATE_ERROR);
+    assert(record.fault_code == 7u);
+    assert(Lifecycle_Apply(&record, LIFECYCLE_TRANSITION_RECOVER, true, 0u) == LIFECYCLE_RESULT_OK);
+    assert(record.state == LIFECYCLE_STATE_INACTIVE);
+    assert(Lifecycle_Apply(&record, LIFECYCLE_TRANSITION_CLEANUP, true, 0u) == LIFECYCLE_RESULT_OK);
+    assert(record.state == LIFECYCLE_STATE_UNCONFIGURED);
+    assert(Lifecycle_Apply(&record, LIFECYCLE_TRANSITION_DEACTIVATE, true, 0u) == LIFECYCLE_RESULT_INVALID_TRANSITION);
+}
+
+static void TestHealthMonitorSnapshotLevels(void)
+{
+    const HealthMonitor_Snapshot *snapshot;
+
+    ResetHealthMonitorInputs();
+    s_test_now_us = 100u;
+    HealthMonitor_Init();
+    snapshot = HealthMonitor_GetSnapshot();
+    assert(snapshot->level == HEALTH_MONITOR_LEVEL_UNKNOWN);
+    assert(snapshot->timestamp_us == 100u);
+
+    s_test_now_us = 200u;
+    s_test_sync_snapshot.valid = true;
+    s_test_sync_snapshot.quality = TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED;
+    s_test_i2c_state = LIFECYCLE_STATE_ACTIVE;
+    s_test_sensor_state = LIFECYCLE_STATE_ACTIVE;
+    s_test_can_state = LIFECYCLE_STATE_ACTIVE;
+    s_test_spi_state = LIFECYCLE_STATE_ACTIVE;
+    s_test_sensor_snapshot.result = SENSOR_TASK_BRINGUP_PASS;
+    s_test_sensor_snapshot.sample_ok_count = 5u;
+    s_test_i2c_success_count = 4u;
+    s_test_spi_diagnostics.staged_frame_count = 2u;
+    HealthMonitor_Process();
+    snapshot = HealthMonitor_GetSnapshot();
+    assert(snapshot->level == HEALTH_MONITOR_LEVEL_GREEN);
+    assert(snapshot->sensor_sample_ok_count == 5u);
+    assert(snapshot->i2c_success_count == 4u);
+    assert(snapshot->spi_staged_frame_count == 2u);
+    assert(snapshot->timestamp_us == 200u);
+
+    s_test_now_us = 300u;
+    s_test_sync_snapshot.valid = false;
+    HealthMonitor_Process();
+    assert(HealthMonitor_GetLevel() == HEALTH_MONITOR_LEVEL_YELLOW);
+
+    s_test_now_us = 400u;
+    s_test_app_mks_register_failures = 1u;
+    HealthMonitor_Process();
+    snapshot = HealthMonitor_GetSnapshot();
+    assert(snapshot->level == HEALTH_MONITOR_LEVEL_RED);
+    assert(snapshot->app_mks_register_failures == 1u);
+}
+
 int main(void)
 {
     TestWrapExtension();
@@ -466,5 +654,7 @@ int main(void)
     TestSpiProtocolState();
     TestDataReadyState();
     TestCanTxAndRecoveryPolicy();
+    TestLifecycleTransitions();
+    TestHealthMonitorSnapshotLevels();
     return 0;
 }

@@ -1,5 +1,7 @@
 add_executable(sprint1_protocol_tests
     protocol_test_main.c
+    ${CMAKE_SOURCE_DIR}/App/Src/lifecycle.c
+    ${CMAKE_SOURCE_DIR}/App/Src/health_monitor.c
     ${CMAKE_SOURCE_DIR}/App/Src/time_service.c
     ${CMAKE_SOURCE_DIR}/App/Src/calibration_record.c
     ${CMAKE_SOURCE_DIR}/App/Src/joint_mapping.c
