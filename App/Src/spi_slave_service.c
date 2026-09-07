@@ -1,3 +1,8 @@
+/**
+ * @file spi_slave_service.c
+ * @brief Implements the spi slave service module.
+ */
+
 #include "spi_slave_service.h"
 
 #include <string.h>
@@ -15,6 +20,9 @@ static uint32_t s_last_poll_tick;
 #define SPI_SERVICE_DEFAULT_POLL_PERIOD_MS 1u
 #define SPI_SERVICE_HOST_STALL_MS 100u
 
+/**
+ * @brief Executes slave service set data ready pin.
+ */
 static void SpiSlaveService_SetDataReadyPin(bool high)
 {
 	HAL_GPIO_WritePin(Data_Ready_GPIO_Port, Data_Ready_Pin, high ? GPIO_PIN_SET : GPIO_PIN_RESET);
@@ -36,6 +44,9 @@ static bool SpiSlaveService_SerializeResponse(uint8_t *frame_buffer,
 	return true;
 }
 
+/**
+ * @brief Executes slave service init.
+ */
 void SpiSlaveService_Init(void)
 {
 	Lifecycle_Init(&s_lifecycle, "SPI3");
@@ -49,16 +60,25 @@ void SpiSlaveService_Init(void)
 	(void)Lifecycle_Apply(&s_lifecycle, LIFECYCLE_TRANSITION_CONFIGURE, true, 0u);
 }
 
+/**
+ * @brief Executes slave service activate.
+ */
 Lifecycle_Result SpiSlaveService_Activate(void)
 {
 	return Lifecycle_Apply(&s_lifecycle, LIFECYCLE_TRANSITION_ACTIVATE, true, 0u);
 }
 
+/**
+ * @brief Executes slave service get lifecycle state.
+ */
 Lifecycle_State SpiSlaveService_GetLifecycleState(void)
 {
 	return Lifecycle_GetState(&s_lifecycle);
 }
 
+/**
+ * @brief Executes slave service process.
+ */
 void SpiSlaveService_Process(void)
 {
 	if (!Lifecycle_IsActive(&s_lifecycle)) {
@@ -74,6 +94,9 @@ void SpiSlaveService_Process(void)
 	}
 }
 
+/**
+ * @brief Executes slave service stage snapshot.
+ */
 SnapshotBuild_Result SpiSlaveService_StageSnapshot(SnapshotBuilder_SerializeCallback serialize, void *context)
 {
 	if (!Lifecycle_IsActive(&s_lifecycle)) {
@@ -87,6 +110,9 @@ SnapshotBuild_Result SpiSlaveService_StageSnapshot(SnapshotBuilder_SerializeCall
 	return result;
 }
 
+/**
+ * @brief Executes slave service begin dma transfer.
+ */
 bool SpiSlaveService_BeginDmaTransfer(const uint8_t **frame_buffer, uint16_t *frame_length)
 {
 	bool started = Lifecycle_IsActive(&s_lifecycle) && SnapshotFramePool_BeginDma(&s_frame_pool, frame_buffer, frame_length);
@@ -94,6 +120,9 @@ bool SpiSlaveService_BeginDmaTransfer(const uint8_t **frame_buffer, uint16_t *fr
 	return started;
 }
 
+/**
+ * @brief Executes slave service complete dma transfer.
+ */
 bool SpiSlaveService_CompleteDmaTransfer(void)
 {
 	return SnapshotFramePool_CompleteDma(&s_frame_pool);
@@ -107,11 +136,17 @@ const SnapshotFrame_Diagnostics *SpiSlaveService_GetSnapshotDiagnostics(void)
 const SpiDataReady_State *SpiSlaveService_GetDataReadyState(void) { return &s_data_ready; }
 void SpiSlaveService_SetPollPeriodMs(uint32_t poll_period_ms) { s_poll_period_ms = poll_period_ms; }
 
+/**
+ * @brief Executes slave service set unsolicited snapshot.
+ */
 bool SpiSlaveService_SetUnsolicitedSnapshot(const uint8_t *payload, uint16_t payload_length)
 {
 	return SpiProtocol_SetUnsolicitedSnapshot(&s_protocol, payload, payload_length);
 }
 
+/**
+ * @brief Executes slave service process request frame.
+ */
 SpiProtocol_Result SpiSlaveService_ProcessRequestFrame(const uint8_t request[SPI_FRAME_MAX_BYTES])
 {
 	SpiProtocol_Result result;

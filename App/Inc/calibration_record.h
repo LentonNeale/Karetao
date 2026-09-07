@@ -1,3 +1,8 @@
+/**
+ * @file calibration_record.h
+ * @brief Implements the calibration record module.
+ */
+
 #ifndef CALIBRATION_RECORD_H
 #define CALIBRATION_RECORD_H
 
@@ -48,6 +53,9 @@ typedef struct
     uint32_t active_generation;
 } Calibration_ActiveVersion;
 
+/**
+ * @brief Validates record.
+ */
 Calibration_Result Calibration_ValidateRecord(const Calibration_Record *record, uint32_t computed_crc32);
 Calibration_Result Calibration_ValidateUniqueIdentities(const Calibration_Record *records,
                                                          const uint32_t *computed_crc32,

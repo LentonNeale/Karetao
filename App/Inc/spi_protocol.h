@@ -1,3 +1,8 @@
+/**
+ * @file spi_protocol.h
+ * @brief Implements the spi protocol module.
+ */
+
 #ifndef SPI_PROTOCOL_H
 #define SPI_PROTOCOL_H
 
@@ -20,8 +25,17 @@ typedef enum { SPI_PROTOCOL_OK = 0, SPI_PROTOCOL_BAD_MAGIC, SPI_PROTOCOL_BAD_VER
 typedef struct { uint32_t next_tx_sequence; uint32_t last_request_sequence; bool has_request_sequence;
     uint8_t unsolicited_payload[SPI_PAYLOAD_MAX_BYTES]; uint16_t unsolicited_payload_length; bool unsolicited_pending; } SpiProtocol_State;
 
+/**
+ * @brief Executes protocol init.
+ */
 void SpiProtocol_Init(SpiProtocol_State *state);
+/**
+ * @brief Executes protocol set unsolicited snapshot.
+ */
 bool SpiProtocol_SetUnsolicitedSnapshot(SpiProtocol_State *state, const uint8_t *payload, uint16_t payload_length);
+/**
+ * @brief Executes protocol build boot status.
+ */
 SpiProtocol_Result SpiProtocol_BuildBootStatus(SpiProtocol_State *state, uint8_t response[SPI_FRAME_MAX_BYTES]);
 SpiProtocol_Result SpiProtocol_ProcessRequest(SpiProtocol_State *state, const uint8_t request[SPI_FRAME_MAX_BYTES],
                                               uint8_t response[SPI_FRAME_MAX_BYTES]);

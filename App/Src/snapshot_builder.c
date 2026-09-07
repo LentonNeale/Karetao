@@ -1,8 +1,16 @@
+/**
+ * @file snapshot_builder.c
+ * @brief Implements the snapshot builder module.
+ */
+
 #include "snapshot_builder.h"
 
 #include <stddef.h>
 #include <string.h>
 
+/**
+ * @brief Executes frame pool find state.
+ */
 static int32_t SnapshotFramePool_FindState(const SnapshotFrame_Pool *pool, SnapshotFrame_State state)
 {
     uint8_t frame_index;
@@ -18,6 +26,9 @@ static int32_t SnapshotFramePool_FindState(const SnapshotFrame_Pool *pool, Snaps
     return -1;
 }
 
+/**
+ * @brief Executes frame pool init.
+ */
 void SnapshotFramePool_Init(SnapshotFrame_Pool *pool)
 {
     if (pool != NULL)
@@ -109,6 +120,9 @@ bool SnapshotFramePool_BeginDma(SnapshotFrame_Pool *pool,
     return true;
 }
 
+/**
+ * @brief Executes frame pool complete dma.
+ */
 bool SnapshotFramePool_CompleteDma(SnapshotFrame_Pool *pool)
 {
     int32_t active_index;

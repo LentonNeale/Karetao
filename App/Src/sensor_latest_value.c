@@ -1,3 +1,8 @@
+/**
+ * @file sensor_latest_value.c
+ * @brief Implements the sensor latest value module.
+ */
+
 #include "sensor_latest_value.h"
 
 #include <stddef.h>
@@ -74,6 +79,9 @@ void SensorLatestValue_SetInvalid(Sensor_LatestValue *record,
     record->freshness = SENSOR_FRESHNESS_INVALID;
 }
 
+/**
+ * @brief Executes latest value mark stale.
+ */
 void SensorLatestValue_MarkStale(Sensor_LatestValue *record, uint64_t update_timestamp_us)
 {
     if ((record == NULL) || (record->freshness != SENSOR_FRESHNESS_FRESH))

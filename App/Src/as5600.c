@@ -1,3 +1,8 @@
+/**
+ * @file as5600.c
+ * @brief Implements the as5600 module.
+ */
+
 #include "as5600.h"
 
 #include "tca9548a_mux.h"
@@ -11,6 +16,9 @@
 
 #define AS5600_DEFAULT_TIMEOUT_MS 10u
 
+/**
+ * @brief Maps i2 cstatus.
+ */
 static AS5600_Status AS5600_MapI2CStatus(I2CManager_Status status)
 {
     switch (status)
@@ -31,6 +39,9 @@ static AS5600_Status AS5600_MapI2CStatus(I2CManager_Status status)
     }
 }
 
+/**
+ * @brief Selects device channel.
+ */
 static AS5600_Status AS5600_SelectDeviceChannel(const AS5600_Device *dev)
 {
     return AS5600_MapI2CStatus(TCA9548A_SelectChannel(dev->mux_channel));
@@ -67,6 +78,9 @@ static AS5600_Status AS5600_ReadRegisterBlock(const AS5600_Device *dev,
     return AS5600_STATUS_OK;
 }
 
+/**
+ * @brief Initializes device.
+ */
 void AS5600_InitDevice(AS5600_Device *dev, uint8_t mux_channel)
 {
     if (dev == NULL)
@@ -79,6 +93,9 @@ void AS5600_InitDevice(AS5600_Device *dev, uint8_t mux_channel)
     dev->timeout_ms = AS5600_DEFAULT_TIMEOUT_MS;
 }
 
+/**
+ * @brief Reads raw angle.
+ */
 AS5600_Status AS5600_ReadRawAngle(const AS5600_Device *dev, uint16_t *raw_angle, uint64_t *timestamp_us)
 {
     uint8_t data[2];
@@ -105,6 +122,9 @@ AS5600_Status AS5600_ReadRawAngle(const AS5600_Device *dev, uint16_t *raw_angle,
     return AS5600_STATUS_OK;
 }
 
+/**
+ * @brief Reads angle.
+ */
 AS5600_Status AS5600_ReadAngle(const AS5600_Device *dev, uint16_t *angle, uint64_t *timestamp_us)
 {
     uint8_t data[2];
@@ -131,6 +151,9 @@ AS5600_Status AS5600_ReadAngle(const AS5600_Device *dev, uint16_t *angle, uint64
     return AS5600_STATUS_OK;
 }
 
+/**
+ * @brief Reads magnitude.
+ */
 AS5600_Status AS5600_ReadMagnitude(const AS5600_Device *dev, uint16_t *magnitude, uint64_t *timestamp_us)
 {
     uint8_t data[2];
@@ -155,6 +178,9 @@ AS5600_Status AS5600_ReadMagnitude(const AS5600_Device *dev, uint16_t *magnitude
     return AS5600_STATUS_OK;
 }
 
+/**
+ * @brief Reads agc.
+ */
 AS5600_Status AS5600_ReadAgc(const AS5600_Device *dev, uint8_t *agc, uint64_t *timestamp_us)
 {
     uint8_t data;
@@ -179,6 +205,9 @@ AS5600_Status AS5600_ReadAgc(const AS5600_Device *dev, uint8_t *agc, uint64_t *t
     return AS5600_STATUS_OK;
 }
 
+/**
+ * @brief Reads status.
+ */
 AS5600_Status AS5600_ReadStatus(const AS5600_Device *dev, uint8_t *status_out, uint64_t *timestamp_us)
 {
     uint8_t data;
@@ -203,6 +232,9 @@ AS5600_Status AS5600_ReadStatus(const AS5600_Device *dev, uint8_t *status_out, u
     return AS5600_STATUS_OK;
 }
 
+/**
+ * @brief Reads sample.
+ */
 AS5600_Status AS5600_ReadSample(const AS5600_Device *dev, AS5600_Sample *sample)
 {
     AS5600_Status status;
@@ -247,6 +279,9 @@ AS5600_Status AS5600_ReadSample(const AS5600_Device *dev, AS5600_Sample *sample)
     return AS5600_STATUS_OK;
 }
 
+/**
+ * @brief Executes raw to degrees.
+ */
 float AS5600_RawToDegrees(uint16_t raw_angle)
 {
     return ((float)(raw_angle & AS5600_RAW_ANGLE_MAX) * 360.0f) / 4096.0f;

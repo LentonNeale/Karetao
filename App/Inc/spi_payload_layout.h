@@ -1,3 +1,8 @@
+/**
+ * @file spi_payload_layout.h
+ * @brief Implements the spi payload layout module.
+ */
+
 #ifndef SPI_PAYLOAD_LAYOUT_H
 #define SPI_PAYLOAD_LAYOUT_H
 

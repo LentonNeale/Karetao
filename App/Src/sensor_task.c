@@ -1,3 +1,8 @@
+/**
+ * @file sensor_task.c
+ * @brief Implements the sensor task module.
+ */
+
 #include "sensor_task.h"
 
 #include "as5600.h"
@@ -21,6 +26,9 @@ static uint32_t s_diag_word;
 volatile SensorTask_BringupSnapshot g_sensor_task_snapshot_dbg;
 volatile uint32_t g_sensor_task_diag_word_dbg;
 
+/**
+ * @brief Executes task pack diag word.
+ */
 static uint32_t SensorTask_PackDiagWord(void)
 {
 	uint32_t result_bits = ((uint32_t)s_snapshot.result & 0x0Fu) << 28u;
@@ -38,12 +46,18 @@ static uint32_t SensorTask_PackDiagWord(void)
 	return result_bits | status_bits | angle_bits | comm_seen | magnet_seen | sample_seen | md_bit | ml_bit | mh_bit | active_bit | heartbeat;
 }
 
+/**
+ * @brief Executes task update debug mirrors.
+ */
 static void SensorTask_UpdateDebugMirrors(void)
 {
 	g_sensor_task_snapshot_dbg = s_snapshot;
 	g_sensor_task_diag_word_dbg = s_diag_word;
 }
 
+/**
+ * @brief Executes task run init checks.
+ */
 static void SensorTask_RunInitChecks(void)
 {
 	I2CManager_Status mux_status;
@@ -99,6 +113,9 @@ static void SensorTask_RunInitChecks(void)
 	}
 }
 
+/**
+ * @brief Executes task init.
+ */
 void SensorTask_Init(void)
 {
 	uint8_t record_index;
@@ -130,16 +147,25 @@ void SensorTask_Init(void)
 	(void)Lifecycle_Apply(&s_lifecycle, LIFECYCLE_TRANSITION_CONFIGURE, true, 0u);
 }
 
+/**
+ * @brief Executes task activate.
+ */
 Lifecycle_Result SensorTask_Activate(void)
 {
 	return Lifecycle_Apply(&s_lifecycle, LIFECYCLE_TRANSITION_ACTIVATE, true, 0u);
 }
 
+/**
+ * @brief Executes task get lifecycle state.
+ */
 Lifecycle_State SensorTask_GetLifecycleState(void)
 {
 	return Lifecycle_GetState(&s_lifecycle);
 }
 
+/**
+ * @brief Executes task process.
+ */
 void SensorTask_Process(void)
 {
 	AS5600_Sample sample;
@@ -237,6 +263,9 @@ void SensorTask_Process(void)
 	SensorTask_UpdateDebugMirrors();
 }
 
+/**
+ * @brief Executes task get bringup result.
+ */
 SensorTask_BringupResult SensorTask_GetBringupResult(void)
 {
 	return s_snapshot.result;
@@ -247,11 +276,17 @@ const SensorTask_BringupSnapshot *SensorTask_GetBringupSnapshot(void)
 	return &s_snapshot;
 }
 
+/**
+ * @brief Executes task get bringup diag word.
+ */
 uint32_t SensorTask_GetBringupDiagWord(void)
 {
 	return s_diag_word;
 }
 
+/**
+ * @brief Executes task is active.
+ */
 uint8_t SensorTask_IsActive(void)
 {
 	return s_snapshot.is_active;

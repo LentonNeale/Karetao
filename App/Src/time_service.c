@@ -1,3 +1,8 @@
+/**
+ * @file time_service.c
+ * @brief Implements the time service module.
+ */
+
 #include "time_service.h"
 
 #include <stddef.h>
@@ -10,6 +15,9 @@ extern TIM_HandleTypeDef htim2;
 static TimeService_State s_tim2_state;
 static TimeService_SyncState s_sync_state;
 
+/**
+ * @brief Executes service read tim2.
+ */
 static uint32_t TimeService_ReadTim2(void *context)
 {
     TIM_HandleTypeDef *timer = context;
@@ -40,6 +48,9 @@ void TimeService_StateInit(TimeService_State *state,
     }
 }
 
+/**
+ * @brief Executes service state now us.
+ */
 uint64_t TimeService_StateNowUs(TimeService_State *state)
 {
     uint32_t current_counter;
@@ -59,6 +70,9 @@ uint64_t TimeService_StateNowUs(TimeService_State *state)
     return state->wrap_base_us + current_counter;
 }
 
+/**
+ * @brief Executes service default sync config.
+ */
 static TimeService_SyncConfig TimeService_DefaultSyncConfig(void)
 {
     TimeService_SyncConfig config;
@@ -69,6 +83,9 @@ static TimeService_SyncConfig TimeService_DefaultSyncConfig(void)
     return config;
 }
 
+/**
+ * @brief Executes service abs int64.
+ */
 static uint64_t TimeService_AbsInt64(int64_t value)
 {
     if (value >= 0)
@@ -79,6 +96,9 @@ static uint64_t TimeService_AbsInt64(int64_t value)
     return (uint64_t)(-(value + 1)) + 1u;
 }
 
+/**
+ * @brief Executes service offset within limit.
+ */
 static bool TimeService_OffsetWithinLimit(int64_t offset_us, int64_t limit_us)
 {
     return (limit_us >= 0) && (TimeService_AbsInt64(offset_us) <= (uint64_t)limit_us);
@@ -151,12 +171,18 @@ static bool TimeService_CalculateOffset(uint64_t pi_time_us,
     return true;
 }
 
+/**
+ * @brief Executes service is sequence newer.
+ */
 static bool TimeService_IsSequenceNewer(uint32_t candidate, uint32_t previous)
 {
     return (candidate != previous) &&
            ((uint32_t)(candidate - previous) < UINT32_C(0x80000000));
 }
 
+/**
+ * @brief Executes service sync state init.
+ */
 void TimeService_SyncStateInit(TimeService_SyncState *state, const TimeService_SyncConfig *config)
 {
     if (state == NULL)
@@ -175,6 +201,9 @@ void TimeService_SyncStateInit(TimeService_SyncState *state, const TimeService_S
     TimeService_SyncStateReset(state);
 }
 
+/**
+ * @brief Executes service sync state reset.
+ */
 void TimeService_SyncStateReset(TimeService_SyncState *state)
 {
     if (state == NULL)
@@ -226,6 +255,9 @@ TimeService_SyncResult TimeService_SyncStateAccept(TimeService_SyncState *state,
     return TIME_SERVICE_SYNC_ACCEPTED;
 }
 
+/**
+ * @brief Executes service sync state refresh.
+ */
 void TimeService_SyncStateRefresh(TimeService_SyncState *state, uint64_t local_time_us)
 {
     if ((state == NULL) || !state->valid || (local_time_us < state->last_sync_local_time_us))
@@ -272,6 +304,9 @@ void TimeService_SyncStateGetSnapshot(TimeService_SyncState *state,
 }
 
 #ifndef TIME_SERVICE_HOST_TEST
+/**
+ * @brief Executes service init.
+ */
 void TimeService_Init(void)
 {
     (void)HAL_TIM_Base_Start(&htim2);
@@ -279,27 +314,42 @@ void TimeService_Init(void)
     TimeService_SyncInit(NULL);
 }
 
+/**
+ * @brief Executes service now us.
+ */
 uint64_t TimeService_NowUs(void)
 {
     return TimeService_StateNowUs(&s_tim2_state);
 }
 
+/**
+ * @brief Executes service sync init.
+ */
 void TimeService_SyncInit(const TimeService_SyncConfig *config)
 {
     TimeService_SyncStateInit(&s_sync_state, config);
 }
 
+/**
+ * @brief Executes service accept sync.
+ */
 TimeService_SyncResult TimeService_AcceptSync(uint64_t pi_time_us, uint32_t sync_sequence)
 {
     return TimeService_SyncStateAccept(&s_sync_state, pi_time_us, sync_sequence, TimeService_NowUs());
 }
 
+/**
+ * @brief Executes service is sync valid.
+ */
 bool TimeService_IsSyncValid(void)
 {
     TimeService_SyncStateRefresh(&s_sync_state, TimeService_NowUs());
     return s_sync_state.valid;
 }
 
+/**
+ * @brief Executes service get sync snapshot.
+ */
 void TimeService_GetSyncSnapshot(TimeService_SyncSnapshot *snapshot)
 {
     TimeService_SyncStateGetSnapshot(&s_sync_state, TimeService_NowUs(), snapshot);

@@ -1,3 +1,8 @@
+/**
+ * @file can_service.c
+ * @brief Implements the can service module.
+ */
+
 #include "can_service.h"
 #include "can_tx_policy.h"
 
@@ -35,6 +40,9 @@ static uint32_t s_bus_off_count;
 
 static MksStatus CanService_TransmitFrame(const MksCanFrame *frame);
 
+/**
+ * @brief Executes service process bus off.
+ */
 static void CanService_ProcessBusOff(void)
 {
 	uint32_t now_ms = HAL_GetTick();
@@ -62,6 +70,9 @@ static void CanService_ProcessBusOff(void)
 	}
 }
 
+/**
+ * @brief Executes service queue frame.
+ */
 static MksStatus CanService_QueueFrame(const MksCanFrame *frame, CanTx_Priority priority)
 {
 	CanTx_Frame queued_frame;
@@ -77,6 +88,9 @@ static MksStatus CanService_QueueFrame(const MksCanFrame *frame, CanTx_Priority 
 	return CanTxQueue_Enqueue(&s_tx_queue, &queued_frame, priority) ? MKS_OK : MKS_INVALID_ARGUMENT;
 }
 
+/**
+ * @brief Executes service drain tx queue.
+ */
 static void CanService_DrainTxQueue(void)
 {
 	CanTx_Entry entry;
@@ -99,6 +113,9 @@ static void CanService_DrainTxQueue(void)
 	}
 }
 
+/**
+ * @brief Executes service config accept all filter.
+ */
 static HAL_StatusTypeDef CanService_ConfigAcceptAllFilter(void)
 {
 	CAN_FilterTypeDef filter;
@@ -118,6 +135,9 @@ static HAL_StatusTypeDef CanService_ConfigAcceptAllFilter(void)
 	return HAL_CAN_ConfigFilter(&hcan1, &filter);
 }
 
+/**
+ * @brief Executes service find motor index by can id.
+ */
 static int32_t CanService_FindMotorIndexByCanId(uint16_t can_id)
 {
 	uint8_t i;
@@ -131,6 +151,9 @@ static int32_t CanService_FindMotorIndexByCanId(uint16_t can_id)
 	return -1;
 }
 
+/**
+ * @brief Executes service process rx frames.
+ */
 static void CanService_ProcessRxFrames(void)
 {
 	while (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) > 0U) {
@@ -180,6 +203,9 @@ static void CanService_ProcessRxFrames(void)
 	}
 }
 
+/**
+ * @brief Executes service run poll scheduler.
+ */
 static void CanService_RunPollScheduler(void)
 {
 	uint8_t attempts;
@@ -223,6 +249,9 @@ static void CanService_RunPollScheduler(void)
 	}
 }
 
+/**
+ * @brief Executes service get motor device.
+ */
 static MksStatus CanService_GetMotorDevice(uint8_t motor_index, const MksDevice** out_device)
 {
 	if (out_device == NULL) {
@@ -241,6 +270,9 @@ static MksStatus CanService_GetMotorDevice(uint8_t motor_index, const MksDevice*
 	return MKS_OK;
 }
 
+/**
+ * @brief Executes service transmit frame.
+ */
 static MksStatus CanService_TransmitFrame(const MksCanFrame* frame)
 {
 	CAN_TxHeaderTypeDef header;
@@ -279,6 +311,9 @@ static MksStatus CanService_TransmitFrame(const MksCanFrame* frame)
 	return MKS_OK;
 }
 
+/**
+ * @brief Executes service init.
+ */
 void CanService_Init(void)
 {
 	uint8_t i;
@@ -313,6 +348,9 @@ void CanService_Init(void)
 	}
 }
 
+/**
+ * @brief Executes service activate.
+ */
 Lifecycle_Result CanService_Activate(void)
 {
 	Lifecycle_Result result = Lifecycle_Apply(&s_lifecycle,
@@ -325,11 +363,17 @@ Lifecycle_Result CanService_Activate(void)
 	return result;
 }
 
+/**
+ * @brief Executes service get lifecycle state.
+ */
 Lifecycle_State CanService_GetLifecycleState(void)
 {
 	return Lifecycle_GetState(&s_lifecycle);
 }
 
+/**
+ * @brief Executes service process.
+ */
 void CanService_Process(void)
 {
 	CanService_ProcessBusOff();
@@ -382,6 +426,9 @@ MksStatus CanService_RegisterMotor(uint8_t motor_index,
 	return MKS_OK;
 }
 
+/**
+ * @brief Executes service send motor enable.
+ */
 MksStatus CanService_SendMotorEnable(uint8_t motor_index, bool enable)
 {
 	const MksDevice* device;
@@ -401,6 +448,9 @@ MksStatus CanService_SendMotorEnable(uint8_t motor_index, bool enable)
 	return CanService_QueueFrame(&frame, CAN_TX_PRIORITY_MOTION);
 }
 
+/**
+ * @brief Executes service set poll period ms.
+ */
 void CanService_SetPollPeriodMs(uint32_t period_ms)
 {
 	s_poll_period_ms = period_ms;
@@ -410,6 +460,9 @@ uint32_t CanService_GetTxQueueDropCount(void) { return s_tx_queue.dropped_count;
 uint32_t CanService_GetTxRetryExhaustedCount(void) { return s_tx_retry_exhausted_count; }
 uint32_t CanService_GetBusOffCount(void) { return s_bus_off_count; }
 
+/**
+ * @brief Executes service get last response.
+ */
 bool CanService_GetLastResponse(uint8_t motor_index, MksParsedResponse *out_response)
 {
 	if ((out_response == NULL) || (motor_index >= CAN_SERVICE_MAX_MKS_MOTORS)) {
@@ -424,6 +477,9 @@ bool CanService_GetLastResponse(uint8_t motor_index, MksParsedResponse *out_resp
 	return true;
 }
 
+/**
+ * @brief Executes service get rx ok count.
+ */
 uint32_t CanService_GetRxOkCount(uint8_t motor_index)
 {
 	if (motor_index >= CAN_SERVICE_MAX_MKS_MOTORS) {
@@ -433,6 +489,9 @@ uint32_t CanService_GetRxOkCount(uint8_t motor_index)
 	return s_motor_slots[motor_index].rx_ok_count;
 }
 
+/**
+ * @brief Executes service get rx decode error count.
+ */
 uint32_t CanService_GetRxDecodeErrorCount(uint8_t motor_index)
 {
 	if (motor_index >= CAN_SERVICE_MAX_MKS_MOTORS) {
@@ -451,6 +510,9 @@ const Motor_LatestValue *CanService_GetLatestMotorValues(size_t *record_count)
 	return s_latest_motor_values;
 }
 
+/**
+ * @brief Executes service send emergency stop.
+ */
 MksStatus CanService_SendEmergencyStop(uint8_t motor_index)
 {
 	const MksDevice* device;
@@ -470,6 +532,9 @@ MksStatus CanService_SendEmergencyStop(uint8_t motor_index)
 	return CanService_QueueFrame(&frame, CAN_TX_PRIORITY_SAFETY);
 }
 
+/**
+ * @brief Executes service send absolute pulse move.
+ */
 MksStatus CanService_SendAbsolutePulseMove(uint8_t motor_index, uint16_t speed, uint8_t acc, int32_t absolute_pulses)
 {
 	const MksDevice* device;
@@ -509,6 +574,9 @@ MksStatus CanService_SendRelativePulseMove(uint8_t motor_index, bool dir_cw, uin
 	return CanService_QueueFrame(&frame, CAN_TX_PRIORITY_MOTION);
 }
 
+/**
+ * @brief Executes service request encoder value.
+ */
 MksStatus CanService_RequestEncoderValue(uint8_t motor_index)
 {
 	const MksDevice* device;
@@ -528,6 +596,9 @@ MksStatus CanService_RequestEncoderValue(uint8_t motor_index)
 	return CanService_QueueFrame(&frame, CAN_TX_PRIORITY_POLL);
 }
 
+/**
+ * @brief Executes service request realtime speed.
+ */
 MksStatus CanService_RequestRealtimeSpeed(uint8_t motor_index)
 {
 	const MksDevice* device;

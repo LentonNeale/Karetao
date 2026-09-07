@@ -1,3 +1,8 @@
+/**
+ * @file snapshot_builder.h
+ * @brief Implements the snapshot builder module.
+ */
+
 #ifndef SNAPSHOT_BUILDER_H
 #define SNAPSHOT_BUILDER_H
 
@@ -46,6 +51,9 @@ typedef struct
     SnapshotFrame_Diagnostics diagnostics;
 } SnapshotFrame_Pool;
 
+/**
+ * @brief Executes frame pool init.
+ */
 void SnapshotFramePool_Init(SnapshotFrame_Pool *pool);
 SnapshotBuild_Result SnapshotBuilder_Stage(SnapshotFrame_Pool *pool,
                                            SnapshotBuilder_SerializeCallback serialize,
@@ -53,6 +61,9 @@ SnapshotBuild_Result SnapshotBuilder_Stage(SnapshotFrame_Pool *pool,
 bool SnapshotFramePool_BeginDma(SnapshotFrame_Pool *pool,
                                 const uint8_t **frame_buffer,
                                 uint16_t *frame_length);
+/**
+ * @brief Executes frame pool complete dma.
+ */
 bool SnapshotFramePool_CompleteDma(SnapshotFrame_Pool *pool);
 const uint8_t *SnapshotFramePool_GetStagedFrame(const SnapshotFrame_Pool *pool,
                                                 uint16_t *frame_length);

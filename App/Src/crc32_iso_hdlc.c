@@ -1,5 +1,13 @@
+/**
+ * @file crc32_iso_hdlc.c
+ * @brief Implements the crc32 iso hdlc module.
+ */
+
 #include "crc32_iso_hdlc.h"
 
+/**
+ * @brief Executes iso hdlc compute.
+ */
 uint32_t Crc32IsoHdlc_Compute(const uint8_t *data, size_t data_length)
 {
     uint32_t crc32 = UINT32_C(0xFFFFFFFF);
@@ -23,6 +31,9 @@ uint32_t Crc32IsoHdlc_Compute(const uint8_t *data, size_t data_length)
     return crc32 ^ UINT32_C(0xFFFFFFFF);
 }
 
+/**
+ * @brief Executes iso hdlc write little endian.
+ */
 void Crc32IsoHdlc_WriteLittleEndian(uint32_t crc32, uint8_t output[4])
 {
     if (output == NULL)
@@ -36,6 +47,9 @@ void Crc32IsoHdlc_WriteLittleEndian(uint32_t crc32, uint8_t output[4])
     output[3] = (uint8_t)(crc32 >> 24u);
 }
 
+/**
+ * @brief Executes iso hdlc read little endian.
+ */
 uint32_t Crc32IsoHdlc_ReadLittleEndian(const uint8_t input[4])
 {
     if (input == NULL)

@@ -1,19 +1,33 @@
+/**
+ * @file calibration_record.c
+ * @brief Implements the calibration record module.
+ */
+
 #include "calibration_record.h"
 
 #include <stdbool.h>
 
+/**
+ * @brief Checks whether same identity.
+ */
 static bool Calibration_HasSameIdentity(const Calibration_Record *first, const Calibration_Record *second)
 {
     return (first->logical_sensor_id == second->logical_sensor_id) &&
            (first->logical_joint_id == second->logical_joint_id);
 }
 
+/**
+ * @brief Checks whether generation newer.
+ */
 static bool Calibration_IsGenerationNewer(uint32_t candidate, uint32_t previous)
 {
     return (candidate != previous) &&
            ((uint32_t)(candidate - previous) < UINT32_C(0x80000000));
 }
 
+/**
+ * @brief Validates record.
+ */
 Calibration_Result Calibration_ValidateRecord(const Calibration_Record *record, uint32_t computed_crc32)
 {
     if (record == NULL)
