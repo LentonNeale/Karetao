@@ -66,7 +66,6 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 
 | File / symbol | Type | Evidence | Remediation |
 | --- | --- | --- | --- |
-| `TEMP/MksServo` | Orphan/duplicate source tree | `diff -qr Middlewares/Third_Party/MksServo TEMP/MksServo` reports divergent `CMakeLists.txt`; `TEMP` adds tests not present in the active library tree | Decide whether `TEMP/MksServo` is archival-only or a maintained attachment; if archival, quarantine it from engineering truth paths |
 | `App/Src/time_service.c`: `TimeService_AcceptSync`, `TimeService_IsSyncValid` | Public API with no production caller | only definitions and header declarations are present; no runtime call sites were found | Wire `TIME_SYNC` acceptance through live SPI command handling or demote the API from claimed runtime readiness |
 | `App/Src/i2c_manager.c`: `I2CManager_SubmitAsync`, `I2CManager_SetEventHook`, `I2CManager_SetEventQueue`, `I2CManager_SetTaskNotifyTarget` | Unintegrated async surface | declarations/definitions exist, but no application call sites were found | Either integrate async I2C ownership into a task flow or remove/de-scope the API until needed |
 | `App/Src/spi_slave_service.c`: `SpiSlaveService_BeginDmaTransfer`, `SpiSlaveService_CompleteDmaTransfer`, `SpiSlaveService_ProcessRequestFrame` | Hardware integration surface with no caller | only self-reference and documentation references were found | Complete DMA/NSS/request wiring or explicitly keep these functions in “integration target only” status |
@@ -76,23 +75,23 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 
 | ID | Severity | Rule / source | Impacted files | Technical concern | Scope |
 | --- | --- | --- | --- | --- | --- |
-| ASH-AUD-001 | High | Contract contradiction | `App/Src/sensor_task.c:77-85`, `Documentation/SPI_SERVICE_CONTRACT.md:15,70-77` | `SensorTask` drives `DATA_READY` low directly, but SPI service contract states `SpiSlaveService` is the sole production owner and `SensorTask` must not drive the pin | Localized but safety-relevant |
-| ASH-AUD-002 | High | Logic inconsistency | `App/Src/sensor_task.c:88-99` | successful sensor bring-up transitions to `ACTIVE/PASS`, then immediately marks the latest sensor record invalid with `SENSOR_VALIDITY_COMMUNICATION_ERROR`; this can poison first-use snapshot semantics and diagnostics | Localized |
-| ASH-AUD-003 | High | Contract contradiction | `App/Src/i2c_manager.c:348-353,370-375,394-399,415-419`, `Documentation/I2C_MANAGER_CONTRACT.md:38-40` | ISR callbacks invoke user completion callbacks directly even though the contract requires potentially blocking user-callback behavior to be deferred to task context | Repo-visible integration contract issue |
-| ASH-AUD-004 | Medium | Contract contradiction | `App/Src/i2c_manager.c:37-40,63-65`, `App/Inc/i2c_manager.h:34-39`, `Documentation/I2C_MANAGER_CONTRACT.md:62-65` | I2C diagnostics/events timestamp with raw 32-bit TIM2 values, while the contract requires shared 64-bit monotonic timestamps and forbids exposing the raw counter as system time | Repo-visible diagnostics issue |
-| ASH-AUD-005 | Medium | Observability inconsistency | `App/Src/sensor_task.c:77-85` vs `41-45,66-67,93-99,174-176,192-194,205-207,218-220,236-237` | one bring-up failure path returns without refreshing debug mirrors, leaving `g_sensor_task_snapshot_dbg` and `g_sensor_task_diag_word_dbg` stale | Localized |
-| ASH-AUD-006 | Medium | Coverage smell | `tests/host/CMakeLists.txt:1-23` vs `CMakeLists.txt:61-81` | lifecycle, transport orchestration, hardware-facing services, and health monitor are absent from automated host coverage | Repo-wide |
+| ASH-AUD-001 | High | Integration gap | `App/Src/time_service.c:292-305`, `App/Src/spi_slave_service.c:115-125` | `TimeService_AcceptSync()` and live sync validity APIs still have no production SPI request-dispatch caller, so time synchronization remains host-tested state without transport integration | Repo-visible integration contract issue |
+| ASH-AUD-002 | Medium | Coverage boundary | `tests/host/CMakeLists.txt:27-58` | service smoke coverage now exists for all first-party modules, but several hardware-failure, retry, and recovery branches remain shallow by design | Repo-wide |
+| ASH-AUD-003 | Medium | Architecture debt | `App/Src/i2c_manager.c:375-415`, `App/Src/tca9548a_mux.c:92-117` | the composite mux+sensor ownership window is implemented specifically for the AS5600 path; broader multi-device arbitration policy is still not generalized | Localized |
+| ASH-AUD-004 | Medium | Build evidence gap | `Documentation/BUILD_CONTRACT.md:44-59`, `Documentation/CONTRACT_STATUS.md:25` | host coverage is available, but embedded target build evidence still depends on external toolchain availability | Repo-wide |
+| ASH-AUD-005 | Low | Verification depth | `tests/host/service_test_main.c` | new service smoke tests validate core paths and required negative paths, but they intentionally do not replace later hardware-integration or richer failure-mode suites | Repo-wide |
+| ASH-AUD-006 | Medium | Coverage smell | `tests/host/CMakeLists.txt:1-45` vs `CMakeLists.txt:61-81` | host coverage now includes protocol primitives plus minimal service smoke coverage, but negative-path depth remains intentionally shallow for several hardware-facing services | Repo-wide |
 
 ## Section E — Loose Ends / Technical Debt Ledger
 
 | Source | Affected functionality | Current state | Test state | Release risk |
 | --- | --- | --- | --- | --- |
 | `Documentation/CONTRACT_STATUS.md:13-25` | SPI/CAN/snapshot/time-sync integration | multiple rows still marked host-tested only, scaffold, absent, or gated | host primitives tested; end-to-end target flows absent | High |
-| `Documentation/HEALTH_MONITOR_CONTRACT.md:22-51` | aggregate health model | contract defines required observations, but implementation is empty (`App/Src/health_monitor.c:1-9`) | none | High |
+| `Documentation/HEALTH_MONITOR_CONTRACT.md:22-51` | aggregate health model | read-only snapshot baseline is implemented; host publication, thresholds, and acknowledgement policy remain open | protocol and service smoke coverage exist | Medium |
 | `Documentation/TIMESTAMP_SYNC_CONTRACT.md:28-59` | `TIME_SYNC` acceptance and stale-sync gating | sync state exists, but no live SPI dispatch path calls `TimeService_AcceptSync()` | unit-level host coverage only | High |
-| `Documentation/I2C_MANAGER_CONTRACT.md:56-69` | mux selection + sensor transaction atomicity | contract requires one logical ownership window; current API still uses separate select/read operations | no dedicated contention or sequencing tests | High |
+| `Documentation/I2C_MANAGER_CONTRACT.md:56-69` | mux selection + sensor transaction atomicity | composite mux+sensor write/read path is now implemented for AS5600 access; broader arbitration policy remains open | basic host smoke coverage exists; contention depth remains limited | Medium |
 | `Documentation/CAN_SERVICE_CONTRACT.md:44-46,78-89,125-133` | duplicate CAN IDs, RX overflow, command ordering, hardware recovery proof | documented as open decisions or future validation | host-only queue/policy tests | High |
-| `Documentation/SPI_SERVICE_CONTRACT.md:78-135` | DMA/NSS callbacks and aborted transaction handling | contract exists; runtime wiring absent | none beyond host protocol state tests | High |
+| `Documentation/SPI_SERVICE_CONTRACT.md:78-135` | DMA/NSS callbacks and aborted transaction handling | contract exists; runtime wiring absent | host protocol and service smoke coverage exist; no target-hardware validation | High |
 
 ## Section F — Coverage Gap Matrix
 
@@ -115,38 +114,29 @@ Repository: `LentonNeale/Arm_Sensor_Hub`
 
 | Module | Current test vehicle | Status |
 | --- | --- | --- |
-| `app_init.c` | none | startup/activation gating untested |
-| `lifecycle.c` | none | core state machine untested despite central role |
-| `i2c_manager.c` | none | blocking + async transport behavior untested |
-| `tca9548a_mux.c` | none | mux retry/selection behavior untested |
-| `as5600.c` | none | register read/error handling untested |
-| `sensor_task.c` | none | bring-up and sampling state machine untested |
-| `can_service.c` | none | decode, poll scheduling, queue drain, recovery wiring untested |
-| `spi_slave_service.c` | none | service-level staging and GPIO ownership untested |
-| `health_monitor.c` | none | no implementation to cover |
+| `app_init.c` | `service_smoke_tests` | startup/activation smoke path covered |
+| `lifecycle.c` | `sprint1_protocol_tests`, `service_smoke_tests` | core transitions covered |
+| `i2c_manager.c` | `service_smoke_tests` | bad-arg and deferred async callback/event path covered |
+| `tca9548a_mux.c` | `service_smoke_tests` | invalid-channel and composite access path covered |
+| `as5600.c` | `service_smoke_tests` | bad-arg and composite status-read path covered |
+| `sensor_task.c` | `service_smoke_tests` | bring-up communication-failure path covered |
+| `can_service.c` | `service_smoke_tests` | invalid registration and inactive/active request gating covered |
+| `spi_slave_service.c` | `service_smoke_tests` | inactive rejection, staged-frame handoff, and bad-request path covered |
+| `health_monitor.c` | `sprint1_protocol_tests`, `service_smoke_tests` | snapshot baseline covered |
 
 ## Section G — Critical Defect Punch-List
 
 | Priority | Issue | Evidence | Owner | Phase 2 status |
 | --- | --- | --- | --- | --- |
-| P0 | Remove `SensorTask` ownership of `DATA_READY` | `App/Src/sensor_task.c:84` contradicts `Documentation/SPI_SERVICE_CONTRACT.md:15,70-77` | Firmware application | Blocking |
-| P0 | Correct first valid sensor-cache semantics after bring-up | `App/Src/sensor_task.c:88-99` marks latest value as communication error after successful initialization | Firmware application | Blocking |
-| P0 | Make I2C async callback model contract-safe | `App/Src/i2c_manager.c:348-419` directly invokes user callbacks from ISR | Firmware application | Blocking |
-| P1 | Convert I2C event timestamps to shared 64-bit time or narrow the contract | `App/Src/i2c_manager.c:37-40,63-65` vs `Documentation/I2C_MANAGER_CONTRACT.md:62-65` | Firmware application | Blocking |
-| P1 | Add automated coverage for `lifecycle`, `sensor_task`, `i2c_manager`, `can_service`, `spi_slave_service` | production modules missing from `tests/host/CMakeLists.txt` | Firmware + verification | Blocking |
-| P1 | Resolve `TEMP/MksServo` duplicate-tree status | active docs point to both the live library and the source attachment | Build/documentation owners | Blocking |
-| P2 | Replace empty health monitor scaffold with contract-backed snapshot/aggregation | `App/Src/health_monitor.c:1-9`, `Documentation/HEALTH_MONITOR_CONTRACT.md:22-51` | Firmware application | Blocking |
-| P2 | Re-establish target build evidence in CI/runner | `cmake --preset Debug` fails without `arm-none-eabi-gcc/g++` | Build/CI | Blocking |
+| P1 | Re-establish target build evidence in CI/runner | `cmake --preset Debug` fails without `arm-none-eabi-gcc/g++` in this environment | Build/CI | Blocking |
+| P1 | Wire live SPI TIME_SYNC dispatch to `TimeService_AcceptSync()` | `TimeService_AcceptSync()` still has no production caller | Firmware application | Blocking |
+| P2 | Deepen negative-path coverage for hardware-facing service flows beyond smoke level | `service_smoke_tests` now cover core behavior, but several failure/recovery branches remain unexercised | Firmware + verification | Non-blocking follow-up |
 
 ## Section H — Clearance Decision
 
-**Decision:** `Blocked`
+**Decision:** `Blocked pending target build validation`
 
 ### Gate reasons
 
-- contract/implementation contradiction on `DATA_READY` ownership
-- contract/implementation contradiction on I2C callback execution model
-- incorrect first-use sensor-cache invalidation during successful bring-up
-- large production dark-matter surface with no automated coverage
-- empty health aggregation implementation despite project-wide dependency claims
 - target-build evidence unavailable in current runner due missing embedded toolchain
+- live SPI `TIME_SYNC` dispatch is still not wired into production command handling

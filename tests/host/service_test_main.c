@@ -1,0 +1,724 @@
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+#include "task.h"
+#include "app_init.h"
+#include "as5600.h"
+#include "can_service.h"
+#include "crc32_iso_hdlc.h"
+#include "health_monitor.h"
+#include "i2c_manager.h"
+#include "sensor_task.h"
+#include "spi_slave_service.h"
+#include "tca9548a_mux.h"
+#include "time_service.h"
+
+I2C_HandleTypeDef hi2c1 = {.Instance = I2C1};
+CAN_HandleTypeDef hcan1 = {.Instance = (void *)0x2};
+TIM_HandleTypeDef htim2 = {.Instance = (void *)0x3};
+void *Data_Ready_GPIO_Port = (void *)0x4;
+uint16_t Data_Ready_Pin = 9u;
+
+typedef struct
+{
+    I2CManager_Event event;
+    uint32_t count;
+} TestQueue;
+
+typedef struct
+{
+    uint16_t address;
+    uint8_t data[8];
+    uint16_t size;
+} I2CWriteLog;
+
+typedef struct
+{
+    CAN_RxHeaderTypeDef header;
+    uint8_t data[8];
+} CanRxScript;
+
+static uint32_t s_hal_tick;
+static uint64_t s_time_now_us;
+static TimeService_SyncSnapshot s_time_sync_snapshot;
+static GPIO_PinState s_last_gpio_state;
+static uint32_t s_gpio_write_count;
+static bool s_force_semaphore_timeout;
+static I2CWriteLog s_i2c_writes[16];
+static uint32_t s_i2c_write_count;
+static HAL_StatusTypeDef s_i2c_tx_statuses[16];
+static HAL_StatusTypeDef s_i2c_rx_statuses[16];
+static uint8_t s_i2c_rx_payloads[16][8];
+static uint16_t s_i2c_rx_sizes[16];
+static uint32_t s_i2c_tx_call_count;
+static uint32_t s_i2c_rx_call_count;
+static HAL_StatusTypeDef s_i2c_tx_it_status = HAL_OK;
+static HAL_StatusTypeDef s_i2c_rx_it_status = HAL_OK;
+static uint32_t s_i2c_error_code;
+static TestQueue s_test_queue;
+static uint32_t s_notify_bits_value;
+static uint32_t s_event_hook_count;
+static bool s_event_hook_from_isr;
+static I2CManager_Event s_last_i2c_event;
+static uint32_t s_completion_count;
+static I2CManager_Status s_last_completion_status;
+static uint64_t s_last_completion_timestamp;
+static HAL_StatusTypeDef s_can_filter_status = HAL_OK;
+static HAL_StatusTypeDef s_can_start_status = HAL_OK;
+static HAL_StatusTypeDef s_can_stop_status = HAL_OK;
+static HAL_StatusTypeDef s_can_add_tx_status = HAL_OK;
+static uint32_t s_can_error_bits;
+static uint32_t s_can_rx_count;
+static uint32_t s_can_rx_index;
+static CanRxScript s_can_rx_script[8];
+static uint32_t s_can_last_tx_count;
+static CAN_TxHeaderTypeDef s_can_last_tx_header;
+static uint8_t s_can_last_tx_data[8];
+static MksStatus s_mks_encode_status = MKS_OK;
+static MksStatus s_mks_decode_status = MKS_OK;
+static MksParsedResponse s_mks_decoded_response;
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c);
+
+static void ResetHalState(void)
+{
+    uint32_t i;
+
+    s_hal_tick = 0u;
+    s_time_now_us = 0u;
+    s_time_sync_snapshot = (TimeService_SyncSnapshot){0};
+    s_last_gpio_state = GPIO_PIN_RESET;
+    s_gpio_write_count = 0u;
+    s_force_semaphore_timeout = false;
+    memset(s_i2c_writes, 0, sizeof(s_i2c_writes));
+    s_i2c_write_count = 0u;
+    s_i2c_tx_call_count = 0u;
+    s_i2c_rx_call_count = 0u;
+    for (i = 0u; i < 16u; ++i) {
+        s_i2c_tx_statuses[i] = HAL_OK;
+        s_i2c_rx_statuses[i] = HAL_OK;
+        s_i2c_rx_sizes[i] = 0u;
+        memset(s_i2c_rx_payloads[i], 0, sizeof(s_i2c_rx_payloads[i]));
+    }
+    s_i2c_tx_it_status = HAL_OK;
+    s_i2c_rx_it_status = HAL_OK;
+    s_i2c_error_code = 0u;
+    s_test_queue = (TestQueue){0};
+    s_notify_bits_value = 0u;
+    s_event_hook_count = 0u;
+    s_event_hook_from_isr = true;
+    s_last_i2c_event = (I2CManager_Event){0};
+    s_completion_count = 0u;
+    s_last_completion_status = I2C_MANAGER_STATUS_OK;
+    s_last_completion_timestamp = 0u;
+    s_can_filter_status = HAL_OK;
+    s_can_start_status = HAL_OK;
+    s_can_stop_status = HAL_OK;
+    s_can_add_tx_status = HAL_OK;
+    s_can_error_bits = 0u;
+    s_can_rx_count = 0u;
+    s_can_rx_index = 0u;
+    s_can_last_tx_count = 0u;
+    memset(&s_can_last_tx_header, 0, sizeof(s_can_last_tx_header));
+    memset(s_can_last_tx_data, 0, sizeof(s_can_last_tx_data));
+    s_mks_encode_status = MKS_OK;
+    s_mks_decode_status = MKS_OK;
+    memset(&s_mks_decoded_response, 0, sizeof(s_mks_decoded_response));
+    htim2.Counter = 0u;
+}
+
+void TimeService_Init(void)
+{
+}
+
+uint64_t TimeService_NowUs(void)
+{
+    return s_time_now_us;
+}
+
+void TimeService_SyncInit(const TimeService_SyncConfig *config)
+{
+    (void)config;
+    s_time_sync_snapshot = (TimeService_SyncSnapshot){0};
+}
+
+TimeService_SyncResult TimeService_AcceptSync(uint64_t pi_time_us, uint32_t sync_sequence)
+{
+    s_time_sync_snapshot.time_offset_us = (int64_t)pi_time_us - (int64_t)s_time_now_us;
+    s_time_sync_snapshot.last_sync_sequence = sync_sequence;
+    s_time_sync_snapshot.last_sync_local_time_us = s_time_now_us;
+    s_time_sync_snapshot.age_us = 0u;
+    s_time_sync_snapshot.valid = true;
+    s_time_sync_snapshot.quality = TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED;
+    return TIME_SERVICE_SYNC_ACCEPTED;
+}
+
+bool TimeService_IsSyncValid(void)
+{
+    return s_time_sync_snapshot.valid;
+}
+
+void TimeService_GetSyncSnapshot(TimeService_SyncSnapshot *snapshot)
+{
+    if (snapshot != NULL) {
+        *snapshot = s_time_sync_snapshot;
+    }
+}
+
+HAL_StatusTypeDef HAL_TIM_Base_Start(TIM_HandleTypeDef *htim)
+{
+    (void)htim;
+    return HAL_OK;
+}
+
+uint32_t HAL_GetTick(void)
+{
+    return s_hal_tick;
+}
+
+void HAL_GPIO_WritePin(void *gpio_port, uint16_t gpio_pin, GPIO_PinState state)
+{
+    (void)gpio_port;
+    (void)gpio_pin;
+    s_last_gpio_state = state;
+    s_gpio_write_count++;
+}
+
+HAL_StatusTypeDef HAL_I2C_Master_Transmit(I2C_HandleTypeDef *hi2c,
+                                          uint16_t address,
+                                          uint8_t *data,
+                                          uint16_t size,
+                                          uint32_t timeout_ms)
+{
+    uint32_t index = s_i2c_tx_call_count++;
+    (void)hi2c;
+    (void)timeout_ms;
+
+    if (index < 16u) {
+        s_i2c_writes[index].address = address;
+        s_i2c_writes[index].size = size;
+        if (size <= sizeof(s_i2c_writes[index].data)) {
+            memcpy(s_i2c_writes[index].data, data, size);
+        }
+    }
+    s_i2c_write_count = s_i2c_tx_call_count;
+    return (index < 16u) ? s_i2c_tx_statuses[index] : HAL_OK;
+}
+
+HAL_StatusTypeDef HAL_I2C_Master_Receive(I2C_HandleTypeDef *hi2c,
+                                         uint16_t address,
+                                         uint8_t *data,
+                                         uint16_t size,
+                                         uint32_t timeout_ms)
+{
+    uint32_t index = s_i2c_rx_call_count++;
+    (void)hi2c;
+    (void)address;
+    (void)timeout_ms;
+
+    if ((index < 16u) && (size > 0u)) {
+        memcpy(data, s_i2c_rx_payloads[index], size);
+    }
+    return (index < 16u) ? s_i2c_rx_statuses[index] : HAL_OK;
+}
+
+HAL_StatusTypeDef HAL_I2C_Master_Transmit_IT(I2C_HandleTypeDef *hi2c,
+                                             uint16_t address,
+                                             uint8_t *data,
+                                             uint16_t size)
+{
+    (void)HAL_I2C_Master_Transmit(hi2c, address, data, size, 0u);
+    return s_i2c_tx_it_status;
+}
+
+HAL_StatusTypeDef HAL_I2C_Master_Receive_IT(I2C_HandleTypeDef *hi2c,
+                                            uint16_t address,
+                                            uint8_t *data,
+                                            uint16_t size)
+{
+    (void)hi2c;
+    (void)address;
+    (void)data;
+    (void)size;
+    return s_i2c_rx_it_status;
+}
+
+uint32_t HAL_I2C_GetError(I2C_HandleTypeDef *hi2c)
+{
+    (void)hi2c;
+    return s_i2c_error_code;
+}
+
+HAL_StatusTypeDef HAL_CAN_ConfigFilter(CAN_HandleTypeDef *hcan, CAN_FilterTypeDef *filter)
+{
+    (void)hcan;
+    (void)filter;
+    return s_can_filter_status;
+}
+
+HAL_StatusTypeDef HAL_CAN_Start(CAN_HandleTypeDef *hcan)
+{
+    (void)hcan;
+    return s_can_start_status;
+}
+
+HAL_StatusTypeDef HAL_CAN_Stop(CAN_HandleTypeDef *hcan)
+{
+    (void)hcan;
+    return s_can_stop_status;
+}
+
+uint32_t HAL_CAN_GetError(CAN_HandleTypeDef *hcan)
+{
+    (void)hcan;
+    return s_can_error_bits;
+}
+
+uint32_t HAL_CAN_GetRxFifoFillLevel(CAN_HandleTypeDef *hcan, uint32_t fifo)
+{
+    (void)hcan;
+    (void)fifo;
+    return s_can_rx_count - s_can_rx_index;
+}
+
+HAL_StatusTypeDef HAL_CAN_GetRxMessage(CAN_HandleTypeDef *hcan,
+                                       uint32_t fifo,
+                                       CAN_RxHeaderTypeDef *header,
+                                       uint8_t *data)
+{
+    (void)hcan;
+    (void)fifo;
+
+    if (s_can_rx_index >= s_can_rx_count) {
+        return HAL_ERROR;
+    }
+
+    *header = s_can_rx_script[s_can_rx_index].header;
+    memcpy(data, s_can_rx_script[s_can_rx_index].data, sizeof(s_can_rx_script[s_can_rx_index].data));
+    s_can_rx_index++;
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef HAL_CAN_AddTxMessage(CAN_HandleTypeDef *hcan,
+                                       CAN_TxHeaderTypeDef *header,
+                                       uint8_t *data,
+                                       uint32_t *mailbox)
+{
+    (void)hcan;
+    if (header != NULL) {
+        s_can_last_tx_header = *header;
+    }
+    if (data != NULL) {
+        memcpy(s_can_last_tx_data, data, sizeof(s_can_last_tx_data));
+    }
+    if (mailbox != NULL) {
+        *mailbox = 0u;
+    }
+    s_can_last_tx_count++;
+    return s_can_add_tx_status;
+}
+
+SemaphoreHandle_t xSemaphoreCreateMutexStatic(StaticSemaphore_t *storage)
+{
+    if (storage != NULL) {
+        storage->locked = pdFALSE;
+    }
+    return storage;
+}
+
+BaseType_t xSemaphoreTake(SemaphoreHandle_t semaphore, TickType_t wait_ticks)
+{
+    (void)wait_ticks;
+    if ((semaphore == NULL) || s_force_semaphore_timeout || semaphore->locked) {
+        return pdFALSE;
+    }
+
+    semaphore->locked = pdTRUE;
+    return pdTRUE;
+}
+
+BaseType_t xSemaphoreGive(SemaphoreHandle_t semaphore)
+{
+    if (semaphore == NULL) {
+        return pdFALSE;
+    }
+
+    semaphore->locked = pdFALSE;
+    return pdTRUE;
+}
+
+BaseType_t xSemaphoreGiveFromISR(SemaphoreHandle_t semaphore, BaseType_t *higher_priority_task_woken)
+{
+    if (higher_priority_task_woken != NULL) {
+        *higher_priority_task_woken = pdFALSE;
+    }
+    return xSemaphoreGive(semaphore);
+}
+
+BaseType_t xQueueSend(QueueHandle_t queue, const void *item, TickType_t wait_ticks)
+{
+    TestQueue *typed_queue = (TestQueue *)queue;
+    (void)wait_ticks;
+    if ((typed_queue == NULL) || (item == NULL)) {
+        return pdFALSE;
+    }
+
+    typed_queue->event = *(const I2CManager_Event *)item;
+    typed_queue->count++;
+    return pdTRUE;
+}
+
+BaseType_t xQueueSendFromISR(QueueHandle_t queue, const void *item, BaseType_t *higher_priority_task_woken)
+{
+    if (higher_priority_task_woken != NULL) {
+        *higher_priority_task_woken = pdFALSE;
+    }
+    return xQueueSend(queue, item, 0u);
+}
+
+BaseType_t xTaskNotify(TaskHandle_t task, uint32_t value, eNotifyAction action)
+{
+    uint32_t *notify_bits = (uint32_t *)task;
+    (void)action;
+
+    if (notify_bits == NULL) {
+        return pdFALSE;
+    }
+
+    *notify_bits |= value;
+    return pdTRUE;
+}
+
+BaseType_t xTaskNotifyFromISR(TaskHandle_t task,
+                              uint32_t value,
+                              eNotifyAction action,
+                              BaseType_t *higher_priority_task_woken)
+{
+    if (higher_priority_task_woken != NULL) {
+        *higher_priority_task_woken = pdFALSE;
+    }
+    return xTaskNotify(task, value, action);
+}
+
+static MksStatus FillTestFrame(const MksDevice *dev, uint8_t code, MksCanFrame *out, uint16_t can_id)
+{
+    if ((dev == NULL) || (out == NULL)) {
+        return MKS_NULL_POINTER;
+    }
+
+    out->id = (can_id == MKS_CAN_ID_DEFAULT) ? dev->default_can_id : can_id;
+    out->dlc = 2u;
+    out->data[0] = code;
+    out->data[1] = 0u;
+    return s_mks_encode_status;
+}
+
+MksDevice mks_device_servo42(uint16_t default_can_id)
+{
+    MksDevice device = {.default_can_id = default_can_id, .max_working_current_ma = 0u};
+    return device;
+}
+
+MksDevice mks_device_servo57(uint16_t default_can_id)
+{
+    MksDevice device = {.default_can_id = default_can_id, .max_working_current_ma = 0u};
+    return device;
+}
+
+MksStatus mks_encode_set_motor_enable(const MksDevice *dev, bool enable, MksCanFrame *out, uint16_t can_id)
+{
+    (void)enable;
+    return FillTestFrame(dev, 0xF1u, out, can_id);
+}
+
+MksStatus mks_encode_emergency_stop(const MksDevice *dev, MksCanFrame *out, uint16_t can_id)
+{
+    return FillTestFrame(dev, 0xFEu, out, can_id);
+}
+
+MksStatus mks_encode_speed_mode_run(const MksDevice *dev, bool dir_cw, uint16_t speed, uint8_t acc,
+                                    bool has_runtime, uint32_t runtime_10ms, MksCanFrame *out, uint16_t can_id)
+{
+    (void)dir_cw;
+    (void)speed;
+    (void)acc;
+    (void)has_runtime;
+    (void)runtime_10ms;
+    return FillTestFrame(dev, 0xA2u, out, can_id);
+}
+
+MksStatus mks_encode_relative_pulse_move(const MksDevice *dev, bool dir_cw, uint16_t speed, uint8_t acc,
+                                         uint32_t relative_pulses, MksCanFrame *out, uint16_t can_id)
+{
+    (void)dir_cw;
+    (void)speed;
+    (void)acc;
+    (void)relative_pulses;
+    return FillTestFrame(dev, 0xA3u, out, can_id);
+}
+
+MksStatus mks_encode_absolute_pulse_move(const MksDevice *dev, uint16_t speed, uint8_t acc,
+                                         int32_t absolute_pulses, MksCanFrame *out, uint16_t can_id)
+{
+    (void)speed;
+    (void)acc;
+    (void)absolute_pulses;
+    return FillTestFrame(dev, 0xA4u, out, can_id);
+}
+
+MksStatus mks_encode_encoder_value(const MksDevice *dev, MksCanFrame *out, uint16_t can_id)
+{
+    return FillTestFrame(dev, 0x31u, out, can_id);
+}
+
+MksStatus mks_encode_realtime_speed(const MksDevice *dev, MksCanFrame *out, uint16_t can_id)
+{
+    return FillTestFrame(dev, 0x32u, out, can_id);
+}
+
+MksStatus mks_encode_working_current(const MksDevice *dev, uint16_t current_ma, bool save_to_flash,
+                                     MksCanFrame *out, uint16_t can_id)
+{
+    (void)current_ma;
+    (void)save_to_flash;
+    return FillTestFrame(dev, 0x33u, out, can_id);
+}
+
+MksStatus mks_encode_set_zero_point(const MksDevice *dev, MksCanFrame *out, uint16_t can_id)
+{
+    return FillTestFrame(dev, 0x34u, out, can_id);
+}
+
+MksStatus mks_encode_execute_zero_return(const MksDevice *dev, bool has_mode, uint8_t mode,
+                                         MksCanFrame *out, uint16_t can_id)
+{
+    (void)has_mode;
+    (void)mode;
+    return FillTestFrame(dev, 0x35u, out, can_id);
+}
+
+MksStatus mks_decode(const MksCanFrame *frame, MksParsedResponse *out)
+{
+    (void)frame;
+    if ((out == NULL) && (s_mks_decode_status == MKS_OK)) {
+        return MKS_NULL_POINTER;
+    }
+    if ((out != NULL) && (s_mks_decode_status == MKS_OK)) {
+        *out = s_mks_decoded_response;
+    }
+    return s_mks_decode_status;
+}
+
+static void TestI2cEventHook(const I2CManager_Event *event, bool from_isr)
+{
+    if (event != NULL) {
+        s_last_i2c_event = *event;
+    }
+    s_event_hook_count++;
+    s_event_hook_from_isr = from_isr;
+}
+
+static void TestI2cCompletion(I2CManager_Status status, void *context, uint64_t timestamp_us)
+{
+    uint8_t *completion_cookie = context;
+
+    if (completion_cookie != NULL) {
+        *completion_cookie = 0x5Au;
+    }
+    s_completion_count++;
+    s_last_completion_status = status;
+    s_last_completion_timestamp = timestamp_us;
+}
+
+static bool SerializeTestFrame(uint8_t *frame_buffer,
+                               uint16_t frame_capacity,
+                               uint16_t *frame_length,
+                               void *context)
+{
+    const uint8_t *value = context;
+
+    if ((frame_buffer == NULL) || (frame_length == NULL) || (value == NULL) ||
+        (frame_capacity < 2u)) {
+        return false;
+    }
+
+    frame_buffer[0] = *value;
+    frame_buffer[1] = 0xAAu;
+    *frame_length = 2u;
+    return true;
+}
+
+static void BuildRequest(uint8_t frame[SPI_FRAME_MAX_BYTES], uint8_t type, uint16_t length, uint32_t sequence)
+{
+    uint32_t crc32;
+    memset(frame, 0, SPI_FRAME_MAX_BYTES);
+    frame[0] = 0x5Au;
+    frame[1] = 0xA5u;
+    frame[2] = SPI_PROTOCOL_VERSION;
+    frame[3] = type;
+    frame[4] = (uint8_t)length;
+    frame[5] = (uint8_t)(length >> 8u);
+    frame[6] = (uint8_t)sequence;
+    frame[7] = (uint8_t)(sequence >> 8u);
+    frame[8] = (uint8_t)(sequence >> 16u);
+    frame[9] = (uint8_t)(sequence >> 24u);
+    crc32 = Crc32IsoHdlc_Compute(frame, SPI_FRAME_HEADER_BYTES + length);
+    Crc32IsoHdlc_WriteLittleEndian(crc32, &frame[SPI_FRAME_CRC_OFFSET(length)]);
+}
+
+static void TestI2CManagerCore(void)
+{
+    uint8_t data = 0x12u;
+    uint8_t async_cookie = 0u;
+    I2CManager_Transfer transfer = {
+        .address_7bit = 0x36u,
+        .buffer = &data,
+        .length = 1u,
+        .direction = I2C_MANAGER_DIR_WRITE,
+        .completion_cb = TestI2cCompletion,
+        .context = &async_cookie
+    };
+
+    I2CManager_Init();
+    if (I2CManager_GetLifecycleState() == LIFECYCLE_STATE_INACTIVE) {
+        assert(I2CManager_Activate() == LIFECYCLE_RESULT_OK);
+    }
+    assert(I2CManager_MasterRead(0x36u, NULL, 1u, 1u) == I2C_MANAGER_STATUS_BAD_ARG);
+
+    I2CManager_SetEventHook(TestI2cEventHook);
+    I2CManager_SetEventQueue(&s_test_queue);
+    I2CManager_SetTaskNotifyTarget(&s_notify_bits_value, 0x20u);
+
+    s_time_now_us = 101u;
+    assert(I2CManager_SubmitAsync(&transfer) == I2C_MANAGER_STATUS_OK);
+    HAL_I2C_MasterTxCpltCallback(&hi2c1);
+    assert(s_completion_count == 0u);
+    I2CManager_Process();
+    assert(s_completion_count == 1u);
+    assert(async_cookie == 0x5Au);
+    assert(s_last_completion_status == I2C_MANAGER_STATUS_OK);
+    assert(s_last_completion_timestamp == 101u);
+    assert(s_event_hook_count == 1u);
+    assert(!s_event_hook_from_isr);
+    assert(s_last_i2c_event.type == I2C_MANAGER_EVENT_TX_COMPLETE);
+    assert(s_last_i2c_event.timestamp_us == 101u);
+    assert(s_test_queue.count == 1u);
+    assert(s_notify_bits_value == 0x20u);
+}
+
+static void TestMuxAndAs5600Core(void)
+{
+    AS5600_Device device;
+    uint8_t status = 0u;
+    uint64_t timestamp_us = 0u;
+
+    TCA9548A_Init(TCA9548A_ADDR_0);
+    assert(TCA9548A_SelectChannel(8u) == I2C_MANAGER_STATUS_BAD_ARG);
+
+    AS5600_InitDevice(&device, 2u);
+    assert(AS5600_ReadStatus(&device, NULL, NULL) == AS5600_STATUS_BAD_ARG);
+
+    s_time_now_us = 222u;
+    s_i2c_rx_payloads[0][0] = AS5600_STATUS_MD;
+    assert(AS5600_ReadStatus(&device, &status, &timestamp_us) == AS5600_STATUS_OK);
+    assert(status == AS5600_STATUS_MD);
+    assert(timestamp_us == 222u);
+    assert(s_i2c_write_count == 2u);
+    assert(s_i2c_writes[0].address == (uint16_t)(TCA9548A_ADDR_0 << 1u));
+    assert(s_i2c_writes[0].data[0] == (1u << 2u));
+    assert(s_i2c_writes[1].address == (uint16_t)(AS5600_I2C_ADDR_7BIT << 1u));
+    assert(s_i2c_writes[1].data[0] == 0x0Bu);
+    assert(TCA9548A_GetSelectedMask() == (1u << 2u));
+}
+
+static void TestSensorTaskCore(void)
+{
+    size_t record_count = 0u;
+    const Sensor_LatestValue *records;
+
+    SensorTask_Init();
+    assert(SensorTask_Activate() == LIFECYCLE_RESULT_OK);
+    s_hal_tick = 20u;
+    s_i2c_tx_statuses[0] = HAL_ERROR;
+    SensorTask_Process();
+    assert(SensorTask_GetBringupResult() == SENSOR_TASK_BRINGUP_FAIL_COMM);
+    records = SensorTask_GetLatestValues(&record_count);
+    assert(records != NULL);
+    assert(record_count == 6u);
+    assert(records[0].freshness == SENSOR_FRESHNESS_INVALID);
+    s_i2c_tx_statuses[0] = HAL_OK;
+}
+
+static void TestCanServiceCore(void)
+{
+    assert(CanService_RegisterMotor(CAN_SERVICE_MAX_MKS_MOTORS, 0u, 0u, CAN_SERVICE_MKS_SERVO42, 1u) ==
+           MKS_INVALID_ARGUMENT);
+
+    CanService_Init();
+    assert(CanService_RequestEncoderValue(0u) == MKS_INVALID_ARGUMENT);
+    assert(CanService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(CanService_RegisterMotor(0u, 0u, 1u, CAN_SERVICE_MKS_SERVO42, 0x800u) ==
+           MKS_CAN_ID_OUT_OF_RANGE);
+    assert(CanService_RegisterMotor(0u, 0u, 1u, CAN_SERVICE_MKS_SERVO42, 0x123u) == MKS_OK);
+    assert(CanService_RequestEncoderValue(0u) == MKS_OK);
+}
+
+static void TestSpiSlaveServiceCore(void)
+{
+    uint8_t frame_value = 0x33u;
+    const uint8_t *frame_buffer = NULL;
+    uint16_t frame_length = 0u;
+    uint8_t request[SPI_FRAME_MAX_BYTES];
+
+    SpiSlaveService_Init();
+    assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_NOT_READY);
+    assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_MESSAGE);
+    assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_OK);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
+    assert(frame_buffer != NULL);
+    assert(frame_length == 2u);
+    assert(s_last_gpio_state == GPIO_PIN_RESET);
+    assert(SpiSlaveService_CompleteDmaTransfer());
+
+    BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 7u);
+    request[0] ^= 1u;
+    assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_MAGIC);
+}
+
+static void TestAppInitCore(void)
+{
+    App_Init();
+    assert(App_GetMksRegisterFailureCount() == 0u);
+    App_Start();
+    assert(App_GetLifecycleActivationFailureCount() == 0u);
+}
+
+int main(void)
+{
+    ResetHalState();
+    TestAppInitCore();
+
+    ResetHalState();
+    TestI2CManagerCore();
+
+    ResetHalState();
+    TestMuxAndAs5600Core();
+
+    ResetHalState();
+    TestSensorTaskCore();
+
+    ResetHalState();
+    TestCanServiceCore();
+
+    ResetHalState();
+    TestSpiSlaveServiceCore();
+
+    return 0;
+}

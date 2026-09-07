@@ -32,7 +32,6 @@ This folder contains the project-level engineering documentation for onboarding,
 ## Related Module Documentation
 
 - [MksServo protocol library](../Middlewares/Third_Party/MksServo/README.md)
-- [MksServo source attachment](../TEMP/MksServo/README.md)
 
 ## Recommended Reading Order
 

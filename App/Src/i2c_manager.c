@@ -1,5 +1,7 @@
 #include "i2c_manager.h"
 
+#include <stddef.h>
+
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
@@ -50,6 +52,82 @@ typedef struct
 static I2CManager_DispatchItem s_dispatch_queue[I2C_MANAGER_DISPATCH_QUEUE_CAPACITY];
 static volatile uint8_t s_dispatch_head;
 static volatile uint8_t s_dispatch_tail;
+
+static I2CManager_Status I2CManager_MapHalStatus(HAL_StatusTypeDef hal_status);
+
+static bool I2CManager_IsReady(void)
+{
+    return (s_state != I2C_MANAGER_STATE_UNINITIALIZED) && Lifecycle_IsActive(&s_lifecycle);
+}
+
+static I2CManager_Status I2CManager_TakeMutex(uint32_t timeout_ms)
+{
+    if (xSemaphoreTake(s_i2c_mutex, pdMS_TO_TICKS(timeout_ms)) != pdTRUE)
+    {
+        s_timeout_count++;
+        return I2C_MANAGER_STATUS_TIMEOUT;
+    }
+
+    return I2C_MANAGER_STATUS_OK;
+}
+
+static I2CManager_Status I2CManager_MasterWriteLocked(uint16_t address_7bit,
+                                                      const uint8_t *data,
+                                                      uint16_t size,
+                                                      uint32_t timeout_ms)
+{
+    HAL_StatusTypeDef hal_status;
+    I2CManager_Status status;
+
+    s_state = I2C_MANAGER_STATE_BUSY_TX;
+    hal_status = HAL_I2C_Master_Transmit(&hi2c1, (uint16_t)(address_7bit << 1u), (uint8_t *)data, size, timeout_ms);
+    status = I2CManager_MapHalStatus(hal_status);
+    s_state = (status == I2C_MANAGER_STATUS_OK) ? I2C_MANAGER_STATE_IDLE : I2C_MANAGER_STATE_ERROR;
+
+    if (status == I2C_MANAGER_STATUS_OK)
+    {
+        s_success_count++;
+    }
+    else if (status == I2C_MANAGER_STATUS_TIMEOUT)
+    {
+        s_timeout_count++;
+    }
+    else
+    {
+        s_error_count++;
+    }
+
+    return status;
+}
+
+static I2CManager_Status I2CManager_MasterReadLocked(uint16_t address_7bit,
+                                                     uint8_t *data,
+                                                     uint16_t size,
+                                                     uint32_t timeout_ms)
+{
+    HAL_StatusTypeDef hal_status;
+    I2CManager_Status status;
+
+    s_state = I2C_MANAGER_STATE_BUSY_RX;
+    hal_status = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)(address_7bit << 1u), data, size, timeout_ms);
+    status = I2CManager_MapHalStatus(hal_status);
+    s_state = (status == I2C_MANAGER_STATUS_OK) ? I2C_MANAGER_STATE_IDLE : I2C_MANAGER_STATE_ERROR;
+
+    if (status == I2C_MANAGER_STATUS_OK)
+    {
+        s_success_count++;
+    }
+    else if (status == I2C_MANAGER_STATUS_TIMEOUT)
+    {
+        s_timeout_count++;
+    }
+    else
+    {
+        s_error_count++;
+    }
+
+    return status;
+}
 
 static void I2CManager_QueueDispatchFromIsr(I2CManager_EventType event_type,
                                             uint32_t error_code,
@@ -214,35 +292,18 @@ I2CManager_Status I2CManager_MasterWrite(uint16_t address_7bit, const uint8_t *d
         return I2C_MANAGER_STATUS_BAD_ARG;
     }
 
-    if ((s_state == I2C_MANAGER_STATE_UNINITIALIZED) || !Lifecycle_IsActive(&s_lifecycle))
+    if (!I2CManager_IsReady())
     {
         return I2C_MANAGER_STATUS_NOT_READY;
     }
 
-    if (xSemaphoreTake(s_i2c_mutex, pdMS_TO_TICKS(timeout_ms)) != pdTRUE)
+    status = I2CManager_TakeMutex(timeout_ms);
+    if (status != I2C_MANAGER_STATUS_OK)
     {
-        s_timeout_count++;
-        return I2C_MANAGER_STATUS_TIMEOUT;
+        return status;
     }
 
-    s_state = I2C_MANAGER_STATE_BUSY_TX;
-    hal_status = HAL_I2C_Master_Transmit(&hi2c1, (uint16_t)(address_7bit << 1u), (uint8_t *)data, size, timeout_ms);
-    status = I2CManager_MapHalStatus(hal_status);
-    s_state = (status == I2C_MANAGER_STATUS_OK) ? I2C_MANAGER_STATE_IDLE : I2C_MANAGER_STATE_ERROR;
-
-    if (status == I2C_MANAGER_STATUS_OK)
-    {
-        s_success_count++;
-    }
-    else if (status == I2C_MANAGER_STATUS_TIMEOUT)
-    {
-        s_timeout_count++;
-    }
-    else
-    {
-        s_error_count++;
-    }
-
+    status = I2CManager_MasterWriteLocked(address_7bit, data, size, timeout_ms);
     (void)xSemaphoreGive(s_i2c_mutex);
     return status;
 }
@@ -257,35 +318,18 @@ I2CManager_Status I2CManager_MasterRead(uint16_t address_7bit, uint8_t *data, ui
         return I2C_MANAGER_STATUS_BAD_ARG;
     }
 
-    if ((s_state == I2C_MANAGER_STATE_UNINITIALIZED) || !Lifecycle_IsActive(&s_lifecycle))
+    if (!I2CManager_IsReady())
     {
         return I2C_MANAGER_STATUS_NOT_READY;
     }
 
-    if (xSemaphoreTake(s_i2c_mutex, pdMS_TO_TICKS(timeout_ms)) != pdTRUE)
+    status = I2CManager_TakeMutex(timeout_ms);
+    if (status != I2C_MANAGER_STATUS_OK)
     {
-        s_timeout_count++;
-        return I2C_MANAGER_STATUS_TIMEOUT;
+        return status;
     }
 
-    s_state = I2C_MANAGER_STATE_BUSY_RX;
-    hal_status = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)(address_7bit << 1u), data, size, timeout_ms);
-    status = I2CManager_MapHalStatus(hal_status);
-    s_state = (status == I2C_MANAGER_STATUS_OK) ? I2C_MANAGER_STATE_IDLE : I2C_MANAGER_STATE_ERROR;
-
-    if (status == I2C_MANAGER_STATUS_OK)
-    {
-        s_success_count++;
-    }
-    else if (status == I2C_MANAGER_STATUS_TIMEOUT)
-    {
-        s_timeout_count++;
-    }
-    else
-    {
-        s_error_count++;
-    }
-
+    status = I2CManager_MasterReadLocked(address_7bit, data, size, timeout_ms);
     (void)xSemaphoreGive(s_i2c_mutex);
     return status;
 }
@@ -305,14 +349,71 @@ I2CManager_Status I2CManager_MasterWriteRead(uint16_t address_7bit,
         return I2C_MANAGER_STATUS_BAD_ARG;
     }
 
-    write_status = I2CManager_MasterWrite(address_7bit, tx_data, tx_size, timeout_ms);
+    if (!I2CManager_IsReady())
+    {
+        return I2C_MANAGER_STATUS_NOT_READY;
+    }
+
+    write_status = I2CManager_TakeMutex(timeout_ms);
     if (write_status != I2C_MANAGER_STATUS_OK)
     {
         return write_status;
     }
 
-    read_status = I2CManager_MasterRead(address_7bit, rx_data, rx_size, timeout_ms);
+    write_status = I2CManager_MasterWriteLocked(address_7bit, tx_data, tx_size, timeout_ms);
+    if (write_status != I2C_MANAGER_STATUS_OK)
+    {
+        (void)xSemaphoreGive(s_i2c_mutex);
+        return write_status;
+    }
+
+    read_status = I2CManager_MasterReadLocked(address_7bit, rx_data, rx_size, timeout_ms);
+    (void)xSemaphoreGive(s_i2c_mutex);
     return read_status;
+}
+
+I2CManager_Status I2CManager_WriteThenWriteRead(uint16_t first_address_7bit,
+                                                const uint8_t *first_tx_data,
+                                                uint16_t first_tx_size,
+                                                uint16_t second_address_7bit,
+                                                const uint8_t *second_tx_data,
+                                                uint16_t second_tx_size,
+                                                uint8_t *rx_data,
+                                                uint16_t rx_size,
+                                                uint32_t timeout_ms)
+{
+    I2CManager_Status status;
+
+    if ((first_tx_data == NULL) || (first_tx_size == 0u) ||
+        (second_tx_data == NULL) || (second_tx_size == 0u) ||
+        (rx_data == NULL) || (rx_size == 0u))
+    {
+        return I2C_MANAGER_STATUS_BAD_ARG;
+    }
+
+    if (!I2CManager_IsReady())
+    {
+        return I2C_MANAGER_STATUS_NOT_READY;
+    }
+
+    status = I2CManager_TakeMutex(timeout_ms);
+    if (status != I2C_MANAGER_STATUS_OK)
+    {
+        return status;
+    }
+
+    status = I2CManager_MasterWriteLocked(first_address_7bit, first_tx_data, first_tx_size, timeout_ms);
+    if (status == I2C_MANAGER_STATUS_OK)
+    {
+        status = I2CManager_MasterWriteLocked(second_address_7bit, second_tx_data, second_tx_size, timeout_ms);
+    }
+    if (status == I2C_MANAGER_STATUS_OK)
+    {
+        status = I2CManager_MasterReadLocked(second_address_7bit, rx_data, rx_size, timeout_ms);
+    }
+
+    (void)xSemaphoreGive(s_i2c_mutex);
+    return status;
 }
 
 I2CManager_Status I2CManager_SubmitAsync(const I2CManager_Transfer *transfer)
@@ -324,7 +425,7 @@ I2CManager_Status I2CManager_SubmitAsync(const I2CManager_Transfer *transfer)
         return I2C_MANAGER_STATUS_BAD_ARG;
     }
 
-    if ((s_state == I2C_MANAGER_STATE_UNINITIALIZED) || !Lifecycle_IsActive(&s_lifecycle))
+    if (!I2CManager_IsReady())
     {
         return I2C_MANAGER_STATUS_NOT_READY;
     }

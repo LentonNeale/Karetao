@@ -38,6 +38,7 @@ The firmware acts as a sensor hub on STM32F405:
 - Build system:
   - Root firmware project builds with C11 + C++17 support.
   - MksServo library is linked as a third-party module.
+  - HostTests cover both protocol/data-plane primitives and minimal service smoke paths.
 - I2C sensor path:
   - AS5600 single-channel bring-up path implemented with diagnostics and status snapshots.
 - CAN path:

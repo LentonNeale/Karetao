@@ -1,5 +1,7 @@
 #include "as5600.h"
 
+#include <stddef.h>
+
 #include "tca9548a_mux.h"
 #include "time_service.h"
 
@@ -31,11 +33,6 @@ static AS5600_Status AS5600_MapI2CStatus(I2CManager_Status status)
     }
 }
 
-static AS5600_Status AS5600_SelectDeviceChannel(const AS5600_Device *dev)
-{
-    return AS5600_MapI2CStatus(TCA9548A_SelectChannel(dev->mux_channel));
-}
-
 static AS5600_Status AS5600_ReadRegisterBlock(const AS5600_Device *dev,
                                               uint8_t start_reg,
                                               uint8_t *buffer,
@@ -48,17 +45,13 @@ static AS5600_Status AS5600_ReadRegisterBlock(const AS5600_Device *dev,
         return AS5600_STATUS_BAD_ARG;
     }
 
-    if (AS5600_SelectDeviceChannel(dev) != AS5600_STATUS_OK)
-    {
-        return AS5600_STATUS_ERROR;
-    }
-
-    i2c_status = I2CManager_MasterWriteRead(dev->i2c_addr_7bit,
-                                            &start_reg,
-                                            1u,
-                                            buffer,
-                                            size,
-                                            dev->timeout_ms);
+    i2c_status = TCA9548A_SelectChannelWriteRead(dev->mux_channel,
+                                                 dev->i2c_addr_7bit,
+                                                 &start_reg,
+                                                 1u,
+                                                 buffer,
+                                                 size,
+                                                 dev->timeout_ms);
     if (i2c_status != I2C_MANAGER_STATUS_OK)
     {
         return AS5600_MapI2CStatus(i2c_status);
