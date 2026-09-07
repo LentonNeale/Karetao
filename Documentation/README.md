@@ -17,6 +17,7 @@ This folder contains the project-level engineering documentation for onboarding,
 | [SPI Service Contract](SPI_SERVICE_CONTRACT.md) | SPI3 service lifecycle, DMA ownership, DATA_READY implementation, and transport recovery. |
 | [Safety Release Checklist](SAFETY_RELEASE_CHECKLIST.md) | Energized-motion release blockers, evidence classes, owners, and required artifacts. |
 | [Application Overview](APP_OVERVIEW.md) | Original application-level project objectives and scope. |
+| [Intern Onboarding Docs](OnboardingDocs/README.md) | Guided onboarding pack for undergraduate interns covering orientation, setup, architecture, and first-week tasks. |
 | [Sprint 2 Readiness Report](Sprint%20Info/Sprint_2_Readiness_Report.md) | Current project state summary and recommended Sprint 2 direction. |
 | [InterAgent Chat Notes](COnversations/InterAgent_Chat.md) | Cross-cutting observations captured for future agent handoffs. |
 
@@ -45,3 +46,4 @@ This folder contains the project-level engineering documentation for onboarding,
 9. [SPI Service Contract](SPI_SERVICE_CONTRACT.md)
 10. [Safety Release Checklist](SAFETY_RELEASE_CHECKLIST.md)
 11. [Application Overview](APP_OVERVIEW.md)
+12. [Intern Onboarding Docs](OnboardingDocs/README.md)

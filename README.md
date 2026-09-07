@@ -8,6 +8,8 @@ This section is the current engineering baseline for onboarding. It summarizes t
 
 Project contracts are consolidated in [Documentation/README.md](Documentation/README.md), with current ownership and implementation status tracked in [Documentation/CONTRACT_STATUS.md](Documentation/CONTRACT_STATUS.md).
 
+Undergraduate intern onboarding material is available in [Documentation/OnboardingDocs/README.md](Documentation/OnboardingDocs/README.md).
+
 ### System Objective
 
 The firmware acts as a sensor hub on STM32F405:
