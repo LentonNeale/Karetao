@@ -1,7 +1,15 @@
+/**
+ * @file joint_mapping.c
+ * @brief Implements the joint mapping module.
+ */
+
 #include "joint_mapping.h"
 
 #include <stdbool.h>
 
+/**
+ * @brief Executes mapping validate record.
+ */
 static JointMapping_Result JointMapping_ValidateRecord(const JointMapping_Record *record)
 {
     if (record->schema_version != JOINT_MAPPING_SCHEMA_VERSION)
@@ -31,6 +39,9 @@ static JointMapping_Result JointMapping_ValidateRecord(const JointMapping_Record
     return JOINT_MAPPING_RESULT_OK;
 }
 
+/**
+ * @brief Executes mapping validate.
+ */
 JointMapping_Result JointMapping_Validate(const JointMapping_Record *records, size_t record_count)
 {
     size_t record_index;

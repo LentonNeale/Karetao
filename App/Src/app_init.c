@@ -1,3 +1,8 @@
+/**
+ * @file app_init.c
+ * @brief Implements the app init module.
+ */
+
 #include "app_init.h"
 
 #include "can_service.h"
@@ -41,6 +46,9 @@ volatile uint32_t g_app_lifecycle_activation_failures_dbg;
 static bool s_start_requested;
 static bool s_mapping_valid;
 
+/**
+ * @brief Executes register mks motors.
+ */
 static void App_RegisterMksMotors(void)
 {
     uint32_t i;
@@ -57,6 +65,9 @@ static void App_RegisterMksMotors(void)
     }
 }
 
+/**
+ * @brief Executes app init.
+ */
 void App_Init(void)
 {
     g_app_lifecycle_activation_failures_dbg = 0u;
@@ -79,6 +90,9 @@ void App_Init(void)
     HealthMonitor_Init();
 }
 
+/**
+ * @brief Executes app start.
+ */
 void App_Start(void)
 {
     if (s_start_requested) {

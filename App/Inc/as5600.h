@@ -1,3 +1,8 @@
+/**
+ * @file as5600.h
+ * @brief Implements the as5600 module.
+ */
+
 #ifndef AS5600_H
 #define AS5600_H
 
@@ -40,15 +45,39 @@ typedef struct
 #define AS5600_STATUS_ML (1u << 4)
 #define AS5600_STATUS_MH (1u << 3)
 
+/**
+ * @brief Initializes device.
+ */
 void AS5600_InitDevice(AS5600_Device *dev, uint8_t mux_channel);
 
+/**
+ * @brief Reads raw angle.
+ */
 AS5600_Status AS5600_ReadRawAngle(const AS5600_Device *dev, uint16_t *raw_angle, uint64_t *timestamp_us);
+/**
+ * @brief Reads angle.
+ */
 AS5600_Status AS5600_ReadAngle(const AS5600_Device *dev, uint16_t *angle, uint64_t *timestamp_us);
+/**
+ * @brief Reads magnitude.
+ */
 AS5600_Status AS5600_ReadMagnitude(const AS5600_Device *dev, uint16_t *magnitude, uint64_t *timestamp_us);
+/**
+ * @brief Reads agc.
+ */
 AS5600_Status AS5600_ReadAgc(const AS5600_Device *dev, uint8_t *agc, uint64_t *timestamp_us);
+/**
+ * @brief Reads status.
+ */
 AS5600_Status AS5600_ReadStatus(const AS5600_Device *dev, uint8_t *status, uint64_t *timestamp_us);
+/**
+ * @brief Reads sample.
+ */
 AS5600_Status AS5600_ReadSample(const AS5600_Device *dev, AS5600_Sample *sample);
 
+/**
+ * @brief Executes raw to degrees.
+ */
 float AS5600_RawToDegrees(uint16_t raw_angle);
 
 #endif /* AS5600_H */

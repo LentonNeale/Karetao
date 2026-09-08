@@ -1,3 +1,8 @@
+/**
+ * @file lifecycle.h
+ * @brief Implements the lifecycle module.
+ */
+
 #ifndef LIFECYCLE_H
 #define LIFECYCLE_H
 
@@ -47,14 +52,29 @@ typedef struct
     uint32_t transition_count;
 } Lifecycle_Record;
 
+/**
+ * @brief Executes lifecycle init.
+ */
 void Lifecycle_Init(Lifecycle_Record *record, const char *identity);
 Lifecycle_Result Lifecycle_Apply(Lifecycle_Record *record,
                                  Lifecycle_Transition transition,
                                  bool operation_ok,
                                  uint32_t fault_code);
+/**
+ * @brief Executes lifecycle fail.
+ */
 Lifecycle_Result Lifecycle_Fail(Lifecycle_Record *record, uint32_t fault_code);
+/**
+ * @brief Returns state.
+ */
 Lifecycle_State Lifecycle_GetState(const Lifecycle_Record *record);
+/**
+ * @brief Checks whether active.
+ */
 bool Lifecycle_IsActive(const Lifecycle_Record *record);
+/**
+ * @brief Checks whether operational.
+ */
 bool Lifecycle_IsOperational(const Lifecycle_Record *record);
 
 #ifdef __cplusplus

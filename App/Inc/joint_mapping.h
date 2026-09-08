@@ -1,3 +1,8 @@
+/**
+ * @file joint_mapping.h
+ * @brief Implements the joint mapping module.
+ */
+
 #ifndef JOINT_MAPPING_H
 #define JOINT_MAPPING_H
 
@@ -41,6 +46,9 @@ typedef enum
     JOINT_MAPPING_RESULT_DUPLICATE_CAN_ID
 } JointMapping_Result;
 
+/**
+ * @brief Executes mapping validate.
+ */
 JointMapping_Result JointMapping_Validate(const JointMapping_Record *records, size_t record_count);
 const JointMapping_Record *JointMapping_FindByJoint(const JointMapping_Record *records,
                                                     size_t record_count,

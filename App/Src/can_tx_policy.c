@@ -1,3 +1,8 @@
+/**
+ * @file can_tx_policy.c
+ * @brief Implements the can tx policy module.
+ */
+
 #include "can_tx_policy.h"
 
 #include <stddef.h>
@@ -8,6 +13,9 @@
 #define CAN_BUS_OFF_MAX_DELAY_MS UINT32_C(1000)
 
 void CanTxQueue_Init(CanTx_Queue *queue) { if (queue != NULL) { memset(queue, 0, sizeof(*queue)); } }
+/**
+ * @brief Executes tx queue enqueue.
+ */
 bool CanTxQueue_Enqueue(CanTx_Queue *queue, const CanTx_Frame *frame, CanTx_Priority priority)
 {
     uint8_t index;
@@ -17,6 +25,9 @@ bool CanTxQueue_Enqueue(CanTx_Queue *queue, const CanTx_Frame *frame, CanTx_Prio
     while ((index > 0u) && (priority < queue->entries[index - 1u].priority)) { queue->entries[index] = queue->entries[index - 1u]; --index; }
     queue->entries[index] = (CanTx_Entry){.frame = *frame, .priority = priority, .retry_count = 0u}; return true;
 }
+/**
+ * @brief Executes tx queue requeue.
+ */
 bool CanTxQueue_Requeue(CanTx_Queue *queue, const CanTx_Entry *entry)
 {
     uint8_t index;
@@ -26,12 +37,18 @@ bool CanTxQueue_Requeue(CanTx_Queue *queue, const CanTx_Entry *entry)
     queue->entries[index] = *entry;
     return true;
 }
+/**
+ * @brief Executes tx queue dequeue.
+ */
 bool CanTxQueue_Dequeue(CanTx_Queue *queue, CanTx_Entry *entry)
 {
     if ((queue == NULL) || (entry == NULL) || (queue->count == 0u)) { return false; }
     *entry = queue->entries[0]; memmove(&queue->entries[0], &queue->entries[1], (queue->count - 1u) * sizeof(queue->entries[0])); queue->count--; return true;
 }
 void CanBusOff_Init(CanBusOff_State *state) { if (state != NULL) { *state = (CanBusOff_State){.recovery_delay_ms = CAN_BUS_OFF_INITIAL_DELAY_MS}; } }
+/**
+ * @brief Executes bus off record.
+ */
 bool CanBusOff_Record(CanBusOff_State *state, uint32_t now_ms)
 {
     if (state == NULL) { return true; }
@@ -40,6 +57,9 @@ bool CanBusOff_Record(CanBusOff_State *state, uint32_t now_ms)
     return state->bus_off_events >= 3u;
 }
 bool CanBusOff_RecoveryDue(const CanBusOff_State *state, uint32_t now_ms) { return (state != NULL) && state->recovery_due && ((int32_t)(now_ms - state->next_recovery_ms) >= 0); }
+/**
+ * @brief Executes bus off recovery result.
+ */
 void CanBusOff_RecoveryResult(CanBusOff_State *state, bool recovered, uint32_t now_ms)
 {
     if (state == NULL) { return; }

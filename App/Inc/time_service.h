@@ -1,3 +1,8 @@
+/**
+ * @file time_service.h
+ * @brief Implements the time service module.
+ */
+
 #ifndef TIME_SERVICE_H
 #define TIME_SERVICE_H
 
@@ -68,23 +73,53 @@ typedef struct
 void TimeService_StateInit(TimeService_State *state,
                            TimeService_CounterReader read_counter,
                            void *reader_context);
+/**
+ * @brief Executes service state now us.
+ */
 uint64_t TimeService_StateNowUs(TimeService_State *state);
+/**
+ * @brief Executes service sync state init.
+ */
 void TimeService_SyncStateInit(TimeService_SyncState *state, const TimeService_SyncConfig *config);
+/**
+ * @brief Executes service sync state reset.
+ */
 void TimeService_SyncStateReset(TimeService_SyncState *state);
 TimeService_SyncResult TimeService_SyncStateAccept(TimeService_SyncState *state,
                                                     uint64_t pi_time_us,
                                                     uint32_t sync_sequence,
                                                     uint64_t local_time_us);
+/**
+ * @brief Executes service sync state refresh.
+ */
 void TimeService_SyncStateRefresh(TimeService_SyncState *state, uint64_t local_time_us);
 void TimeService_SyncStateGetSnapshot(TimeService_SyncState *state,
                                       uint64_t local_time_us,
                                       TimeService_SyncSnapshot *snapshot);
 
+/**
+ * @brief Executes service init.
+ */
 void TimeService_Init(void);
+/**
+ * @brief Executes service now us.
+ */
 uint64_t TimeService_NowUs(void);
+/**
+ * @brief Executes service sync init.
+ */
 void TimeService_SyncInit(const TimeService_SyncConfig *config);
+/**
+ * @brief Executes service accept sync.
+ */
 TimeService_SyncResult TimeService_AcceptSync(uint64_t pi_time_us, uint32_t sync_sequence);
+/**
+ * @brief Executes service is sync valid.
+ */
 bool TimeService_IsSyncValid(void);
+/**
+ * @brief Executes service get sync snapshot.
+ */
 void TimeService_GetSyncSnapshot(TimeService_SyncSnapshot *snapshot);
 
 #ifdef __cplusplus

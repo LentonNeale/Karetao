@@ -1,3 +1,8 @@
+/**
+ * @file motor_latest_value.h
+ * @brief Implements the motor latest value module.
+ */
+
 #ifndef MOTOR_LATEST_VALUE_H
 #define MOTOR_LATEST_VALUE_H
 
@@ -56,6 +61,9 @@ void MotorLatestValue_SetValid(Motor_LatestValue *record,
                                uint64_t acquisition_timestamp_us,
                                TimeService_SyncQuality synchronization_quality,
                                uint32_t calibration_version);
+/**
+ * @brief Executes latest value mark stale.
+ */
 void MotorLatestValue_MarkStale(Motor_LatestValue *record, uint64_t update_timestamp_us);
 
 #ifdef __cplusplus

@@ -1,3 +1,8 @@
+/**
+ * @file sensor_latest_value.h
+ * @brief Implements the sensor latest value module.
+ */
+
 #ifndef SENSOR_LATEST_VALUE_H
 #define SENSOR_LATEST_VALUE_H
 
@@ -53,6 +58,9 @@ void SensorLatestValue_SetInvalid(Sensor_LatestValue *record,
                                   uint8_t status,
                                   uint16_t reason_flags,
                                   uint64_t update_timestamp_us);
+/**
+ * @brief Executes latest value mark stale.
+ */
 void SensorLatestValue_MarkStale(Sensor_LatestValue *record, uint64_t update_timestamp_us);
 
 #ifdef __cplusplus

@@ -1,7 +1,15 @@
+/**
+ * @file lifecycle.c
+ * @brief Implements the lifecycle module.
+ */
+
 #include "lifecycle.h"
 
 #include <stddef.h>
 
+/**
+ * @brief Checks whether valid transition.
+ */
 static bool Lifecycle_IsValidTransition(Lifecycle_State state, Lifecycle_Transition transition)
 {
     switch (transition)
@@ -24,6 +32,9 @@ static bool Lifecycle_IsValidTransition(Lifecycle_State state, Lifecycle_Transit
     }
 }
 
+/**
+ * @brief Executes lifecycle init.
+ */
 void Lifecycle_Init(Lifecycle_Record *record, const char *identity)
 {
     if (record == NULL)
@@ -100,11 +111,17 @@ Lifecycle_Result Lifecycle_Apply(Lifecycle_Record *record,
     return LIFECYCLE_RESULT_OK;
 }
 
+/**
+ * @brief Executes lifecycle fail.
+ */
 Lifecycle_Result Lifecycle_Fail(Lifecycle_Record *record, uint32_t fault_code)
 {
     return Lifecycle_Apply(record, LIFECYCLE_TRANSITION_FAIL, false, fault_code);
 }
 
+/**
+ * @brief Returns state.
+ */
 Lifecycle_State Lifecycle_GetState(const Lifecycle_Record *record)
 {
     if (record == NULL)
@@ -115,11 +132,17 @@ Lifecycle_State Lifecycle_GetState(const Lifecycle_Record *record)
     return record->state;
 }
 
+/**
+ * @brief Checks whether active.
+ */
 bool Lifecycle_IsActive(const Lifecycle_Record *record)
 {
     return Lifecycle_GetState(record) == LIFECYCLE_STATE_ACTIVE;
 }
 
+/**
+ * @brief Checks whether operational.
+ */
 bool Lifecycle_IsOperational(const Lifecycle_Record *record)
 {
     Lifecycle_State state = Lifecycle_GetState(record);

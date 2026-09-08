@@ -1,3 +1,8 @@
+/**
+ * @file sensor_task.h
+ * @brief Implements the sensor task module.
+ */
+
 #ifndef SENSOR_TASK_H
 #define SENSOR_TASK_H
 
@@ -42,13 +47,34 @@ typedef struct
 	uint32_t magnet_error_count;
 } SensorTask_BringupSnapshot;
 
+/**
+ * @brief Executes task init.
+ */
 void SensorTask_Init(void);
+/**
+ * @brief Executes task activate.
+ */
 Lifecycle_Result SensorTask_Activate(void);
+/**
+ * @brief Executes task get lifecycle state.
+ */
 Lifecycle_State SensorTask_GetLifecycleState(void);
+/**
+ * @brief Executes task process.
+ */
 void SensorTask_Process(void);
+/**
+ * @brief Executes task get bringup result.
+ */
 SensorTask_BringupResult SensorTask_GetBringupResult(void);
 const SensorTask_BringupSnapshot *SensorTask_GetBringupSnapshot(void);
+/**
+ * @brief Executes task get bringup diag word.
+ */
 uint32_t SensorTask_GetBringupDiagWord(void);
+/**
+ * @brief Executes task is active.
+ */
 uint8_t SensorTask_IsActive(void);
 const Sensor_LatestValue *SensorTask_GetLatestValues(size_t *record_count);
 

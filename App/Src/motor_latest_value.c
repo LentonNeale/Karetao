@@ -1,3 +1,8 @@
+/**
+ * @file motor_latest_value.c
+ * @brief Implements the motor latest value module.
+ */
+
 #include "motor_latest_value.h"
 
 #include <stddef.h>
@@ -78,6 +83,9 @@ void MotorLatestValue_SetValid(Motor_LatestValue *record,
     record->rx_ok_count++;
 }
 
+/**
+ * @brief Executes latest value mark stale.
+ */
 void MotorLatestValue_MarkStale(Motor_LatestValue *record, uint64_t update_timestamp_us)
 {
     if (record == NULL)
