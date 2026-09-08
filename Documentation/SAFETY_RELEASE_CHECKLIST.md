@@ -1,6 +1,6 @@
 # Energized-Motion Safety Release Checklist
 
-**Authority:** [CTO Final Decisions](COnversations/CTO_DECISION_FINAL.md), SD-25 and exceptions 1-7
+**Authority:** [CTO Final Decisions](Conversations/CTO_DECISION_FINAL.md), SD-25 and exceptions 1-7
 
 Do not authorize energized motion until every row has a recorded artifact at its stated location and independent review accepts it. Firmware tests and builds are not substitutes for hardware evidence or external safety assessment.
 

@@ -1,6 +1,8 @@
 # CTO Decision Brief: System Decisions v1
 
-**Status:** All entries are **PROPOSED** and await CTO approval. This document is the approval proposal, not a safety certification or a claim that every behavior is implemented.
+**Status:** Superseded by [CTO_DECISION_FINAL.md](CTO_DECISION_FINAL.md), which records the approved decisions. This brief is retained as the original proposal for historical context.
+
+**Original status:** All entries were **PROPOSED** and awaited CTO approval. This document was the approval proposal, not a safety certification or a claim that every behavior is implemented.
 
 **Source note:** `SYSTEM_DECISIONS_V1.md` was not present in the workspace. The decision inventory was reconstructed from the supplied draft and reconciled with the repository contracts.
 

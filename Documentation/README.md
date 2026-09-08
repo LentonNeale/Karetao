@@ -20,7 +20,7 @@ This folder contains the project-level engineering documentation for onboarding,
 | [Application Overview](APP_OVERVIEW.md) | Original application-level project objectives and scope. |
 | [Intern Onboarding Docs](OnboardingDocs/README.md) | Guided onboarding pack for undergraduate interns covering orientation, setup, architecture, and first-week tasks. |
 | [Sprint 2 Readiness Report](Sprint%20Info/Sprint_2_Readiness_Report.md) | Current project state summary and recommended Sprint 2 direction. |
-| [InterAgent Chat Notes](COnversations/InterAgent_Chat.md) | Cross-cutting observations captured for future agent handoffs. |
+| [InterAgent Chat Notes](Conversations/InterAgent_Chat.md) | Cross-cutting observations captured for future agent handoffs. |
 
 ## Documentation Rules
 

@@ -1,6 +1,6 @@
 # Sprint 1 Agent Task List
 
-**Source of truth:** `Documentation/COnversations/CTO_DECISION_FINAL.md`
+**Source of truth:** `Documentation/Conversations/CTO_DECISION_FINAL.md`
 
 **Sprint goal:** Convert the approved v1.0 firmware decisions into verified contract updates and small, testable STM32 implementation increments. Keep hardware-dependent decisions explicit. Do not authorize energized motion from firmware changes alone.
 
@@ -54,7 +54,7 @@ Tasks 01-15 may proceed in order. Tasks 16-18 require the earlier data/lifecycle
 
 **Copyable prompt:**
 
-> Read `Documentation/COnversations/CTO_DECISION_FINAL.md`, `Documentation/CONTRACT_V1_FREEZE.md`, and `Documentation/CONTRACT_STATUS.md`. Update the affected contract documents so the approved CTO decisions are reflected consistently. At minimum reconcile the 100 Hz baseline, 512-byte SPI frame, 490-byte payload, CRC-32/ISO-HDLC, 5-second time-sync timeout, time-dependent motion inhibition after sync loss, explicit inactive recovery, and the distinction between firmware response levels and formal PL/SIL ratings. Keep CAN bitrate, maximum SPI clock, exact motor controller behavior, and independent safety validation marked as integration/release gates. Do not change implementation code. Run a targeted link/text consistency check and report every remaining gate.
+> Read `Documentation/Conversations/CTO_DECISION_FINAL.md`, `Documentation/CONTRACT_V1_FREEZE.md`, and `Documentation/CONTRACT_STATUS.md`. Update the affected contract documents so the approved CTO decisions are reflected consistently. At minimum reconcile the 100 Hz baseline, 512-byte SPI frame, 490-byte payload, CRC-32/ISO-HDLC, 5-second time-sync timeout, time-dependent motion inhibition after sync loss, explicit inactive recovery, and the distinction between firmware response levels and formal PL/SIL ratings. Keep CAN bitrate, maximum SPI clock, exact motor controller behavior, and independent safety validation marked as integration/release gates. Do not change implementation code. Run a targeted link/text consistency check and report every remaining gate.
 
 **Files:** `Documentation/CONTRACT_V1_FREEZE.md`, `Documentation/CONTRACT_STATUS.md`, affected contract files only.
 
@@ -671,7 +671,7 @@ Completed: Create safety release checklist from SD-25 and CTO exceptions (1/3)
 
 **Copyable prompt:**
 
-> Review all Sprint 1 changes against `Documentation/COnversations/CTO_DECISION_FINAL.md` and the contract hierarchy. Check for contradictory field meanings, unsafe automatic activation, stale timestamps, duplicate CRC logic, mutable DMA buffers, unbounded retries, hidden payload truncation, and claims of hardware or safety validation that were not performed. Run the Debug build, Release build if available, all focused host tests, documentation link checks, and static diagnostics available in the repository. Update `Documentation/CONTRACT_STATUS.md` with implementation status and remaining gates. Do not fix unrelated defects; report them separately.
+> Review all Sprint 1 changes against `Documentation/Conversations/CTO_DECISION_FINAL.md` and the contract hierarchy. Check for contradictory field meanings, unsafe automatic activation, stale timestamps, duplicate CRC logic, mutable DMA buffers, unbounded retries, hidden payload truncation, and claims of hardware or safety validation that were not performed. Run the Debug build, Release build if available, all focused host tests, documentation link checks, and static diagnostics available in the repository. Update `Documentation/CONTRACT_STATUS.md` with implementation status and remaining gates. Do not fix unrelated defects; report them separately.
 
 **Files:** Sprint 1 changes and `Documentation/CONTRACT_STATUS.md`.
 

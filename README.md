@@ -84,7 +84,7 @@ Header: App/Inc/can_service.h
 | --- | --- | --- |
 | CanService_Init(void) | Initializes CAN service runtime state and starts CAN peripheral path. | Call once during App_Init. |
 | CanService_Process(void) | Periodic service loop work (RX decode plus poll scheduler). | Call from a periodic task loop. |
-| CanService_RegisterMotor(uint8_t motor_index, CanService_MksModel model, uint16_t can_id) | Registers a logical motor slot with servo model and CAN ID. | Valid motor index range is 0..CAN_SERVICE_MAX_MKS_MOTORS-1. |
+| CanService_RegisterMotor(uint8_t motor_index, uint8_t logical_joint_id, uint32_t configuration_version, CanService_MksModel model, uint16_t can_id) | Registers a logical motor slot bound to a joint mapping version, servo model, and CAN ID. | Valid motor index range is 0..CAN_SERVICE_MAX_MKS_MOTORS-1. |
 | CanService_SendMotorEnable(uint8_t motor_index, bool enable) | Sends motor enable or disable command via MKS encoder. | Returns MksStatus. |
 | CanService_SendEmergencyStop(uint8_t motor_index) | Sends emergency stop command. | Returns MksStatus. |
 | CanService_SendAbsolutePulseMove(uint8_t motor_index, uint16_t speed, uint8_t acc, int32_t absolute_pulses) | Sends absolute pulse move command. | Returns MksStatus. |
