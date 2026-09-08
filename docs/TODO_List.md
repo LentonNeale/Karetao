@@ -127,3 +127,9 @@
 - Remaining work (Task 09): complete six-channel scanning and bind commissioned mapping/calibration versions to each record.
 - Task 18 output is not implemented and deferred to when Motor Service work begins (open Sprint 2+ item).
 - Sprint 1 exit criteria checklist items remain unchecked.
+
+## Code vs document consistency issues found in code review
+- `docs/interfaces/spi-service-contract.md` states fixed 512-byte request-frame validation, but `RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py` still has an open TODO to confirm whether production transfers are fixed 512-byte frames.
+- `docs/protocols/spi-contract.md` says the host shall validate `protocol_version`, but `RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py` decode currently accepts any `protocol_version` value without rejecting unsupported versions.
+- `docs/protocols/spi-contract.md` says the host shall track sequence numbers and reject stale/duplicate responses, but `RaspberryPi_Sensor_Hub/src/spi/spi_device.py` currently provides stateless transact/get_status helpers only.
+- `docs/interfaces/raspberry-pi-spi.md` says production backend and bus/device path are not yet frozen; `RaspberryPi_Sensor_Hub/src/spi/spi_bus.py` still carries placeholder defaults (`/dev/spidevTODO` and transfer `NotImplementedError`) that should be resolved once those contract gates are closed.
