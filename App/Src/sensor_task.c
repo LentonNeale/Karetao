@@ -251,6 +251,8 @@ void SensorTask_Process(void)
 	SensorLatestValue_SetValid(&s_latest_values[0],
 	                           sample.raw_angle,
 	                           (int32_t)(((uint32_t)sample.angle * 360000u) / 4096u),
+	                           sample.magnitude,
+	                           sample.agc,
 	                           sample.status,
 	                           sample.timestamp_us,
 	                           time_sync_snapshot.quality,

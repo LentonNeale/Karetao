@@ -21,6 +21,8 @@ void SensorLatestValue_Init(Sensor_LatestValue *record,
     record->sensor_id = sensor_id;
     record->raw_angle_counts = 0u;
     record->processed_angle_mdeg = 0;
+    record->magnitude = 0u;
+    record->agc = 0u;
     record->status = 0u;
     record->validity_flags = 0u;
     record->measurement_timestamp_us = 0u;
@@ -33,6 +35,8 @@ void SensorLatestValue_Init(Sensor_LatestValue *record,
 void SensorLatestValue_SetValid(Sensor_LatestValue *record,
                                 uint16_t raw_angle_counts,
                                 int32_t processed_angle_mdeg,
+                                uint16_t magnitude,
+                                uint8_t agc,
                                 uint8_t status,
                                 uint64_t measurement_timestamp_us,
                                 TimeService_SyncQuality synchronization_quality,
@@ -45,6 +49,8 @@ void SensorLatestValue_SetValid(Sensor_LatestValue *record,
 
     record->raw_angle_counts = raw_angle_counts;
     record->processed_angle_mdeg = processed_angle_mdeg;
+    record->magnitude = magnitude;
+    record->agc = agc;
     record->status = status;
     record->validity_flags = SENSOR_VALIDITY_SAMPLE_VALID;
     if (synchronization_quality == TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED)
@@ -71,6 +77,8 @@ void SensorLatestValue_SetInvalid(Sensor_LatestValue *record,
 
     record->raw_angle_counts = 0u;
     record->processed_angle_mdeg = 0;
+    record->magnitude = 0u;
+    record->agc = 0u;
     record->status = status;
     record->validity_flags = reason_flags & ~SENSOR_VALIDITY_SAMPLE_VALID;
     record->measurement_timestamp_us = 0u;

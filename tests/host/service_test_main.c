@@ -567,6 +567,31 @@ static bool SerializeTestFrame(uint8_t *frame_buffer,
     return true;
 }
 
+static uint16_t ReadU16(const uint8_t *data)
+{
+    return (uint16_t)data[0] | ((uint16_t)data[1] << 8u);
+}
+
+static uint32_t ReadU32(const uint8_t *data)
+{
+    return (uint32_t)data[0] |
+           ((uint32_t)data[1] << 8u) |
+           ((uint32_t)data[2] << 16u) |
+           ((uint32_t)data[3] << 24u);
+}
+
+static uint64_t ReadU64(const uint8_t *data)
+{
+    return (uint64_t)data[0] |
+           ((uint64_t)data[1] << 8u) |
+           ((uint64_t)data[2] << 16u) |
+           ((uint64_t)data[3] << 24u) |
+           ((uint64_t)data[4] << 32u) |
+           ((uint64_t)data[5] << 40u) |
+           ((uint64_t)data[6] << 48u) |
+           ((uint64_t)data[7] << 56u);
+}
+
 static void BuildRequest(uint8_t frame[SPI_FRAME_MAX_BYTES], uint8_t type, uint16_t length, uint32_t sequence)
 {
     uint32_t crc32;
@@ -717,9 +742,43 @@ static void TestSpiSlaveServiceCore(void)
     uint16_t frame_length = 0u;
     uint8_t request[SPI_FRAME_MAX_BYTES];
 
+    s_time_now_us = 111u;
     SpiSlaveService_Init();
     assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_NOT_READY);
-    assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_MESSAGE);
+    assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
+    assert(frame_buffer != NULL);
+    assert(frame_length == SPI_FRAME_MAX_BYTES);
+    assert(frame_buffer[3] == SPI_MESSAGE_STATUS);
+    assert(ReadU64(&frame_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(111));
+    assert(s_last_gpio_state == GPIO_PIN_RESET);
+    assert(SpiSlaveService_CompleteDmaTransfer());
+
+    assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_OK);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
+    assert(frame_buffer != NULL);
+    assert(frame_length == 2u);
+    assert(s_last_gpio_state == GPIO_PIN_RESET);
+    assert(SpiSlaveService_CompleteDmaTransfer());
+
+    s_time_now_us = 500u;
+    SpiSlaveService_Init();
+    BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 1u);
+    assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_STATE);
+    assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
+    assert(frame_length == SPI_FRAME_MAX_BYTES);
+    assert(frame_buffer[3] == SPI_MESSAGE_NACK);
+    assert(ReadU16(&frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + 2u]) == SPI_PROTOCOL_BAD_STATE);
+    assert(ReadU32(&frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + 4u]) == 1u);
+    assert(ReadU64(&frame_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(500));
+    assert(SpiSlaveService_CompleteDmaTransfer());
+
+    s_time_now_us = 500u;
+    SpiSlaveService_Init();
     s_time_now_us = 500u;
     BuildTimeSyncRequest(request, 2u, 900u, 7u);
     assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_OK);
@@ -728,11 +787,11 @@ static void TestSpiSlaveServiceCore(void)
     assert(s_last_time_sync_sequence == 7u);
     assert(TimeService_IsSyncValid());
     assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
-    assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_OK);
     assert(s_last_gpio_state == GPIO_PIN_SET);
     assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
     assert(frame_buffer != NULL);
-    assert(frame_length == 2u);
+    assert(frame_length == SPI_FRAME_MAX_BYTES);
+    assert(frame_buffer[3] == SPI_MESSAGE_ACK);
     assert(s_last_gpio_state == GPIO_PIN_RESET);
     assert(SpiSlaveService_CompleteDmaTransfer());
 
@@ -753,6 +812,44 @@ static void TestSpiSlaveServiceCore(void)
     s_time_sync_result = TIME_SERVICE_SYNC_REJECTED_OFFSET;
     assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_TIME_SYNC);
     assert(s_time_sync_accept_count == 3u);
+}
+
+static void TestSpiSlaveServiceLatestSnapshot(void)
+{
+    const uint8_t *frame_buffer = NULL;
+    uint16_t frame_length = 0u;
+    uint16_t expected_payload_length = SPI_SNAPSHOT_PAYLOAD_BYTES(1u);
+    uint16_t sensor0_offset = SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_PREFIX_BYTES;
+    uint16_t sensor1_offset = sensor0_offset + SPI_SENSOR_RECORD_BYTES;
+    uint16_t motor0_offset = SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_PREFIX_BYTES +
+                             (SPI_SNAPSHOT_SENSOR_RECORD_COUNT * SPI_SENSOR_RECORD_BYTES);
+
+    SensorTask_Init();
+    CanService_Init();
+    assert(CanService_RegisterMotor(0u, 0u, 1u, CAN_SERVICE_MKS_SERVO42, 0x123u) == MKS_OK);
+    s_time_now_us = 700u;
+    SpiSlaveService_Init();
+    assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(SpiSlaveService_StageLatestSnapshot() == SNAPSHOT_BUILD_OK);
+    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
+    assert(frame_buffer != NULL);
+    assert(frame_length == (uint16_t)(SPI_FRAME_HEADER_BYTES + expected_payload_length + SPI_FRAME_CRC_BYTES));
+    assert(frame_buffer[3] == SPI_MESSAGE_SNAPSHOT);
+    assert(ReadU64(&frame_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(700));
+    assert(frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION] == 1u);
+    assert(frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_SENSOR_COUNT] == 6u);
+    assert(frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_MOTOR_COUNT] == 1u);
+    assert(ReadU32(&frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE]) == 0u);
+    assert(frame_buffer[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] == 0u);
+    assert(ReadU16(&frame_buffer[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]) == 0u);
+    assert(ReadU16(&frame_buffer[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_MAGNITUDE]) == 0u);
+    assert(frame_buffer[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_AGC] == 0u);
+    assert(frame_buffer[sensor1_offset + SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] == 1u);
+    assert(ReadU16(&frame_buffer[sensor1_offset + SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]) == 0u);
+    assert(frame_buffer[motor0_offset + SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX] == 0u);
+    assert(ReadU16(&frame_buffer[motor0_offset + SPI_MOTOR_RECORD_OFFSET_CAN_ID]) == 0x123u);
+    assert(frame_buffer[motor0_offset + SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] == 0u);
+    assert(SpiSlaveService_CompleteDmaTransfer());
 }
 
 static void TestAppInitCore(void)
@@ -782,6 +879,9 @@ int main(void)
 
     ResetHalState();
     TestSpiSlaveServiceCore();
+
+    ResetHalState();
+    TestSpiSlaveServiceLatestSnapshot();
 
     return 0;
 }

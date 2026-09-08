@@ -34,6 +34,8 @@ typedef struct
     uint8_t sensor_id;
     uint16_t raw_angle_counts;
     int32_t processed_angle_mdeg;
+    uint16_t magnitude;
+    uint8_t agc;
     uint8_t status;
     uint16_t validity_flags;
     uint64_t measurement_timestamp_us;
@@ -50,6 +52,8 @@ void SensorLatestValue_Init(Sensor_LatestValue *record,
 void SensorLatestValue_SetValid(Sensor_LatestValue *record,
                                 uint16_t raw_angle_counts,
                                 int32_t processed_angle_mdeg,
+                                uint16_t magnitude,
+                                uint8_t agc,
                                 uint8_t status,
                                 uint64_t measurement_timestamp_us,
                                 TimeService_SyncQuality synchronization_quality,
