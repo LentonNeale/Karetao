@@ -1,0 +1,30 @@
+name: raspberry-ci
+
+on:
+  pull_request:
+    paths:
+      - 'RaspberryPi_Sensor_Hub/**'
+      - 'shared/**'
+      - '.github/workflows/raspberry-ci.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'RaspberryPi_Sensor_Hub/**'
+      - 'shared/**'
+      - '.github/workflows/raspberry-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  spi-scaffold-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Raspberry Pi SPI scaffold tests
+        run: python -m unittest discover -s RaspberryPi_Sensor_Hub/tests/spi -p 'test_*.py' -v
