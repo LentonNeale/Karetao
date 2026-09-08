@@ -604,7 +604,18 @@ Validation passed: all calculations reproduce, 17 checked relative Markdown link
 **Handoff:** Report assumptions about HAL bxCAN state and hardware recovery behavior.
 
 ```text
-Output:
+Output:Implemented and host-tested the bounded CAN policy primitives in can_tx_policy.h and can_tx_policy.c.
+
+They provide an 8-entry deterministic priority queue (SAFETY, MOTION, POLL, FIFO within each priority) and bus-off state with normal-command inhibition, a 60-second rolling window, escalating recovery delay from 100 ms to 1 s, and escalation on the third event. Recovery success deliberately does not clear command inhibition, so later explicit activation remains required.
+
+Validation passed:
+cmake --build --preset HostTests
+ctest --test-dir build/HostTests --output-on-failure -R sprint1_protocol_tests
+cmake --preset Debug && cmake --build --preset Debug
+
+1/1 host tests passed; Debug linked without related warnings/errors.
+
+Important remaining integration: the policy is not yet wired into CanService’s existing direct HAL_CAN_AddTxMessage() path, nor are HAL bus-off detection and task-context HAL_CAN_Stop()/HAL_CAN_Start() recovery calls implemented. Those require confirmation of bxCAN error semantics, stop/start behavior, controller/transceiver recovery timing, and physical bus evidence before replacing the active transport path.
 
 ```
 
@@ -623,20 +634,7 @@ Output:
 **Handoff:** List the hardware-independent behavior and the hardware safety behavior that still needs validation.
 
 ```text
-Output:Implemented and host-tested the bounded CAN policy primitives in can_tx_policy.h and can_tx_policy.c.
-
-They provide an 8-entry deterministic priority queue (SAFETY, MOTION, POLL, FIFO within each priority) and bus-off state with normal-command inhibition, a 60-second rolling window, escalating recovery delay from 100 ms to 1 s, and escalation on the third event. Recovery success deliberately does not clear command inhibition, so later explicit activation remains required.
-
-Validation passed:
-cmake --build --preset HostTests
-ctest --test-dir build/HostTests --output-on-failure -R sprint1_protocol_tests
-cmake --preset Debug && cmake --build --preset Debug
-
-1/1 host tests passed; Debug linked without related warnings/errors.
-
-Important remaining integration: the policy is not yet wired into CanService’s existing direct HAL_CAN_AddTxMessage() path, nor are HAL bus-off detection and task-context HAL_CAN_Stop()/HAL_CAN_Start() recovery calls implemented. Those require confirmation of bxCAN error semantics, stop/start behavior, controller/transceiver recovery timing, and physical bus evidence before replacing the active transport path.
-
-
+Output:Not implemented. No motion command path, heartbeat timer, or Motor Service exists yet to gate (see MOTOR_SERVICE_CONTRACT.md), so this task's command-gating layer has no caller to attach to. Deferred to when Motor Service work begins; carries forward as an open Sprint 2+ item.
 
 ```
 
