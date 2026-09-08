@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug STM32",
+      "cwd": "${workspaceFolder}",
+      "executable": "${command:cmake.launchTargetPath}",
+      "request": "launch",
+      "type": "cortex-debug",
+      "servertype": "stlink",
+      "interface": "swd",
+      "runToEntryPoint": "main",
+      "device": "STM32F405RG",
+      "preLaunchTask": "CMake: Build Debug",
+      "serverpath": "/home/lenton/.local/share/stm32cube/bundles/stlink-gdbserver/7.14.0+st.2/bin/ST-LINK_gdbserver",
+      "stm32cubeprogrammer": "/home/lenton/.local/share/stm32cube/bundles/programmer/2.23.0/bin",
+      "showDevDebugOutput": "raw",
+
+      // This environment provides the ARM GNU binutils in /usr/bin, which is the
+      // correct toolchain for the STM32F405 build. Point Cortex-Debug at that path
+      // so it resolves arm-none-eabi-nm / arm-none-eabi-objdump correctly.
+      "armToolchainPath": "/usr/bin",
+      "gdbPath": "/usr/bin/gdb-multiarch"
+
+      // If you install the ARM GNU GDB package later, you can switch to:
+      // "gdbPath": "arm-none-eabi-gdb"
+    }
+  ]
+}

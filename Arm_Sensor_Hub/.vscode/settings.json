@@ -1,0 +1,17 @@
+{
+  "cortex-debug.stm32cubeprogrammer": "/home/lenton/.local/share/stm32cube/bundles/programmer/2.23.0/bin",
+  "cortex-debug.stm32cubeprogrammer.linux": "/home/lenton/.local/share/stm32cube/bundles/programmer/2.23.0/bin",
+  "cmake.cmakePath": "cube-cmake",
+  "cmake.configureArgs": [
+    "-DCMAKE_COMMAND=cube-cmake"
+  ],
+  "cmake.preferredGenerators": [
+    "Ninja"
+  ],
+  "stm32cube-ide-clangd.path": "cube",
+  "stm32cube-ide-clangd.arguments": [
+    "starm-clangd",
+    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc*",
+    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-g++*"
+  ]
+}

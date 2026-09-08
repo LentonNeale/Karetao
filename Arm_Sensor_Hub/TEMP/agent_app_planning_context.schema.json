@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:arm-sensor-hub:app-planning-context:v1",
+  "title": "ArmSensorHubAppPlanningContext",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "meta",
+    "system",
+    "interfaces",
+    "software_architecture",
+    "app_layer_status",
+    "build_system",
+    "planning_directives",
+    "known_gaps",
+    "source_anchors"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "project_id",
+        "date_utc",
+        "purpose",
+        "planning_scope",
+        "machine_optimized"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0.0"
+        },
+        "project_id": {
+          "type": "string",
+          "const": "arm_sensor_hub_f405"
+        },
+        "date_utc": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "planning_scope": {
+          "type": "string",
+          "enum": ["app-level software only"]
+        },
+        "machine_optimized": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mcu", "clock", "rtos", "irq_constraints"],
+      "properties": {
+        "mcu": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["part", "core"],
+          "properties": {
+            "part": { "type": "string", "const": "STM32F405RGT6" },
+            "core": { "type": "string", "const": "Cortex-M4F" }
+          }
+        },
+        "clock": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sysclk_hz", "source", "hse_hz"],
+          "properties": {
+            "sysclk_hz": { "type": "integer", "const": 168000000 },
+            "source": { "type": "string", "const": "PLL from HSE" },
+            "hse_hz": { "type": "integer", "const": 8000000 }
+          }
+        },
+        "rtos": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kernel",
+            "api",
+            "tick_hz",
+            "heap_scheme",
+            "total_heap_bytes",
+            "max_priorities",
+            "preemptive"
+          ],
+          "properties": {
+            "kernel": { "type": "string", "const": "FreeRTOS" },
+            "api": { "type": "string", "const": "CMSIS-RTOS2" },
+            "tick_hz": { "type": "integer", "const": 1000 },
+            "heap_scheme": { "type": "string", "const": "heap_4" },
+            "total_heap_bytes": { "type": "integer", "const": 15360 },
+            "max_priorities": { "type": "integer", "const": 56 },
+            "preemptive": { "type": "boolean", "const": true }
+          }
+        },
+        "irq_constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY", "rule"],
+          "properties": {
+            "configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY": {
+              "type": "integer",
+              "const": 5
+            },
+            "rule": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "interfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["i2c1", "can1", "spi3", "gpio"],
+      "properties": {
+        "i2c1": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pins", "mode", "speed_hz"],
+          "properties": {
+            "pins": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["scl", "sda"],
+              "properties": {
+                "scl": { "type": "string", "const": "PB6" },
+                "sda": { "type": "string", "const": "PB7" }
+              }
+            },
+            "mode": { "type": "string", "const": "master" },
+            "speed_hz": { "type": "integer", "const": 400000 }
+          }
+        },
+        "can1": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pins", "mode", "timing", "auto_retransmission"],
+          "properties": {
+            "pins": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["rx", "tx"],
+              "properties": {
+                "rx": { "type": "string", "const": "PB8" },
+                "tx": { "type": "string", "const": "PB9" }
+              }
+            },
+            "mode": { "type": "string", "const": "normal" },
+            "timing": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["prescaler", "bs1_tq", "bs2_tq", "sjw_tq"],
+              "properties": {
+                "prescaler": { "type": "integer", "const": 16 },
+                "bs1_tq": { "type": "integer", "const": 1 },
+                "bs2_tq": { "type": "integer", "const": 1 },
+                "sjw_tq": { "type": "integer", "const": 1 }
+              }
+            },
+            "auto_retransmission": { "type": "boolean", "const": false }
+          }
+        },
+        "spi3": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pins", "mode", "frame_bits", "nss", "dma"],
+          "properties": {
+            "pins": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["nss", "sck", "miso", "mosi"],
+              "properties": {
+                "nss": { "type": "string", "const": "PA15" },
+                "sck": { "type": "string", "const": "PC10" },
+                "miso": { "type": "string", "const": "PC11" },
+                "mosi": { "type": "string", "const": "PC12" }
+              }
+            },
+            "mode": { "type": "string", "const": "slave" },
+            "frame_bits": { "type": "integer", "const": 8 },
+            "nss": { "type": "string", "const": "hardware input" },
+            "dma": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["rx_stream", "tx_stream"],
+              "properties": {
+                "rx_stream": { "type": "string", "const": "DMA1_Stream0" },
+                "tx_stream": { "type": "string", "const": "DMA1_Stream5" }
+              }
+            }
+          }
+        },
+        "gpio": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["data_ready"],
+          "properties": {
+            "data_ready": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pin", "mode", "default_level"],
+              "properties": {
+                "pin": { "type": "string", "const": "PA8" },
+                "mode": { "type": "string", "const": "output_push_pull" },
+                "default_level": { "type": "string", "const": "low" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "software_architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layers", "regen_policy", "entry_sequence"],
+      "properties": {
+        "layers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2
+        },
+        "regen_policy": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "entry_sequence": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 5
+        }
+      }
+    },
+    "app_layer_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module_registry", "implemented_functions", "current_state"],
+      "properties": {
+        "module_registry": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "implemented_functions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "current_state": { "type": "string" }
+      }
+    },
+    "build_system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "build_tool",
+        "toolchain",
+        "language_standard",
+        "presets",
+        "app_sources_registered"
+      ],
+      "properties": {
+        "build_tool": { "type": "string", "const": "CMake" },
+        "toolchain": { "type": "string" },
+        "language_standard": { "type": "string", "const": "C11" },
+        "presets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "app_sources_registered": { "type": "boolean", "const": true }
+      }
+    },
+    "planning_directives": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_goal", "constraints", "recommended_first_tasks"],
+      "properties": {
+        "primary_goal": { "type": "string" },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "recommended_first_tasks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 3
+        }
+      }
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "source_anchors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "role"],
+        "properties": {
+          "path": { "type": "string" },
+          "role": { "type": "string" }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}
