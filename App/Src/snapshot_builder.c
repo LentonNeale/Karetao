@@ -1,8 +1,14 @@
+/**
+ * @file snapshot_builder.c
+ * @brief Frame-pool ownership helpers for SPI snapshot and response staging.
+ */
+
 #include "snapshot_builder.h"
 
 #include <stddef.h>
 #include <string.h>
 
+/** Find the first frame buffer currently in the requested ownership state. */
 static int32_t SnapshotFramePool_FindState(const SnapshotFrame_Pool *pool, SnapshotFrame_State state)
 {
     uint8_t frame_index;
@@ -18,6 +24,7 @@ static int32_t SnapshotFramePool_FindState(const SnapshotFrame_Pool *pool, Snaps
     return -1;
 }
 
+/** Reset both frame buffers so the SPI service starts from an empty pool. */
 void SnapshotFramePool_Init(SnapshotFrame_Pool *pool)
 {
     if (pool != NULL)
@@ -26,6 +33,10 @@ void SnapshotFramePool_Init(SnapshotFrame_Pool *pool)
     }
 }
 
+/**
+ * Serialize a new frame into a free buffer or replace the unread staged frame
+ * when that is the only non-DMA-owned slot left.
+ */
 SnapshotBuild_Result SnapshotBuilder_Stage(SnapshotFrame_Pool *pool,
                                            SnapshotBuilder_SerializeCallback serialize,
                                            void *context)
@@ -84,6 +95,7 @@ SnapshotBuild_Result SnapshotBuilder_Stage(SnapshotFrame_Pool *pool,
     return SNAPSHOT_BUILD_OK;
 }
 
+/** Hand the staged frame to the DMA path while preventing double ownership. */
 bool SnapshotFramePool_BeginDma(SnapshotFrame_Pool *pool,
                                 const uint8_t **frame_buffer,
                                 uint16_t *frame_length)
@@ -109,6 +121,7 @@ bool SnapshotFramePool_BeginDma(SnapshotFrame_Pool *pool,
     return true;
 }
 
+/** Return the DMA-owned frame buffer to the free pool after transfer completion. */
 bool SnapshotFramePool_CompleteDma(SnapshotFrame_Pool *pool)
 {
     int32_t active_index;
@@ -130,6 +143,7 @@ bool SnapshotFramePool_CompleteDma(SnapshotFrame_Pool *pool)
     return true;
 }
 
+/** Inspect the currently staged frame without changing ownership. */
 const uint8_t *SnapshotFramePool_GetStagedFrame(const SnapshotFrame_Pool *pool,
                                                 uint16_t *frame_length)
 {
@@ -150,6 +164,7 @@ const uint8_t *SnapshotFramePool_GetStagedFrame(const SnapshotFrame_Pool *pool,
     return pool->frame_buffers[staged_index];
 }
 
+/** Expose accumulated frame-pool diagnostics to higher-level SPI service code. */
 const SnapshotFrame_Diagnostics *SnapshotFramePool_GetDiagnostics(const SnapshotFrame_Pool *pool)
 {
     return (pool == NULL) ? NULL : &pool->diagnostics;

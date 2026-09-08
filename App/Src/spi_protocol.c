@@ -1,14 +1,24 @@
+/**
+ * @file spi_protocol.c
+ * @brief Validation and response assembly for fixed-size SPI transport frames.
+ */
+
 #include "spi_protocol.h"
 
 #include <string.h>
 
 #include "crc32_iso_hdlc.h"
 
+/** Read a little-endian 16-bit field from a serialized SPI frame. */
 static uint16_t SpiProtocol_ReadU16(const uint8_t *data) { return (uint16_t)data[0] | ((uint16_t)data[1] << 8u); }
+/** Read a little-endian 32-bit field from a serialized SPI frame. */
 static uint32_t SpiProtocol_ReadU32(const uint8_t *data) { return (uint32_t)data[0] | ((uint32_t)data[1] << 8u) | ((uint32_t)data[2] << 16u) | ((uint32_t)data[3] << 24u); }
+/** Write a little-endian 32-bit field into a serialized SPI frame. */
 static void SpiProtocol_WriteU32(uint8_t *data, uint32_t value) { data[0] = (uint8_t)value; data[1] = (uint8_t)(value >> 8u); data[2] = (uint8_t)(value >> 16u); data[3] = (uint8_t)(value >> 24u); }
+/** Compare request sequence numbers with wrap-aware monotonic ordering. */
 static bool SpiProtocol_IsNewer(uint32_t candidate, uint32_t previous) { return candidate != previous && (uint32_t)(candidate - previous) < UINT32_C(0x80000000); }
 
+/** Build one complete response frame and advance the transmit-side sequence. */
 static void SpiProtocol_BuildFrame(SpiProtocol_State *state, uint8_t type, const uint8_t *payload, uint16_t length, uint8_t *response)
 {
     uint32_t crc32;
@@ -21,6 +31,7 @@ static void SpiProtocol_BuildFrame(SpiProtocol_State *state, uint8_t type, const
     Crc32IsoHdlc_WriteLittleEndian(crc32, &response[SPI_FRAME_CRC_OFFSET(length)]);
 }
 
+/** Build a fixed-format ACK or NACK payload correlated to one host request. */
 static void SpiProtocol_BuildReply(SpiProtocol_State *state, uint8_t type, uint8_t request_type, uint32_t request_sequence, uint16_t code, uint8_t *response)
 {
     uint8_t payload[12] = {1u, request_type, (uint8_t)code, (uint8_t)(code >> 8u), 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u};
@@ -28,17 +39,24 @@ static void SpiProtocol_BuildReply(SpiProtocol_State *state, uint8_t type, uint8
     SpiProtocol_BuildFrame(state, type, payload, sizeof(payload), response);
 }
 
+/** Reset protocol state to the boot lifecycle with no accepted requests. */
 void SpiProtocol_Init(SpiProtocol_State *state) { if (state != NULL) { memset(state, 0, sizeof(*state)); } }
+/** Store one unsolicited snapshot that can satisfy the next GET_SNAPSHOT. */
 bool SpiProtocol_SetUnsolicitedSnapshot(SpiProtocol_State *state, const uint8_t *payload, uint16_t length)
 {
     if ((state == NULL) || (payload == NULL) || (length < SPI_SNAPSHOT_PREFIX_BYTES) || (length > SPI_PAYLOAD_MAX_BYTES)) { return false; }
     memcpy(state->unsolicited_payload, payload, length); state->unsolicited_payload_length = length; state->unsolicited_pending = true; return true;
 }
+/** Emit the defined boot-time status frame before host-driven transactions begin. */
 SpiProtocol_Result SpiProtocol_BuildBootStatus(SpiProtocol_State *state, uint8_t response[SPI_FRAME_MAX_BYTES])
 {
     if ((state == NULL) || (response == NULL)) { return SPI_PROTOCOL_BAD_LENGTH; }
     SpiProtocol_BuildFrame(state, SPI_MESSAGE_STATUS, NULL, 0u, response); return SPI_PROTOCOL_OK;
 }
+/**
+ * Validate the host request lifecycle, then either consume the queued
+ * unsolicited snapshot or return an ACK/NACK response.
+ */
 SpiProtocol_Result SpiProtocol_ProcessRequest(SpiProtocol_State *state, const uint8_t request[SPI_FRAME_MAX_BYTES], uint8_t response[SPI_FRAME_MAX_BYTES])
 {
     uint16_t length; uint32_t sequence; uint8_t type; SpiProtocol_Result result = SPI_PROTOCOL_OK;
