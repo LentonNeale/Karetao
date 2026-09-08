@@ -24,11 +24,12 @@ Defined in `App/Inc/i2c_manager.h`:
 - Addresses are seven-bit addresses; the manager performs HAL address shifting.
 - Blocking operations reject null buffers and zero lengths.
 - Blocking operations return only after HAL completion or timeout.
+- `I2CManager_WriteThenWriteRead()` performs two writes followed by a read while holding the manager mutex for the full ownership window; it is the current composite path used for mux-select plus AS5600 register access.
 - `I2CManager_SubmitAsync()` copies the transfer descriptor but not the caller buffer or context.
 - Async buffers and context must remain valid until completion/error callback.
 - `I2CManager_Process()` commits deferred lifecycle faults from task context.
 
-`MasterWriteRead()` currently performs a write followed by a read through two manager calls. It must not be described as an atomic repeated-start transaction until the HAL implementation is changed and verified.
+`MasterWriteRead()` currently performs a write followed by a read while retaining manager ownership, but it is not an atomic repeated-start transaction and must not be described as one until the HAL implementation is changed and verified.
 
 ## Concurrency and RTOS
 
@@ -55,7 +56,7 @@ Before production approval, define:
 
 ## TCA9548A Coordination
 
-Mux selection and the AS5600 transaction must be serialized as one logical operation. From the application contract, `select channel + sensor transaction` is one I2C ownership window. A task must not select a mux channel and then allow another task to select a different channel before the sensor transaction completes. The current manager API does not yet provide this composite operation; it must be added or the sensor task must be the sole owner of the complete sequence before multi-task sensor access.
+Mux selection and the AS5600 transaction must be serialized as one logical operation. From the application contract, `select channel + sensor transaction` is one I2C ownership window. A task must not select a mux channel and then allow another task to select a different channel before the sensor transaction completes. The current implementation provides this ownership window through `TCA9548A_SelectChannelWriteRead()` on top of `I2CManager_WriteThenWriteRead()` for the AS5600 path. Broader multi-device composite arbitration is still an open design area.
 
 ## Diagnostics
 

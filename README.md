@@ -28,7 +28,7 @@ The firmware acts as a sensor hub on STM32F405:
   - `i2c_manager` + `tca9548a_mux`: I2C access and channel routing.
   - `can_service`: CAN transport-facing service and MKS protocol bridge.
   - `spi_slave_service`: SPI slave service skeleton for host transfer path.
-  - `health_monitor`: health/status scaffolding.
+  - `health_monitor`: task-context aggregate health snapshot baseline.
 - Protocol library layer:
   - `Middlewares/Third_Party/MksServo`: C++17 protocol codec library.
   - `mks_api.h`: C11-compatible boundary used by application C code.
@@ -38,6 +38,7 @@ The firmware acts as a sensor hub on STM32F405:
 - Build system:
   - Root firmware project builds with C11 + C++17 support.
   - MksServo library is linked as a third-party module.
+  - HostTests cover both protocol/data-plane primitives and minimal service smoke paths.
 - I2C sensor path:
   - AS5600 single-channel bring-up path implemented with diagnostics and status snapshots.
 - CAN path:
@@ -52,6 +53,8 @@ The firmware acts as a sensor hub on STM32F405:
   - Lightweight periodic polling scheduler alternates encoder and speed requests.
 - SPI path:
   - Interface skeleton present; full payload protocol integration remains to be completed.
+- Health path:
+  - Read-only aggregate snapshot baseline implemented for lifecycle states, sync validity, and core service counters.
 
 ### Runtime Flow (Current)
 

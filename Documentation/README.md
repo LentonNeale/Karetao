@@ -16,6 +16,7 @@ This folder contains the project-level engineering documentation for onboarding,
 | [Snapshot Coherency Contract](SNAPSHOT_COHERENCY_CONTRACT.md) | Sensor/CAN snapshot assembly, buffer ownership, DMA safety, and overwrite policy. |
 | [SPI Service Contract](SPI_SERVICE_CONTRACT.md) | SPI3 service lifecycle, DMA ownership, DATA_READY implementation, and transport recovery. |
 | [Safety Release Checklist](SAFETY_RELEASE_CHECKLIST.md) | Energized-motion release blockers, evidence classes, owners, and required artifacts. |
+| [Phase 1 Final Clearance Report](PHASE_1_FINAL_CLEARANCE_REPORT.md) | Evidence-backed audit of architecture integrity, loose ends, coverage gaps, and Phase 2 blockers. |
 | [Application Overview](APP_OVERVIEW.md) | Original application-level project objectives and scope. |
 | [Intern Onboarding Docs](OnboardingDocs/README.md) | Guided onboarding pack for undergraduate interns covering orientation, setup, architecture, and first-week tasks. |
 | [Sprint 2 Readiness Report](Sprint%20Info/Sprint_2_Readiness_Report.md) | Current project state summary and recommended Sprint 2 direction. |
@@ -31,7 +32,6 @@ This folder contains the project-level engineering documentation for onboarding,
 ## Related Module Documentation
 
 - [MksServo protocol library](../Middlewares/Third_Party/MksServo/README.md)
-- [MksServo source attachment](../TEMP/MksServo/README.md)
 
 ## Recommended Reading Order
 

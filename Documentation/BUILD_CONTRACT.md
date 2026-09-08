@@ -27,7 +27,7 @@
 
 ## Quality and Artifacts
 
-The project should enforce baseline warnings, produce compile commands, report Flash/RAM usage, and retain the ELF/map files needed for debug. CI should eventually build Debug and Release, run host protocol tests, validate documentation links, and run static analysis.
+The project should enforce baseline warnings, produce compile commands, report Flash/RAM usage, and retain the ELF/map files needed for debug. CI should eventually build Debug and Release, run host protocol and service smoke tests, validate documentation links, and run static analysis.
 
 Memory budgets, stack budgets, compiler version range, HAL/FreeRTOS version pins, artifact version metadata, and release signing are open decisions and must be approved before being enforced.
 
@@ -52,7 +52,7 @@ cmake --preset HostTests && cmake --build --preset HostTests
 ctest --preset HostTests
 ```
 
-The `sprint1_protocol_tests` executable is the native test location for CRC framing, explicit serialization/size checks, and monotonic-time helpers. Later tasks should add a focused test there and run it with:
+The `sprint1_protocol_tests` executable is the native test location for CRC framing, explicit serialization/size checks, and monotonic-time helpers. The `service_smoke_tests` executable provides minimal core-functionality and negative-path coverage for the service-layer modules under host stubs. Focused protocol regressions should continue to run with:
 
 ```bash
 ctest --test-dir build/HostTests --output-on-failure -R sprint1_protocol_tests

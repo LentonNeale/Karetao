@@ -95,7 +95,7 @@ static void SensorTask_RunInitChecks(void)
 			s_snapshot.is_active = 0u;
 			s_snapshot.comm_error_count++;
 			s_diag_word = SensorTask_PackDiagWord();
-			HAL_GPIO_WritePin(Data_Ready_GPIO_Port, Data_Ready_Pin, GPIO_PIN_RESET);
+			SensorTask_UpdateDebugMirrors();
 			return;
 		}
 
@@ -106,10 +106,6 @@ static void SensorTask_RunInitChecks(void)
 		s_snapshot.result = SENSOR_TASK_BRINGUP_PASS;
 		s_diag_word = SensorTask_PackDiagWord();
 		SensorTask_UpdateDebugMirrors();
-			SensorLatestValue_SetInvalid(&s_latest_values[0],
-			                             0u,
-			                             SENSOR_VALIDITY_COMMUNICATION_ERROR,
-			                             TimeService_NowUs());
 	}
 }
 
