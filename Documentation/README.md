@@ -24,7 +24,8 @@ This folder contains the project-level engineering documentation for onboarding,
 
 ## Documentation Rules
 
-- `README.md` at the repository root remains the repository entry point and contains the current project snapshot.
+- `README.md` at the repository root is a short project summary and links here; it does not duplicate technical content.
+- [Project Baseline](PROJECT_BASELINE.md) is the authoritative technical reference: architecture, implementation status, runtime flow, MCU/clock, pinout, and API reference.
 - Documents in this folder are authoritative for project architecture and system contracts.
 - Protocol-specific documentation remains beside its implementation when it describes a reusable third-party module, such as `Middlewares/Third_Party/MksServo/README.md`.
 - Generated files, build output, editor configuration, and temporary planning artifacts are not project documentation.
