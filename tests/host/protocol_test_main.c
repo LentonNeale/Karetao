@@ -361,12 +361,16 @@ static void TestSensorLatestValue(void)
     SensorLatestValue_SetValid(&record,
                                1234u,
                                108457,
+                               2048u,
+                               17u,
                                UINT8_C(0x20),
                                UINT64_C(1000),
                                TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED,
                                8u);
     assert(record.raw_angle_counts == 1234u);
     assert(record.processed_angle_mdeg == 108457);
+    assert(record.magnitude == 2048u);
+    assert(record.agc == 17u);
     assert(record.measurement_timestamp_us == UINT64_C(1000));
     assert(record.synchronization_quality == TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED);
     assert(record.calibration_version == 8u);
@@ -378,6 +382,8 @@ static void TestSensorLatestValue(void)
                                  0u,
                                  SENSOR_VALIDITY_COMMUNICATION_ERROR,
                                  UINT64_C(2000));
+    assert(record.magnitude == 0u);
+    assert(record.agc == 0u);
     assert(record.raw_angle_counts == 0u);
     assert(record.processed_angle_mdeg == 0);
     assert(record.measurement_timestamp_us == 0u);

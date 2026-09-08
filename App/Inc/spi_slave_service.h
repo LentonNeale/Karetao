@@ -30,6 +30,8 @@ Lifecycle_State SpiSlaveService_GetLifecycleState(void);
 void SpiSlaveService_Process(void);
 /** Serialize and stage the next outbound SPI frame using the shared frame pool. */
 SnapshotBuild_Result SpiSlaveService_StageSnapshot(SnapshotBuilder_SerializeCallback serialize, void *context);
+/** Serialize the latest sensor and motor caches into a compliant snapshot frame. */
+SnapshotBuild_Result SpiSlaveService_StageLatestSnapshot(void);
 /** Transfer ownership of the staged frame to the DMA path and expose its buffer. */
 bool SpiSlaveService_BeginDmaTransfer(const uint8_t **frame_buffer, uint16_t *frame_length);
 /** Release the DMA-owned frame after a completed or deferred transfer. */

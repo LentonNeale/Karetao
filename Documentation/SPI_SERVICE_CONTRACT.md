@@ -12,7 +12,7 @@ The wire format and message meanings are defined in [SPI_CONTRACT.md](SPI_CONTRA
 
 ## Current Status
 
-`App/Src/spi_slave_service.c` owns two static serialized-frame buffers through `SnapshotFrame_Pool`, stages fixed-frame responses selected by `SpiProtocol_ProcessRequest()`, and is the sole production owner of the `DATA_READY` GPIO. It does not yet start hardware DMA, receive hardware requests, or perform final snapshot serialization. This contract defines the implementation target and must not be read as proof that those behaviors already exist.
+`App/Src/spi_slave_service.c` owns two static serialized-frame buffers through `SnapshotFrame_Pool`, stages fixed-frame responses selected by `SpiProtocol_ProcessRequest()`, serializes contract-compliant snapshots from the latest sensor/motor caches, and is the sole production owner of the `DATA_READY` GPIO. It stages a boot-status response while `INACTIVE`, but it does not yet start hardware DMA or receive hardware requests. This contract defines the implementation target and must not be read as proof that those behaviors already exist.
 
 ## Lifecycle
 
