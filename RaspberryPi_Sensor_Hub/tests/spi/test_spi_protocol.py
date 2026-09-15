@@ -23,11 +23,28 @@ class SpiProtocolTests(unittest.TestCase):
             frame_time_us=123456,
             payload=b'\x01\x00\x02\x00abcdefgh\x03\x00\x00\x00',
         )
-
         encoded = frame.encode()
         decoded = SpiFrame.decode(encoded)
-
         self.assertEqual(decoded, frame)
+
+    def test_fixed_512_byte_transport_padding_is_accepted(self) -> None:
+        frame = SpiFrame(message_type=MessageType.GET_STATUS, seq=1)
+        encoded = frame.encode()
+        decoded = SpiFrame.decode(encoded.ljust(512, b'\x00'))
+        self.assertEqual(decoded, frame)
+
+    def test_nonzero_transport_padding_is_rejected(self) -> None:
+        frame = SpiFrame(message_type=MessageType.GET_STATUS, seq=1)
+        encoded = frame.encode()
+        padded = bytearray(encoded.ljust(512, b'\x00'))
+        padded[-1] = 0x01
+        with self.assertRaises(ValueError):
+            SpiFrame.decode(padded)
+
+    def test_unsupported_protocol_version_is_rejected(self) -> None:
+        frame = SpiFrame(message_type=MessageType.GET_STATUS, seq=1, protocol_version=2).encode()
+        with self.assertRaises(ValueError):
+            SpiFrame.decode(frame)
 
     def test_oversized_payload_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
