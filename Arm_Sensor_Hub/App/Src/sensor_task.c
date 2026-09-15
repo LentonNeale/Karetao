@@ -15,7 +15,6 @@
 #define SENSOR_TASK_RECORD_COUNT 6u
 #define SENSOR_TASK_CALIBRATION_VERSION 0u
 #define SENSOR_TASK_MIN_HEALTHY_CHANNELS 1u
-#define SENSOR_TASK_MUX_SETTLE_US 0u
 
 static AS5600_Device s_encoders[SENSOR_TASK_RECORD_COUNT];
 static SensorTask_BringupSnapshot s_snapshot;
@@ -246,7 +245,6 @@ void SensorTask_Process(void)
 	for (channel = 0u; channel < SENSOR_TASK_RECORD_COUNT; ++channel)
 	{
 		SensorTask_ProcessChannel(channel, &time_sync_snapshot);
-		(void)SENSOR_TASK_MUX_SETTLE_US;
 	}
 
 	s_diag_word = SensorTask_PackDiagWord();
