@@ -69,9 +69,7 @@ static bool SpiSlaveService_SerializeResponse(uint8_t *frame_buffer,
                                                void *context)
 {
     (void)context;
-    if ((frame_buffer == NULL) || (frame_length == NULL) || (frame_capacity < SPI_FRAME_MAX_BYTES)) {
-        return false;
-    }
+    if ((frame_buffer == NULL) || (frame_length == NULL) || (frame_capacity < SPI_FRAME_MAX_BYTES)) return false;
     memcpy(frame_buffer, s_response_frame, SPI_FRAME_MAX_BYTES);
     *frame_length = SPI_FRAME_MAX_BYTES;
     return true;
@@ -82,15 +80,10 @@ static bool SpiSlaveService_ArmDma(void)
     const uint8_t *tx_frame;
     uint16_t frame_length;
 
-    if (s_dma_active || s_request_pending || !Lifecycle_IsActive(&s_lifecycle)) {
-        return false;
-    }
-
-    if (!SpiSlaveService_BeginDmaTransfer(&tx_frame, &frame_length)) {
-        return false;
-    }
-
+    if (s_dma_active || s_request_pending || !Lifecycle_IsActive(&s_lifecycle)) return false;
+    if (!SpiSlaveService_BeginDmaTransfer(&tx_frame, &frame_length)) return false;
     (void)frame_length;
+
     memset(s_rx_frame, 0, sizeof(s_rx_frame));
     if (HAL_SPI_TransmitReceive_DMA(&hspi3, tx_frame, s_rx_frame, SPI_FRAME_MAX_BYTES) != HAL_OK) {
         (void)SpiSlaveService_CompleteDmaTransfer();
@@ -106,10 +99,7 @@ static bool SpiSlaveService_PublishStagedFrame(void)
 {
     uint16_t frame_length;
 
-    if (!Lifecycle_IsActive(&s_lifecycle)) {
-        return false;
-    }
-
+    if (!Lifecycle_IsActive(&s_lifecycle)) return false;
     if ((SnapshotFramePool_GetStagedFrame(&s_frame_pool, &frame_length) != NULL) &&
         SpiDataReady_OnFrameStaged(&s_data_ready, HAL_GetTick())) {
         if (SpiSlaveService_ArmDma()) {
@@ -117,7 +107,6 @@ static bool SpiSlaveService_PublishStagedFrame(void)
             return true;
         }
     }
-
     return false;
 }
 
@@ -219,9 +208,7 @@ static bool SpiSlaveService_SerializeLatestSnapshot(uint8_t *frame_buffer,
 static bool SpiSlaveService_RequestAllowed(uint8_t request_type)
 {
     Lifecycle_State state = Lifecycle_GetState(&s_lifecycle);
-    if (request_type == SPI_MESSAGE_TIME_SYNC) {
-        return (state == LIFECYCLE_STATE_INACTIVE) || (state == LIFECYCLE_STATE_ACTIVE);
-    }
+    if (request_type == SPI_MESSAGE_TIME_SYNC) return (state == LIFECYCLE_STATE_INACTIVE) || (state == LIFECYCLE_STATE_ACTIVE);
     return state == LIFECYCLE_STATE_ACTIVE;
 }
 
@@ -261,14 +248,11 @@ Lifecycle_State SpiSlaveService_GetLifecycleState(void) { return Lifecycle_GetSt
 void SpiSlaveService_Process(void)
 {
     uint32_t now = HAL_GetTick();
-
     if (!Lifecycle_IsActive(&s_lifecycle)) return;
 
     if (s_request_pending) {
-        taskENTER_CRITICAL();
         memcpy(s_rx_frame, s_pending_request, SPI_FRAME_MAX_BYTES);
         s_request_pending = false;
-        taskEXIT_CRITICAL();
         (void)SpiSlaveService_CompleteDmaTransfer();
         s_dma_active = false;
         (void)SpiSlaveService_ProcessRequestFrame(s_rx_frame);
@@ -327,7 +311,6 @@ bool SpiSlaveService_BeginDmaTransfer(const uint8_t **frame_buffer, uint16_t *fr
 }
 
 bool SpiSlaveService_CompleteDmaTransfer(void) { return SnapshotFramePool_CompleteDma(&s_frame_pool); }
-
 const SnapshotFrame_Diagnostics *SpiSlaveService_GetSnapshotDiagnostics(void) { return SnapshotFramePool_GetDiagnostics(&s_frame_pool); }
 const SpiDataReady_State *SpiSlaveService_GetDataReadyState(void) { return &s_data_ready; }
 void SpiSlaveService_SetPollPeriodMs(uint32_t poll_period_ms) { s_poll_period_ms = poll_period_ms; }
@@ -379,8 +362,6 @@ SpiProtocol_Result SpiSlaveService_ProcessRequestFrame(const uint8_t request[SPI
     return result;
 }
 
-/* HAL invokes these from DMA/SPI interrupt context. Only copy data and signal
- * task context; buffer ownership, parsing, and recovery remain in Process(). */
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
     if ((hspi != NULL) && (hspi->Instance == SPI3) && s_dma_active) {
