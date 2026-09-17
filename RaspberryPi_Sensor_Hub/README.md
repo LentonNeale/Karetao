@@ -11,11 +11,14 @@ Shared monorepo documentation now lives under the root `docs/` tree:
 - [SPI transport contract](../docs/protocols/spi-contract.md)
 - [SPI payload schema](../docs/protocols/spi-payload-schema.md)
 - [SPI service contract](../docs/interfaces/spi-service-contract.md)
-- [Raspberry Pi SPI scaffold](../docs/interfaces/raspberry-pi-spi.md)
+- [Raspberry Pi SPI interface](../docs/interfaces/raspberry-pi-spi.md)
 
 A local compatibility pointer is kept at [docs/spi.md](docs/spi.md).
 
-## Current Scaffold
+## Current SPI Implementation
 
-The subtree now includes a minimal Python SPI scaffold under `src/spi/` and placeholder contract tests under `tests/spi/`.
-The implementation intentionally leaves hardware-specific Linux SPI and GPIO choices as TODO items until the ARM contract gates are finalized.
+The subtree includes the production Linux `spidev` backend under `src/spi/` and host-test coverage under `tests/spi/`.
+
+The current backend configuration is `/dev/spidev0.0`, SPI mode 0, 8 bits per word, a configured maximum of 5 MHz, and fixed 512-byte full-duplex transfers. `SpiBus` keeps the backend injectable so protocol/device tests do not require Raspberry Pi hardware or the `spidev` package.
+
+The 5 MHz value is the current integration ceiling, not hardware approval. Live Raspberry Pi <-> STM32 transactions, DATA_READY GPIO integration, NSS behavior, DMA timing, signal integrity, and sustained repeated-transfer acceptance remain open hardware gates.
