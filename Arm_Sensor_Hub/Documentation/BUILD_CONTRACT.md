@@ -16,6 +16,8 @@
 - Outputs: `build/<preset>/Arm_Sensor_Hub.elf` and map/size data.
 - Runtime: FreeRTOS with CMSIS-RTOS2.
 
+The repository now has CI coverage for `HostTests`, Debug firmware, and Release firmware. The ARM CI workflow installs the ARM GNU toolchain on the runner, builds both firmware presets, records ELF size and SHA-256 checksum information, and uploads the Debug/Release ELF files plus the size/checksum report as artifacts. The first successful run on the current baseline is run `35180226459` on commit `1cf0bc7f4d2785f746ca8facac557c776651a2f8`.
+
 ## Required Build Rules
 
 - Debug and Release must both configure and link.
@@ -27,7 +29,7 @@
 
 ## Quality and Artifacts
 
-The project should enforce baseline warnings, produce compile commands, report Flash/RAM usage, and retain the ELF/map files needed for debug. CI should eventually build Debug and Release, run host protocol and service smoke tests, validate documentation links, and run static analysis.
+The project should enforce baseline warnings, produce compile commands, report Flash/RAM usage, and retain the ELF/map files needed for debug. CI now builds Debug and Release, runs host protocol and service smoke tests, records firmware size/checksum information, and uploads the firmware artifacts. Documentation-link validation and static analysis remain future CI improvements.
 
 Memory budgets, stack budgets, compiler version range, HAL/FreeRTOS version pins, artifact version metadata, and release signing are open decisions and must be approved before being enforced.
 
@@ -57,6 +59,8 @@ The `sprint1_protocol_tests` executable is the native test location for CRC fram
 ```bash
 ctest --test-dir build/HostTests --output-on-failure -R sprint1_protocol_tests
 ```
+
+The current CI evidence establishes that the runner can install the ARM GNU toolchain and successfully build both target presets. It does not by itself provide target-hardware behavior validation or interface acceptance.
 
 ## Open Decisions
 
