@@ -25,7 +25,7 @@ Important modules:
 - `sensor_task`: sensor bring-up and sampling state machine
 - `i2c_manager` and `tca9548a_mux`: shared I2C access and channel selection
 - `can_service`: CAN transport-facing service and MKS message handling
-- `spi_slave_service`: SPI request/response path and staged snapshot ownership
+- `spi_slave_service`: SPI request/response path, DMA transfer ownership, and staged snapshot ownership
 - `time_service`: monotonic time and synchronization state
 - `snapshot_builder`: coherent frame assembly
 - `health_monitor`: health scaffold for broader diagnostics
@@ -69,7 +69,7 @@ This loop is visible in [`../Arm_Sensor_Hub/Core/Src/main.c`](../Arm_Sensor_Hub/
 
 1. `snapshot_builder` prepares frame data,
 2. `spi_protocol` applies framing rules,
-3. `spi_slave_service` stages responses/snapshots and manages `DATA_READY`.
+3. `spi_slave_service` stages responses/snapshots, arms SPI3 DMA, and owns `DATA_READY`.
 
 ## What Is Mature Vs What Is Emerging
 
@@ -80,15 +80,23 @@ More mature:
 - host-side validation path,
 - lifecycle vocabulary,
 - time sync model,
-- single-channel sensor path.
+- six-axis sensor record path and commissioned SD2-SD7 mapping,
+- STM32 SPI3 DMA arm/complete/error/stall/re-arm software path,
+- Raspberry Pi Linux `spidev` backend and fixed-frame protocol decoder,
+- target Debug/Release build coverage in CI.
 
 Less mature or still being integrated:
 
-- six-channel sensor scheduling,
-- final SPI DMA/NSS hardware integration,
-- complete TIME_SYNC dispatch through live SPI command handling,
+- live Raspberry Pi <-> STM32 SPI transaction acceptance,
+- 5 MHz physical SPI acceptance including DMA timing, NSS, DATA_READY/GPIO timing, and signal integrity,
+- sustained/repeated SPI transaction validation,
+- scan timing and other six-channel sensor parameters that remain unfrozen,
+- complete TIME_SYNC end-to-end target validation,
 - expanded health aggregation,
-- end-to-end target-hardware evidence.
+- CAN physical validation,
+- calibration persistence,
+- exact motor-controller semantics,
+- independent safety validation.
 
 ## Files Interns Should Learn Early
 
