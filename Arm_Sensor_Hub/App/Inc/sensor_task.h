@@ -6,6 +6,7 @@
 #ifndef SENSOR_TASK_H
 #define SENSOR_TASK_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -15,6 +16,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Number of logical sensor axes published in every snapshot (logical IDs 0-5). */
+#define SENSOR_TASK_AXIS_COUNT 6u
+/** Highest selectable TCA9548A channel index. */
+#define SENSOR_TASK_MAX_MUX_CHANNEL 7u
 
 typedef enum
 {
@@ -51,6 +57,22 @@ typedef struct
  * @brief Executes task init.
  */
 void SensorTask_Init(void);
+/**
+ * @brief Bind each logical axis to the TCA9548A channel that carries its AS5600.
+ *
+ * Realizes the configurable commissioning mapping required by
+ * MULTI_SENSOR_CONTRACT: `mux_channels[axis]` is the mux channel read for
+ * logical axis `axis`, so the physical wiring may change without touching the
+ * acquisition algorithm. Record positions and logical IDs stay 0-5 regardless
+ * of which channels are bound.
+ *
+ * The map is validated before any binding is applied, so a rejected map leaves
+ * the previous binding intact. Returns false when the map is NULL, is not
+ * exactly SENSOR_TASK_AXIS_COUNT entries, names a channel above
+ * SENSOR_TASK_MAX_MUX_CHANNEL, repeats a channel, or when the service is
+ * already ACTIVE.
+ */
+bool SensorTask_ConfigureMuxChannels(const uint8_t *mux_channels, size_t count);
 /**
  * @brief Executes task activate.
  */

@@ -31,3 +31,38 @@ jobs:
         run: cmake --build --preset HostTests
       - name: Run HostTests
         run: ctest --preset HostTests --output-on-failure
+
+  firmware-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Arm_Sensor_Hub
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ARM GNU toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib ninja-build
+          arm-none-eabi-gcc --version
+      - name: Configure Debug
+        run: cmake --preset Debug
+      - name: Build Debug
+        run: cmake --build --preset Debug
+      - name: Configure Release
+        run: cmake --preset Release
+      - name: Build Release
+        run: cmake --build --preset Release
+      - name: Record firmware sizes
+        run: |
+          arm-none-eabi-size build/Debug/Arm_Sensor_Hub.elf build/Release/Arm_Sensor_Hub.elf | tee firmware-size.txt
+          sha256sum build/Debug/Arm_Sensor_Hub.elf build/Release/Arm_Sensor_Hub.elf | tee -a firmware-size.txt
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm-sensor-hub-firmware
+          path: |
+            Arm_Sensor_Hub/build/Debug/Arm_Sensor_Hub.elf
+            Arm_Sensor_Hub/build/Release/Arm_Sensor_Hub.elf
+            Arm_Sensor_Hub/firmware-size.txt

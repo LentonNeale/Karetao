@@ -27,6 +27,18 @@ static const App_MksMotorConfig s_mks_motors[] = {
     {0u, 0u, JOINT_MAPPING_SCHEMA_VERSION, CAN_SERVICE_MKS_SERVO42, 0x001u}
 };
 
+/*
+ * Commissioned sensor topology, confirmed 2026-09-17.
+ *
+ * Index is the logical axis; the value is the TCA9548A channel carrying that
+ * axis AS5600, so logical joint N reads breakout pad SDN+2. Channel SD0 carries
+ * a bench test sensor and is deliberately excluded from the published axes;
+ * SD1 is unpopulated. Rewiring the arm means editing only this table.
+ */
+static const uint8_t s_sensor_mux_channels[SENSOR_TASK_AXIS_COUNT] = {
+    2u, 3u, 4u, 5u, 6u, 7u
+};
+
 static const JointMapping_Record s_joint_mapping[] = {
     {
         .schema_version = JOINT_MAPPING_SCHEMA_VERSION,
@@ -43,8 +55,10 @@ static const JointMapping_Record s_joint_mapping[] = {
 
 volatile uint32_t g_app_mks_register_failures_dbg;
 volatile uint32_t g_app_lifecycle_activation_failures_dbg;
+volatile uint32_t g_app_sensor_configure_failures_dbg;
 static bool s_start_requested;
 static bool s_mapping_valid;
+static bool s_sensor_channels_valid;
 
 /**
  * @brief Executes register mks motors.
@@ -71,7 +85,9 @@ static void App_RegisterMksMotors(void)
 void App_Init(void)
 {
     g_app_lifecycle_activation_failures_dbg = 0u;
+    g_app_sensor_configure_failures_dbg = 0u;
     s_start_requested = false;
+    s_sensor_channels_valid = false;
     s_mapping_valid = JointMapping_Validate(s_joint_mapping,
                                             sizeof(s_joint_mapping) / sizeof(s_joint_mapping[0])) ==
                       JOINT_MAPPING_RESULT_OK;
@@ -80,6 +96,12 @@ void App_Init(void)
     I2CManager_Init();
     TCA9548A_Init(TCA9548A_ADDR_0);
     SensorTask_Init();
+    s_sensor_channels_valid =
+        SensorTask_ConfigureMuxChannels(s_sensor_mux_channels,
+                                        sizeof(s_sensor_mux_channels) / sizeof(s_sensor_mux_channels[0]));
+    if (!s_sensor_channels_valid) {
+        g_app_sensor_configure_failures_dbg++;
+    }
     CanService_Init();
     if (s_mapping_valid) {
         App_RegisterMksMotors();
@@ -118,6 +140,7 @@ void App_Start(void)
     }
 
     if (!s_mapping_valid ||
+        !s_sensor_channels_valid ||
         (I2CManager_GetLifecycleState() != LIFECYCLE_STATE_ACTIVE) ||
         (SensorTask_GetLifecycleState() != LIFECYCLE_STATE_INACTIVE) ||
         (SensorTask_Activate() != LIFECYCLE_RESULT_OK)) {
@@ -133,4 +156,9 @@ uint32_t App_GetMksRegisterFailureCount(void)
 uint32_t App_GetLifecycleActivationFailureCount(void)
 {
     return g_app_lifecycle_activation_failures_dbg;
+}
+
+uint32_t App_GetSensorConfigureFailureCount(void)
+{
+    return g_app_sensor_configure_failures_dbg;
 }

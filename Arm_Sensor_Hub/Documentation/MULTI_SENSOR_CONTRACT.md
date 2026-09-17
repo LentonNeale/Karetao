@@ -8,14 +8,18 @@
 
 | Logical axis | TCA9548A channel | Sensor |
 | ---: | ---: | --- |
-| 0 | 0 | AS5600 |
-| 1 | 1 | AS5600 |
-| 2 | 2 | AS5600 |
-| 3 | 3 | AS5600 |
-| 4 | 4 | AS5600 |
-| 5 | 5 | AS5600 |
+| 0 | 2 | AS5600 |
+| 1 | 3 | AS5600 |
+| 2 | 4 | AS5600 |
+| 3 | 5 | AS5600 |
+| 4 | 6 | AS5600 |
+| 5 | 7 | AS5600 |
 
 The mapping is the commissioning default and must be configurable without changing the sensor algorithm. All AS5600 devices use the configured seven-bit device address unless a hardware revision requires otherwise.
+
+Channels 0 and 1 are deliberately outside the published axis set. Channel 0 carries a bench test sensor and channel 1 is unpopulated, so neither appears in a snapshot; a seventh record cannot be published without a payload-schema change.
+
+This table was revised on 2026-09-17 from the earlier axis-N-to-channel-N default, which did not match the commissioned wiring. The configurability requirement above is now met in code: `SensorTask_ConfigureMuxChannels()` binds each axis to its channel, validating the whole map before applying any of it, and rejecting a map that is the wrong size, names a channel above 7, repeats a channel, or arrives while the service is `ACTIVE`. The binding lives in one table in `App/Src/app_init.c`, and `App_Start()` refuses sensor activation when the map was rejected. Record positions and logical IDs remain 0-5 regardless of which channels are bound.
 
 ## Sampling
 
@@ -46,7 +50,7 @@ Initial recommended policy:
 - escalate the aggregate sensor service only when the configured minimum healthy-channel count is not met;
 - expose per-channel fault and last-success timestamps.
 
-The current firmware implements only channel 0 and must not claim six-channel support until all records and scan behavior exist.
+Status note (2026-09-17): the firmware now sweeps all six channels in one blocking pass per 20 ms tick, ahead of this contract. The scan period, settle time, per-channel timeout, and minimum healthy-channel count required above have not been frozen. On 2026-09-17 this scan was also run on a physical STM32F405 with one real AS5600 wired to TCA9548A channel 0 and channels 1-5 unwired: the mux reported the expected channel-0 selection, a real raw angle and status byte were read from the wired sensor, and the five unwired channels produced isolated communication errors each pass without stalling the scan or the other channel. `sample_ok_count` remained 0 on the wired channel because its AS5600 status decoded to the `ML` (magnet-too-weak) flag rather than a communication failure; roughly 18 seconds after boot the wired channel also stopped producing successful reads for the remainder of the ~23-second run, a bench/wiring observation that has not been explained. This is evidence for one physical channel and the absent-channel isolation behavior only, not for a commissioned six-sensor topology, and it does not substitute for freezing the parameters above.
 
 ## Runtime Failure
 

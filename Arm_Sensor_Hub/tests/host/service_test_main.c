@@ -21,6 +21,7 @@
 I2C_HandleTypeDef hi2c1 = {.Instance = I2C1};
 CAN_HandleTypeDef hcan1 = {.Instance = (void *)0x2};
 TIM_HandleTypeDef htim2 = {.Instance = (void *)0x3};
+SPI_HandleTypeDef hspi3 = {.Instance = SPI3};
 void *Data_Ready_GPIO_Port = (void *)0x4;
 uint16_t Data_Ready_Pin = 9u;
 
@@ -86,6 +87,12 @@ static uint8_t s_can_last_tx_data[8];
 static MksStatus s_mks_encode_status = MKS_OK;
 static MksStatus s_mks_decode_status = MKS_OK;
 static MksParsedResponse s_mks_decoded_response;
+static HAL_StatusTypeDef s_spi_dma_status = HAL_OK;
+static uint32_t s_spi_dma_start_count;
+static uint32_t s_spi_abort_count;
+static const uint8_t *s_spi_last_tx_buffer;
+static uint8_t *s_spi_last_rx_buffer;
+static uint16_t s_spi_last_transfer_size;
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c);
 
@@ -137,6 +144,12 @@ static void ResetHalState(void)
     s_mks_encode_status = MKS_OK;
     s_mks_decode_status = MKS_OK;
     memset(&s_mks_decoded_response, 0, sizeof(s_mks_decoded_response));
+    s_spi_dma_status = HAL_OK;
+    s_spi_dma_start_count = 0u;
+    s_spi_abort_count = 0u;
+    s_spi_last_tx_buffer = NULL;
+    s_spi_last_rx_buffer = NULL;
+    s_spi_last_transfer_size = 0u;
     htim2.Counter = 0u;
 }
 
@@ -201,6 +214,26 @@ void HAL_GPIO_WritePin(void *gpio_port, uint16_t gpio_pin, GPIO_PinState state)
     (void)gpio_pin;
     s_last_gpio_state = state;
     s_gpio_write_count++;
+}
+
+HAL_StatusTypeDef HAL_SPI_TransmitReceive_DMA(SPI_HandleTypeDef *hspi,
+                                              const uint8_t *tx_data,
+                                              uint8_t *rx_data,
+                                              uint16_t size)
+{
+    (void)hspi;
+    s_spi_dma_start_count++;
+    s_spi_last_tx_buffer = tx_data;
+    s_spi_last_rx_buffer = rx_data;
+    s_spi_last_transfer_size = size;
+    return s_spi_dma_status;
+}
+
+HAL_StatusTypeDef HAL_SPI_Abort(SPI_HandleTypeDef *hspi)
+{
+    (void)hspi;
+    s_spi_abort_count++;
+    return HAL_OK;
 }
 
 HAL_StatusTypeDef HAL_I2C_Master_Transmit(I2C_HandleTypeDef *hi2c,
@@ -721,6 +754,59 @@ static void TestSensorTaskCore(void)
     s_i2c_tx_statuses[0] = HAL_OK;
 }
 
+static void TestSensorTaskMuxMapping(void)
+{
+    static const uint8_t commissioned[SENSOR_TASK_AXIS_COUNT] = {2u, 3u, 4u, 5u, 6u, 7u};
+    static const uint8_t out_of_range[SENSOR_TASK_AXIS_COUNT] = {2u, 3u, 4u, 5u, 6u, 8u};
+    static const uint8_t duplicated[SENSOR_TASK_AXIS_COUNT] = {2u, 3u, 4u, 5u, 6u, 6u};
+
+    TCA9548A_Init(TCA9548A_ADDR_0);
+    SensorTask_Init();
+
+    /* Rejected maps change nothing. */
+    assert(!SensorTask_ConfigureMuxChannels(NULL, SENSOR_TASK_AXIS_COUNT));
+    assert(!SensorTask_ConfigureMuxChannels(commissioned, SENSOR_TASK_AXIS_COUNT - 1u));
+    assert(!SensorTask_ConfigureMuxChannels(out_of_range, SENSOR_TASK_AXIS_COUNT));
+    assert(!SensorTask_ConfigureMuxChannels(duplicated, SENSOR_TASK_AXIS_COUNT));
+
+    assert(SensorTask_ConfigureMuxChannels(commissioned, SENSOR_TASK_AXIS_COUNT));
+    assert(SensorTask_Activate() == LIFECYCLE_RESULT_OK);
+
+    /* Rebinding a live acquisition path is refused. */
+    assert(!SensorTask_ConfigureMuxChannels(commissioned, SENSOR_TASK_AXIS_COUNT));
+
+    /* Bring-up probes the mux, then addresses axis 0 through SD2 rather than SD0. */
+    s_i2c_rx_payloads[0][0] = 0x01u;
+    s_hal_tick = 20u;
+    SensorTask_Process();
+
+    assert(s_i2c_writes[0].address == (uint16_t)(TCA9548A_ADDR_0 << 1u));
+    assert(s_i2c_writes[0].data[0] == 0x01u);
+    assert(s_i2c_writes[1].address == (uint16_t)(TCA9548A_ADDR_0 << 1u));
+    assert(s_i2c_writes[1].data[0] == (1u << 2u));
+    assert(s_i2c_writes[2].address == (uint16_t)(AS5600_I2C_ADDR_7BIT << 1u));
+    assert(s_i2c_writes[2].data[0] == 0x0Bu);
+    /* Axis 1 follows on SD3. */
+    assert(s_i2c_writes[3].data[0] == (1u << 3u));
+    /* Axis 5 is the last bring-up access and lands on SD7. */
+    assert(s_i2c_writes[11].data[0] == (1u << 7u));
+    assert(SensorTask_GetBringupResult() == SENSOR_TASK_BRINGUP_PASS);
+
+    /* Logical identity stays 0-5 no matter which channels are bound. */
+    {
+        size_t record_count = 0u;
+        const Sensor_LatestValue *records = SensorTask_GetLatestValues(&record_count);
+        size_t axis;
+
+        assert(records != NULL);
+        assert(record_count == SENSOR_TASK_AXIS_COUNT);
+        for (axis = 0u; axis < record_count; ++axis) {
+            assert(records[axis].logical_joint_id == (uint8_t)axis);
+            assert(records[axis].sensor_id == (uint8_t)axis);
+        }
+    }
+}
+
 static void TestCanServiceCore(void)
 {
     assert(CanService_RegisterMotor(CAN_SERVICE_MAX_MKS_MOTORS, 0u, 0u, CAN_SERVICE_MKS_SERVO42, 1u) ==
@@ -741,45 +827,52 @@ static void TestSpiSlaveServiceCore(void)
     const uint8_t *frame_buffer = NULL;
     uint16_t frame_length = 0u;
     uint8_t request[SPI_FRAME_MAX_BYTES];
+    const SnapshotFrame_Diagnostics *diagnostics;
 
+    /* Armed-then-assert model (approved 2026-09-17): DATA_READY rises only after
+     * the staged frame is handed to DMA ownership and the transfer is armed. */
     s_time_now_us = 111u;
     SpiSlaveService_Init();
     assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_NOT_READY);
+    assert(s_spi_dma_start_count == 0u);
+    assert(s_last_gpio_state == GPIO_PIN_RESET);
     assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(s_spi_dma_start_count == 1u);
+    assert(s_spi_last_transfer_size == SPI_FRAME_MAX_BYTES);
+    assert(s_spi_last_tx_buffer != NULL);
+    assert(s_spi_last_rx_buffer != NULL);
+    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_STATUS);
+    assert(ReadU64(&s_spi_last_tx_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(111));
     assert(s_last_gpio_state == GPIO_PIN_SET);
-    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
-    assert(frame_buffer != NULL);
-    assert(frame_length == SPI_FRAME_MAX_BYTES);
-    assert(frame_buffer[3] == SPI_MESSAGE_STATUS);
-    assert(ReadU64(&frame_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(111));
-    assert(s_last_gpio_state == GPIO_PIN_RESET);
-    assert(SpiSlaveService_CompleteDmaTransfer());
-
+    /* The armed buffer is DMA-owned: a second handoff is refused. */
+    assert(!SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
+    diagnostics = SpiSlaveService_GetSnapshotDiagnostics();
+    assert(diagnostics->dma_start_count == 1u);
+    assert(diagnostics->dma_complete_count == 0u);
+    /* Staging while a transfer is armed lands in the free buffer without re-arming. */
     assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_OK);
-    assert(s_last_gpio_state == GPIO_PIN_SET);
-    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
-    assert(frame_buffer != NULL);
-    assert(frame_length == 2u);
-    assert(s_last_gpio_state == GPIO_PIN_RESET);
-    assert(SpiSlaveService_CompleteDmaTransfer());
+    assert(s_spi_dma_start_count == 1u);
 
+    /* INACTIVE request handling: NACK is staged but not armed until ACTIVE. */
+    ResetHalState();
     s_time_now_us = 500u;
     SpiSlaveService_Init();
     BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 1u);
     assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_BAD_STATE);
+    assert(s_spi_dma_start_count == 0u);
+    assert(s_last_gpio_state == GPIO_PIN_RESET);
     assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(s_spi_dma_start_count == 1u);
     assert(s_last_gpio_state == GPIO_PIN_SET);
-    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
-    assert(frame_length == SPI_FRAME_MAX_BYTES);
-    assert(frame_buffer[3] == SPI_MESSAGE_NACK);
-    assert(ReadU16(&frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + 2u]) == SPI_PROTOCOL_BAD_STATE);
-    assert(ReadU32(&frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + 4u]) == 1u);
-    assert(ReadU64(&frame_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(500));
-    assert(SpiSlaveService_CompleteDmaTransfer());
+    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_NACK);
+    assert(ReadU16(&s_spi_last_tx_buffer[SPI_FRAME_OFFSET_PAYLOAD + 2u]) == SPI_PROTOCOL_BAD_STATE);
+    assert(ReadU32(&s_spi_last_tx_buffer[SPI_FRAME_OFFSET_PAYLOAD + 4u]) == 1u);
+    assert(ReadU64(&s_spi_last_tx_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(500));
 
+    /* TIME_SYNC is accepted while INACTIVE; the ACK is armed on activation. */
+    ResetHalState();
     s_time_now_us = 500u;
     SpiSlaveService_Init();
-    s_time_now_us = 500u;
     BuildTimeSyncRequest(request, 2u, 900u, 7u);
     assert(SpiSlaveService_ProcessRequestFrame(request) == SPI_PROTOCOL_OK);
     assert(s_time_sync_accept_count == 1u);
@@ -787,13 +880,9 @@ static void TestSpiSlaveServiceCore(void)
     assert(s_last_time_sync_sequence == 7u);
     assert(TimeService_IsSyncValid());
     assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(s_spi_dma_start_count == 1u);
     assert(s_last_gpio_state == GPIO_PIN_SET);
-    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
-    assert(frame_buffer != NULL);
-    assert(frame_length == SPI_FRAME_MAX_BYTES);
-    assert(frame_buffer[3] == SPI_MESSAGE_ACK);
-    assert(s_last_gpio_state == GPIO_PIN_RESET);
-    assert(SpiSlaveService_CompleteDmaTransfer());
+    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_ACK);
 
     BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 7u);
     request[0] ^= 1u;
@@ -814,10 +903,82 @@ static void TestSpiSlaveServiceCore(void)
     assert(s_time_sync_accept_count == 3u);
 }
 
+static void TestSpiSlaveServiceDmaLoop(void)
+{
+    uint8_t frame_value = 0x44u;
+    SPI_HandleTypeDef other_spi = {.Instance = (void *)0x6};
+    const SnapshotFrame_Diagnostics *diagnostics;
+
+    s_time_now_us = 111u;
+    SpiSlaveService_Init();
+    assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(s_spi_dma_start_count == 1u);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+    diagnostics = SpiSlaveService_GetSnapshotDiagnostics();
+
+    /* A completion for another SPI instance is ignored. */
+    HAL_SPI_TxRxCpltCallback(&other_spi);
+    SpiSlaveService_Process();
+    assert(diagnostics->dma_complete_count == 0u);
+    assert(s_spi_dma_start_count == 1u);
+
+    /* Host clocks the transaction carrying GET_STATUS seq 1. The ISR only flags;
+     * ownership release and request processing happen in Process(). */
+    BuildRequest(s_spi_last_rx_buffer, SPI_MESSAGE_GET_STATUS, 0u, 1u);
+    HAL_SPI_TxRxCpltCallback(&hspi3);
+    assert(diagnostics->dma_complete_count == 0u);
+    SpiSlaveService_Process();
+    assert(diagnostics->dma_complete_count == 1u);
+    assert(s_spi_dma_start_count == 2u);
+    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_ACK);
+    assert(ReadU32(&s_spi_last_tx_buffer[SPI_FRAME_OFFSET_PAYLOAD + 4u]) == 1u);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+    assert(s_spi_abort_count == 0u);
+
+    /* DMA error: abort, release, DATA_READY low, boot status re-staged and re-armed. */
+    HAL_SPI_ErrorCallback(&hspi3);
+    assert(s_spi_abort_count == 0u);
+    SpiSlaveService_Process();
+    assert(s_spi_abort_count == 1u);
+    assert(diagnostics->dma_complete_count == 2u);
+    assert(s_spi_dma_start_count == 3u);
+    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_STATUS);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+
+    /* Host stall: no completion within 100 ms produces the same recovery. */
+    s_hal_tick = 99u;
+    SpiSlaveService_Process();
+    assert(s_spi_abort_count == 1u);
+    s_hal_tick = 100u;
+    SpiSlaveService_Process();
+    assert(s_spi_abort_count == 2u);
+    assert(diagnostics->dma_complete_count == 3u);
+    assert(s_spi_dma_start_count == 4u);
+    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_STATUS);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+
+    /* A DMA start failure releases the handed-off buffer and leaves DATA_READY low. */
+    ResetHalState();
+    s_time_now_us = 111u;
+    s_spi_dma_status = HAL_ERROR;
+    SpiSlaveService_Init();
+    assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(s_spi_dma_start_count == 1u);
+    assert(s_last_gpio_state == GPIO_PIN_RESET);
+    diagnostics = SpiSlaveService_GetSnapshotDiagnostics();
+    assert(diagnostics->dma_start_count == 1u);
+    assert(diagnostics->dma_complete_count == 1u);
+    /* With the HAL healthy again, a newly staged frame is armed and signalled. */
+    s_spi_dma_status = HAL_OK;
+    assert(SpiSlaveService_StageSnapshot(SerializeTestFrame, &frame_value) == SNAPSHOT_BUILD_OK);
+    assert(s_spi_dma_start_count == 2u);
+    assert(s_spi_last_tx_buffer[0] == 0x44u);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+}
+
 static void TestSpiSlaveServiceLatestSnapshot(void)
 {
-    const uint8_t *frame_buffer = NULL;
-    uint16_t frame_length = 0u;
+    const uint8_t *frame;
     uint16_t expected_payload_length = SPI_SNAPSHOT_PAYLOAD_BYTES(1u);
     uint16_t sensor0_offset = SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_PREFIX_BYTES;
     uint16_t sensor1_offset = sensor0_offset + SPI_SENSOR_RECORD_BYTES;
@@ -828,28 +989,32 @@ static void TestSpiSlaveServiceLatestSnapshot(void)
     CanService_Init();
     assert(CanService_RegisterMotor(0u, 0u, 1u, CAN_SERVICE_MKS_SERVO42, 0x123u) == MKS_OK);
     s_time_now_us = 700u;
+    /* Leave the DMA idle after activation so the staged snapshot is the frame armed. */
+    s_spi_dma_status = HAL_ERROR;
     SpiSlaveService_Init();
     assert(SpiSlaveService_Activate() == LIFECYCLE_RESULT_OK);
+    s_spi_dma_status = HAL_OK;
     assert(SpiSlaveService_StageLatestSnapshot() == SNAPSHOT_BUILD_OK);
-    assert(SpiSlaveService_BeginDmaTransfer(&frame_buffer, &frame_length));
-    assert(frame_buffer != NULL);
-    assert(frame_length == (uint16_t)(SPI_FRAME_HEADER_BYTES + expected_payload_length + SPI_FRAME_CRC_BYTES));
-    assert(frame_buffer[3] == SPI_MESSAGE_SNAPSHOT);
-    assert(ReadU64(&frame_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(700));
-    assert(frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION] == 1u);
-    assert(frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_SENSOR_COUNT] == 6u);
-    assert(frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_MOTOR_COUNT] == 1u);
-    assert(ReadU32(&frame_buffer[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE]) == 0u);
-    assert(frame_buffer[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] == 0u);
-    assert(ReadU16(&frame_buffer[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]) == 0u);
-    assert(ReadU16(&frame_buffer[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_MAGNITUDE]) == 0u);
-    assert(frame_buffer[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_AGC] == 0u);
-    assert(frame_buffer[sensor1_offset + SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] == 1u);
-    assert(ReadU16(&frame_buffer[sensor1_offset + SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]) == 0u);
-    assert(frame_buffer[motor0_offset + SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX] == 0u);
-    assert(ReadU16(&frame_buffer[motor0_offset + SPI_MOTOR_RECORD_OFFSET_CAN_ID]) == 0x123u);
-    assert(frame_buffer[motor0_offset + SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] == 0u);
-    assert(SpiSlaveService_CompleteDmaTransfer());
+    assert(s_spi_dma_start_count == 2u);
+    assert(s_last_gpio_state == GPIO_PIN_SET);
+    frame = s_spi_last_tx_buffer;
+    assert(frame != NULL);
+    assert(frame[3] == SPI_MESSAGE_SNAPSHOT);
+    assert(ReadU16(&frame[4]) == expected_payload_length);
+    assert(ReadU64(&frame[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(700));
+    assert(frame[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION] == 1u);
+    assert(frame[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_SENSOR_COUNT] == 6u);
+    assert(frame[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_MOTOR_COUNT] == 1u);
+    assert(ReadU32(&frame[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE]) == 0u);
+    assert(frame[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] == 0u);
+    assert(ReadU16(&frame[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]) == 0u);
+    assert(ReadU16(&frame[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_MAGNITUDE]) == 0u);
+    assert(frame[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_AGC] == 0u);
+    assert(frame[sensor1_offset + SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] == 1u);
+    assert(ReadU16(&frame[sensor1_offset + SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]) == 0u);
+    assert(frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX] == 0u);
+    assert(ReadU16(&frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_CAN_ID]) == 0x123u);
+    assert(frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] == 0u);
 }
 
 static void TestAppInitCore(void)
@@ -875,10 +1040,16 @@ int main(void)
     TestSensorTaskCore();
 
     ResetHalState();
+    TestSensorTaskMuxMapping();
+
+    ResetHalState();
     TestCanServiceCore();
 
     ResetHalState();
     TestSpiSlaveServiceCore();
+
+    ResetHalState();
+    TestSpiSlaveServiceDmaLoop();
 
     ResetHalState();
     TestSpiSlaveServiceLatestSnapshot();

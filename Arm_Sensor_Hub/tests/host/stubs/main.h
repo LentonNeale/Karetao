@@ -6,6 +6,7 @@
 extern I2C_HandleTypeDef hi2c1;
 extern CAN_HandleTypeDef hcan1;
 extern TIM_HandleTypeDef htim2;
+extern SPI_HandleTypeDef hspi3;
 extern void *Data_Ready_GPIO_Port;
 extern uint16_t Data_Ready_Pin;
 

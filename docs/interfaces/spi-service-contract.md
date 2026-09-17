@@ -12,7 +12,7 @@ The wire format and message meanings are defined in [docs/protocols/spi-contract
 
 ## Current Status
 
-`App/Src/spi_slave_service.c` owns two static serialized-frame buffers through `SnapshotFrame_Pool`, stages fixed-frame responses selected by `SpiProtocol_ProcessRequest()`, serializes contract-compliant snapshots from the latest sensor/motor caches, and is the sole production owner of the `DATA_READY` GPIO. It stages a boot-status response while `INACTIVE`, but it does not yet start hardware DMA or receive hardware requests. This contract defines the implementation target and must not be read as proof that those behaviors already exist.
+`App/Src/spi_slave_service.c` owns two static serialized-frame buffers through `SnapshotFrame_Pool`, stages fixed-frame responses selected by `SpiProtocol_ProcessRequest()`, serializes contract-compliant snapshots from the latest sensor/motor caches, and is the sole production owner of the `DATA_READY` GPIO. It stages a boot-status response while `INACTIVE`. Since 2026-09-15 it also arms the SPI3 full-duplex DMA transfer for a fixed 512-byte transaction whenever a frame is staged and the service is `ACTIVE`, defers completion and error callbacks to task context, and aborts and re-arms after a DMA error or a 100 ms host stall. On 2026-09-17 this DMA path was flashed to a physical STM32F405 (ST-LINK/V2.1, no SPI host attached) and observed for approximately 23 seconds under debugger sampling. The arm/complete/abort/re-arm software state machine executed correctly on target: 234 arm/complete cycles were counted between two samples, consistent with the `SPI_SERVICE_HOST_STALL_MS` (100 ms) timeout, with zero dropped or replaced frames. No live SPI host clocked a transaction during this run, so request/response handling under a real master was not exercised, and the physical `DATA_READY` pin level, NSS behavior, DMA transfer timing, and signal integrity were not independently measured; only the internal software counters were read. This contract still must not be read as proof that the maximum SPI clock, host-driven transactions, or the DATA_READY-to-Pi path have been validated.
 
 ## Lifecycle
 
@@ -67,11 +67,11 @@ DMA mode details must support the fixed frame limit; maximum SPI clock remains t
 
 ## DATA_READY
 
-- Assert only when a complete valid frame is staged and SPI is `ACTIVE`; it does not indicate sensor cache changes.
-- Do not assert for a buffer still being serialized or for a partial DMA transfer.
-- Deassert when the staged buffer transfers to DMA ownership.
+- Assert only after a complete valid frame has been handed to DMA ownership and the SPI3 DMA transfer is armed, while SPI is `ACTIVE`; it does not indicate sensor cache changes. (Armed-then-assert model, approved 2026-09-17 in place of the earlier staged-then-assert wording, so that the Raspberry Pi can only be signalled when the slave is able to clock the frame.)
+- Do not assert for a buffer still being serialized, for a frame that is staged but not yet armed, or for a partial DMA transfer.
+- Deassert when the armed transfer completes, when it is aborted after an error or host stall, and whenever the service leaves `ACTIVE`.
 - Force low during `INACTIVE`, `ERROR`, and shutdown.
-- Poll staged-frame availability every configurable 1 ms by default. A poll that finds staged data while DATA_READY is low reasserts it and increments `poll_recovery_count`.
+- Poll staged-frame availability every configurable 1 ms by default. A poll that finds staged data while DATA_READY is low and no transfer is armed re-arms the transfer, reasserts DATA_READY, and increments `poll_recovery_count`.
 - Count rising notifications in `notification_count`; count a still-staged frame once after the configured host-stall interval in `host_stall_count`.
 
 SensorTask does not drive DATA_READY in production.

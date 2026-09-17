@@ -12,7 +12,7 @@
 #include "time_service.h"
 
 #define SENSOR_TASK_BRINGUP_POLL_PERIOD_MS 20u
-#define SENSOR_TASK_RECORD_COUNT 6u
+#define SENSOR_TASK_RECORD_COUNT SENSOR_TASK_AXIS_COUNT
 #define SENSOR_TASK_CALIBRATION_VERSION 0u
 #define SENSOR_TASK_MIN_HEALTHY_CHANNELS 1u
 
@@ -190,6 +190,12 @@ void SensorTask_Init(void)
 	s_snapshot.comm_error_count = 0u;
 	s_snapshot.magnet_error_count = 0u;
 
+	/*
+	 * Identity axis-to-mux binding is only a safe starting state so the encoder
+	 * table is never uninitialized. The commissioned binding is applied by
+	 * SensorTask_ConfigureMuxChannels(); App_Init() blocks activation when that
+	 * call is missing or rejected.
+	 */
 	for (record_index = 0u; record_index < SENSOR_TASK_RECORD_COUNT; ++record_index)
 	{
 		AS5600_InitDevice(&s_encoders[record_index], record_index);
@@ -204,6 +210,47 @@ void SensorTask_Init(void)
 
 	s_last_poll_tick = HAL_GetTick();
 	(void)Lifecycle_Apply(&s_lifecycle, LIFECYCLE_TRANSITION_CONFIGURE, true, 0u);
+}
+
+bool SensorTask_ConfigureMuxChannels(const uint8_t *mux_channels, size_t count)
+{
+	size_t axis;
+	size_t other;
+
+	if ((mux_channels == NULL) || (count != SENSOR_TASK_RECORD_COUNT))
+	{
+		return false;
+	}
+
+	/* Rebinding a live acquisition path would silently change joint identity. */
+	if (Lifecycle_IsActive(&s_lifecycle))
+	{
+		return false;
+	}
+
+	/* Validate the whole map first so a rejected map changes nothing. */
+	for (axis = 0u; axis < count; ++axis)
+	{
+		if (mux_channels[axis] > SENSOR_TASK_MAX_MUX_CHANNEL)
+		{
+			return false;
+		}
+
+		for (other = 0u; other < axis; ++other)
+		{
+			if (mux_channels[axis] == mux_channels[other])
+			{
+				return false;
+			}
+		}
+	}
+
+	for (axis = 0u; axis < count; ++axis)
+	{
+		AS5600_InitDevice(&s_encoders[axis], mux_channels[axis]);
+	}
+
+	return true;
 }
 
 Lifecycle_Result SensorTask_Activate(void)
@@ -242,6 +289,10 @@ void SensorTask_Process(void)
 
 	TimeService_GetSyncSnapshot(&time_sync_snapshot);
 
+	/*
+	 * The loop index is the logical axis and record position, not the mux
+	 * channel. The mux channel is whatever the bound encoder carries.
+	 */
 	for (channel = 0u; channel < SENSOR_TASK_RECORD_COUNT; ++channel)
 	{
 		SensorTask_ProcessChannel(channel, &time_sync_snapshot);
