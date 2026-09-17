@@ -1,6 +1,6 @@
 # Multi-Sensor and TCA9548A Contract
 
-**Status:** Design target  
+**Status:** Design target with commissioned implementation evidence  
 **Owner:** SensorTask, TCA9548A driver, and AS5600 device layer  
 **Boundary:** Six AS5600 devices -> sensor records/snapshots
 
@@ -15,21 +15,23 @@
 | 4 | 6 | AS5600 |
 | 5 | 7 | AS5600 |
 
-The mapping is the commissioning default and must be configurable without changing the sensor algorithm. All AS5600 devices use the configured seven-bit device address unless a hardware revision requires otherwise.
+The table above is the commissioned SD2-SD7 mapping. The mapping remains configurable without changing the sensor algorithm. All AS5600 devices use the configured seven-bit device address unless a hardware revision requires otherwise.
 
-Channels 0 and 1 are deliberately outside the published axis set. Channel 0 carries a bench test sensor and channel 1 is unpopulated, so neither appears in a snapshot; a seventh record cannot be published without a payload-schema change.
+Channels 0 and 1 are deliberately outside the published axis set. Channel 0 carries a bench test sensor and channel 1 is unpopulated in the earlier bench configuration, so neither appears in a snapshot; a seventh record cannot be published without a payload-schema change.
 
-This table was revised on 2026-09-17 from the earlier axis-N-to-channel-N default, which did not match the commissioned wiring. The configurability requirement above is now met in code: `SensorTask_ConfigureMuxChannels()` binds each axis to its channel, validating the whole map before applying any of it, and rejecting a map that is the wrong size, names a channel above 7, repeats a channel, or arrives while the service is `ACTIVE`. The binding lives in one table in `App/Src/app_init.c`, and `App_Start()` refuses sensor activation when the map was rejected. Record positions and logical IDs remain 0-5 regardless of which channels are bound.
+The configurability requirement is implemented in code: `SensorTask_ConfigureMuxChannels()` binds each axis to its channel, validating the whole map before applying any of it, and rejecting a map that is the wrong size, names a channel above 7, repeats a channel, or arrives while the service is `ACTIVE`. The binding lives in one table in `App/Src/app_init.c`, and `App_Start()` refuses sensor activation when the map was rejected. Record positions and logical IDs remain 0-5 regardless of which channels are bound.
 
 ## Sampling
 
-The TCA9548A is sequential; samples are not simultaneous. A scan visits enabled channels in ascending logical-axis order, selects one mux channel, allows the required settle time, then performs the AS5600 transaction. The scan period, per-channel timeout, settle time, and maximum full-scan duration must be frozen before implementation.
+The TCA9548A is sequential; samples are not simultaneous. A scan visits enabled channels in ascending logical-axis order, selects one mux channel, allows the required settle time, then performs the AS5600 transaction. The scan period, per-channel timeout, settle time, and maximum full-scan duration must be frozen before treating the current scheduler timing as an accepted scan contract.
 
 Each successful measurement records acquisition time immediately after its bytes are received and decoded, using the shared 64-bit monotonic timestamp source. The timestamp spread across one snapshot must remain visible to the host.
 
 The synchronized timestamp flag is valid only when the last accepted TIME_SYNC update is no older than five seconds. Otherwise the record remains usable as local-time data but must be marked unsynchronized.
 
 The snapshot target is always six sensor records with logical IDs 0-5. A channel that is not ready or has failed remains represented with invalid/stale flags rather than changing record positions.
+
+The current firmware sweeps all six logical axes in one blocking pass per 20 ms scheduler tick. The measured full six-axis sweep is approximately 46 ms, so the 20 ms value is a scheduler period and must not be described as a demonstrated 20 ms full-scan completion time. The scan period, settle time, per-channel timeout, and minimum healthy-channel threshold remain unfrozen.
 
 ## Latest-Value Cache
 
@@ -50,7 +52,11 @@ Initial recommended policy:
 - escalate the aggregate sensor service only when the configured minimum healthy-channel count is not met;
 - expose per-channel fault and last-success timestamps.
 
-Status note (2026-09-17): the firmware now sweeps all six channels in one blocking pass per 20 ms tick, ahead of this contract. The scan period, settle time, per-channel timeout, and minimum healthy-channel count required above have not been frozen. On 2026-09-17 this scan was also run on a physical STM32F405 with one real AS5600 wired to TCA9548A channel 0 and channels 1-5 unwired: the mux reported the expected channel-0 selection, a real raw angle and status byte were read from the wired sensor, and the five unwired channels produced isolated communication errors each pass without stalling the scan or the other channel. `sample_ok_count` remained 0 on the wired channel because its AS5600 status decoded to the `ML` (magnet-too-weak) flag rather than a communication failure; roughly 18 seconds after boot the wired channel also stopped producing successful reads for the remainder of the ~23-second run, a bench/wiring observation that has not been explained. This is evidence for one physical channel and the absent-channel isolation behavior only, not for a commissioned six-sensor topology, and it does not substitute for freezing the parameters above.
+## Commissioning Evidence
+
+On 2026-09-17 the current implementation was run on a physical STM32F405 with the commissioned logical mapping bound to SD2-SD7. All six commissioned axes produced valid magnet samples with zero communication or magnet errors during the commissioning run. This is evidence for the six-axis commissioned mapping and sensor-path behavior at the recorded bench conditions; it is not evidence that the unfrozen scan timing parameters meet any separate 20 ms full-scan requirement.
+
+An earlier bench run used one real AS5600 on channel 0 with channels 1-5 unwired. That run demonstrated isolated communication failures for absent channels and a real status/angle read from the wired channel, but it is not the evidence basis for the commissioned SD2-SD7 mapping. The earlier run also recorded a magnet-too-weak status and a later loss of successful reads; those observations remain bench evidence rather than a six-axis acceptance result.
 
 ## Runtime Failure
 
