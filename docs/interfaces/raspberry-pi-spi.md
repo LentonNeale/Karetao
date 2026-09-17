@@ -1,45 +1,61 @@
-# Raspberry Pi SPI Scaffold
+# Raspberry Pi SPI Interface
 
-This document is the canonical Raspberry Pi-side companion to the ARM-owned SPI contracts.
+This document is the Raspberry Pi-side companion to the ARM-owned SPI contracts.
 
-## Scope
+## Hardware baseline
 
-The Raspberry Pi code under `RaspberryPi_Sensor_Hub/src/spi/` is currently a minimal scaffold for:
+The Raspberry Pi is the SPI master and the STM32F405 SPI3 peripheral is the slave.
+The selected Raspberry Pi SPI0 wiring is:
 
-- SPI bus lifecycle (`spi_bus.py`)
-- Frame encode/decode and CRC validation (`spi_protocol.py`)
-- High-level request/response access (`spi_device.py`)
+| Raspberry Pi physical pin | Signal | STM32 SPI3 |
+| ---: | --- | --- |
+| 19 | MOSI | PC12 MOSI |
+| 21 | MISO | PC11 MISO |
+| 23 | SCLK | PC10 SCK |
+| 24 | CE0 / NSS | PA15 NSS |
 
-It intentionally avoids selecting a production backend (`spidev`, `periphery`, GPIO library, DMA strategy, or systemd integration) until those choices are frozen for the target hardware image.
+Pins 19, 21 and 23 are the user-specified SPI data/clock pins. CE0 on physical pin 24 is used as the SPI chip-select because the STM32 SPI3 interface uses hardware NSS.
 
-## Contract Alignment
+`DATA_READY` is intentionally not assigned a Raspberry Pi GPIO in this baseline because no Raspberry Pi GPIO number was supplied. The Pi transport therefore performs explicit SPI transfers when the application requests them; assigning a DATA_READY GPIO can be added later without changing the SPI wire format.
 
-Use these root docs as the source of truth:
+## Transport
 
-- Transport and framing: [docs/protocols/spi-contract.md](../protocols/spi-contract.md)
-- Payload layouts: [docs/protocols/spi-payload-schema.md](../protocols/spi-payload-schema.md)
-- STM32 SPI service behavior: [docs/interfaces/spi-service-contract.md](spi-service-contract.md)
-- ARM hardware baseline: [docs/hardware/arm-sensor-hub-baseline.md](../hardware/arm-sensor-hub-baseline.md)
+The implementation uses Linux `spidev` with:
 
-## Current Usage
+- `/dev/spidev0.0`;
+- SPI mode 0;
+- 8 bits per word;
+- maximum configured clock 5 MHz;
+- fixed 512-byte full-duplex transfers.
 
-```python
-from spi import MessageType, SpiBus, SpiBusConfig, SpiDevice, SpiFrame
+A logical frame may be shorter than 512 bytes. The remaining bytes in the transport transaction are zero padding. The CRC covers only the logical frame header and payload, exactly as defined by `docs/protocols/spi-contract.md`.
 
-bus = SpiBus(SpiBusConfig(), backend=fake_backend)
-bus.open()
+The STM32 stages the response before the Pi clocks the transaction. A transaction carries a request from the Pi and the response staged before that request; the request is validated after DMA completion and the next response is then staged. This is the canonical pipelined request/response model.
 
-device = SpiDevice(bus)
-request = SpiFrame(message_type=MessageType.GET_STATUS, seq=1)
-response = device.transact(request)
-```
+## Software
 
-For unit tests and early integration, inject a fake backend into `SpiBus` rather than assuming Linux SPI devices or GPIO mappings. The scaffold intentionally raises `NotImplementedError` if a transfer is attempted without a backend.
+The Pi implementation is split into:
 
-## TODOs Before Production Bring-Up
+- `src/spi/spi_bus.py` — Linux `spidev` backend and fixed-size transfer wrapper;
+- `src/spi/spi_protocol.py` — explicit frame serialization, deserialization and CRC;
+- `src/spi/spi_device.py` — high-level device access.
 
-- Confirm the final Linux SPI backend and bus/device path once Raspberry Pi OS packaging is chosen.
-- Confirm `DATA_READY` GPIO polarity, debounce expectations, and user-space access strategy against target hardware.
-- Confirm the maximum accepted SPI clock after the ARM-side 5 MHz integration gate is closed.
-- Confirm final request/response retry policy for stalled or partial transactions.
-- Confirm whether the Raspberry Pi should treat every transfer as fixed 512-byte frames or allow a future transport wrapper.
+The `SpiBus` backend remains injectable, so protocol and device tests do not require Raspberry Pi hardware or the `spidev` package.
+
+## Bring-up
+
+Install the target image's `spidev` Python package and enable SPI0. Confirm `/dev/spidev0.0` exists before running the device interface.
+
+Start at 5 MHz or below. The 5 MHz value is the current integration ceiling in the STM32 contract; final acceptance still requires target hardware evidence for signal integrity, DMA timing, NSS behaviour and complete 512-byte transactions.
+
+## Validation requirements
+
+Before treating SPI as closed, verify on target hardware:
+
+1. MOSI/MISO/SCLK/NSS connectivity using the physical mapping above.
+2. Mode 0 timing at the selected clock.
+3. Complete 512-byte DMA transactions without overrun/underrun.
+4. Correct CRC and sequence/correlation behaviour.
+5. NSS abort/error recovery.
+6. DATA_READY behaviour if a Raspberry Pi GPIO is subsequently assigned.
+7. Repeated transactions under sustained load.

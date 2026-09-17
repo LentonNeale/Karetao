@@ -12,11 +12,11 @@
 #include "time_service.h"
 
 #define SENSOR_TASK_BRINGUP_POLL_PERIOD_MS 20u
-#define SENSOR_TASK_MUX_CH0_MASK (1u << 0)
 #define SENSOR_TASK_RECORD_COUNT 6u
 #define SENSOR_TASK_CALIBRATION_VERSION 0u
+#define SENSOR_TASK_MIN_HEALTHY_CHANNELS 1u
 
-static AS5600_Device s_single_encoder;
+static AS5600_Device s_encoders[SENSOR_TASK_RECORD_COUNT];
 static SensorTask_BringupSnapshot s_snapshot;
 static Sensor_LatestValue s_latest_values[SENSOR_TASK_RECORD_COUNT];
 static Lifecycle_Record s_lifecycle;
@@ -26,9 +26,6 @@ static uint32_t s_diag_word;
 volatile SensorTask_BringupSnapshot g_sensor_task_snapshot_dbg;
 volatile uint32_t g_sensor_task_diag_word_dbg;
 
-/**
- * @brief Executes task pack diag word.
- */
 static uint32_t SensorTask_PackDiagWord(void)
 {
 	uint32_t result_bits = ((uint32_t)s_snapshot.result & 0x0Fu) << 28u;
@@ -46,78 +43,141 @@ static uint32_t SensorTask_PackDiagWord(void)
 	return result_bits | status_bits | angle_bits | comm_seen | magnet_seen | sample_seen | md_bit | ml_bit | mh_bit | active_bit | heartbeat;
 }
 
-/**
- * @brief Executes task update debug mirrors.
- */
 static void SensorTask_UpdateDebugMirrors(void)
 {
 	g_sensor_task_snapshot_dbg = s_snapshot;
 	g_sensor_task_diag_word_dbg = s_diag_word;
 }
 
-/**
- * @brief Executes task run init checks.
- */
 static void SensorTask_RunInitChecks(void)
 {
 	I2CManager_Status mux_status;
-	AS5600_Status sensor_status;
-	uint8_t mux_readback = 0u;
-	uint8_t sensor_status_reg = 0u;
-	uint64_t ts = 0u;
+	uint8_t mux_readback;
+	uint64_t ts;
+	uint8_t channel;
+	uint32_t healthy_channels = 0u;
 
-	if (s_snapshot.init_stage == SENSOR_TASK_INIT_STAGE_MUX)
+	mux_status = TCA9548A_Probe(0x01u, &mux_readback);
+	if ((mux_status != I2C_MANAGER_STATUS_OK) || (mux_readback != 0x01u))
 	{
-		mux_status = TCA9548A_Probe(SENSOR_TASK_MUX_CH0_MASK, &mux_readback);
-		s_snapshot.mux_readback_mask = mux_readback;
-
-		if ((mux_status != I2C_MANAGER_STATUS_OK) || (mux_readback != SENSOR_TASK_MUX_CH0_MASK))
-		{
-			(void)Lifecycle_Fail(&s_lifecycle, (uint32_t)mux_status);
-			s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_COMM;
-			s_snapshot.is_active = 0u;
-			s_snapshot.comm_error_count++;
-			s_diag_word = SensorTask_PackDiagWord();
-			SensorTask_UpdateDebugMirrors();
-			return;
-		}
-
-		s_snapshot.init_stage = SENSOR_TASK_INIT_STAGE_SENSOR;
-	}
-
-	if (s_snapshot.init_stage == SENSOR_TASK_INIT_STAGE_SENSOR)
-	{
-		sensor_status = AS5600_ReadStatus(&s_single_encoder, &sensor_status_reg, &ts);
-		if (sensor_status != AS5600_STATUS_OK)
-		{
-			(void)Lifecycle_Fail(&s_lifecycle, (uint32_t)sensor_status);
-			s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_COMM;
-			s_snapshot.is_active = 0u;
-			s_snapshot.comm_error_count++;
-			s_diag_word = SensorTask_PackDiagWord();
-			SensorTask_UpdateDebugMirrors();
-			return;
-		}
-
-		s_snapshot.last_status = sensor_status_reg;
-		s_snapshot.last_timestamp_us = ts;
-		s_snapshot.init_stage = SENSOR_TASK_INIT_STAGE_ACTIVE;
-		s_snapshot.is_active = 1u;
-		s_snapshot.result = SENSOR_TASK_BRINGUP_PASS;
+		(void)Lifecycle_Fail(&s_lifecycle, (uint32_t)mux_status);
+		s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_COMM;
+		s_snapshot.is_active = 0u;
+		s_snapshot.comm_error_count++;
 		s_diag_word = SensorTask_PackDiagWord();
 		SensorTask_UpdateDebugMirrors();
+		return;
 	}
+
+	s_snapshot.mux_readback_mask = mux_readback;
+	s_snapshot.init_stage = SENSOR_TASK_INIT_STAGE_SENSOR;
+
+	for (channel = 0u; channel < SENSOR_TASK_RECORD_COUNT; ++channel)
+	{
+		uint8_t sensor_status = 0u;
+		AS5600_Status sensor_result = AS5600_ReadStatus(&s_encoders[channel], &sensor_status, &ts);
+		if (sensor_result == AS5600_STATUS_OK)
+		{
+			healthy_channels++;
+			s_snapshot.last_status = sensor_status;
+			s_snapshot.last_timestamp_us = ts;
+		}
+		else
+		{
+			s_snapshot.comm_error_count++;
+			SensorLatestValue_SetInvalid(&s_latest_values[channel],
+			                             0u,
+			                             SENSOR_VALIDITY_COMMUNICATION_ERROR,
+			                             TimeService_NowUs());
+		}
+	}
+
+	if (healthy_channels < SENSOR_TASK_MIN_HEALTHY_CHANNELS)
+	{
+		(void)Lifecycle_Fail(&s_lifecycle, (uint32_t)AS5600_STATUS_NOT_READY);
+		s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_COMM;
+		s_snapshot.is_active = 0u;
+		s_diag_word = SensorTask_PackDiagWord();
+		SensorTask_UpdateDebugMirrors();
+		return;
+	}
+
+	s_snapshot.init_stage = SENSOR_TASK_INIT_STAGE_ACTIVE;
+	s_snapshot.is_active = 1u;
+	s_snapshot.result = SENSOR_TASK_BRINGUP_PASS;
+	s_diag_word = SensorTask_PackDiagWord();
+	SensorTask_UpdateDebugMirrors();
 }
 
-/**
- * @brief Executes task init.
- */
+static void SensorTask_SetChannelInvalid(uint8_t channel, uint8_t status, uint16_t reason_flags)
+{
+	if (channel >= SENSOR_TASK_RECORD_COUNT)
+	{
+		return;
+	}
+
+	SensorLatestValue_SetInvalid(&s_latest_values[channel],
+	                             status,
+	                             reason_flags,
+	                             TimeService_NowUs());
+}
+
+static void SensorTask_ProcessChannel(uint8_t channel, const TimeService_SyncSnapshot *time_sync_snapshot)
+{
+	AS5600_Sample sample;
+	AS5600_Status status;
+
+	status = AS5600_ReadSample(&s_encoders[channel], &sample);
+	if (status != AS5600_STATUS_OK)
+	{
+		s_snapshot.comm_error_count++;
+		SensorTask_SetChannelInvalid(channel, 0u, SENSOR_VALIDITY_COMMUNICATION_ERROR);
+		return;
+	}
+
+	s_snapshot.last_raw_angle = sample.raw_angle;
+	s_snapshot.last_status = sample.status;
+	s_snapshot.last_timestamp_us = sample.timestamp_us;
+
+	if ((sample.status & AS5600_STATUS_MD) == 0u)
+	{
+		s_snapshot.magnet_error_count++;
+		SensorTask_SetChannelInvalid(channel, sample.status, SENSOR_VALIDITY_MAGNET_NOT_DETECTED);
+		return;
+	}
+
+	if ((sample.status & AS5600_STATUS_ML) != 0u)
+	{
+		s_snapshot.magnet_error_count++;
+		SensorTask_SetChannelInvalid(channel, sample.status, SENSOR_VALIDITY_MAGNET_TOO_WEAK);
+		return;
+	}
+
+	if ((sample.status & AS5600_STATUS_MH) != 0u)
+	{
+		s_snapshot.magnet_error_count++;
+		SensorTask_SetChannelInvalid(channel, sample.status, SENSOR_VALIDITY_MAGNET_TOO_STRONG);
+		return;
+	}
+
+	s_snapshot.result = SENSOR_TASK_BRINGUP_PASS;
+	s_snapshot.sample_ok_count++;
+	SensorLatestValue_SetValid(&s_latest_values[channel],
+	                           sample.raw_angle,
+	                           (int32_t)(((uint32_t)sample.angle * 360000u) / 4096u),
+	                           sample.magnitude,
+	                           sample.agc,
+	                           sample.status,
+	                           sample.timestamp_us,
+	                           time_sync_snapshot->quality,
+	                           SENSOR_TASK_CALIBRATION_VERSION);
+}
+
 void SensorTask_Init(void)
 {
 	uint8_t record_index;
 
 	Lifecycle_Init(&s_lifecycle, "AS5600_SENSOR_SERVICE");
-	AS5600_InitDevice(&s_single_encoder, 0u);
 
 	s_snapshot.result = SENSOR_TASK_BRINGUP_UNKNOWN;
 	s_snapshot.init_stage = SENSOR_TASK_INIT_STAGE_MUX;
@@ -129,13 +189,16 @@ void SensorTask_Init(void)
 	s_snapshot.sample_ok_count = 0u;
 	s_snapshot.comm_error_count = 0u;
 	s_snapshot.magnet_error_count = 0u;
+
 	for (record_index = 0u; record_index < SENSOR_TASK_RECORD_COUNT; ++record_index)
 	{
+		AS5600_InitDevice(&s_encoders[record_index], record_index);
 		SensorLatestValue_Init(&s_latest_values[record_index],
 		                       record_index,
 		                       record_index,
 		                       SENSOR_TASK_CALIBRATION_VERSION);
 	}
+
 	s_diag_word = SensorTask_PackDiagWord();
 	SensorTask_UpdateDebugMirrors();
 
@@ -143,31 +206,21 @@ void SensorTask_Init(void)
 	(void)Lifecycle_Apply(&s_lifecycle, LIFECYCLE_TRANSITION_CONFIGURE, true, 0u);
 }
 
-/**
- * @brief Executes task activate.
- */
 Lifecycle_Result SensorTask_Activate(void)
 {
 	return Lifecycle_Apply(&s_lifecycle, LIFECYCLE_TRANSITION_ACTIVATE, true, 0u);
 }
 
-/**
- * @brief Executes task get lifecycle state.
- */
 Lifecycle_State SensorTask_GetLifecycleState(void)
 {
 	return Lifecycle_GetState(&s_lifecycle);
 }
 
-/**
- * @brief Executes task process.
- */
 void SensorTask_Process(void)
 {
-	AS5600_Sample sample;
-	AS5600_Status status;
 	TimeService_SyncSnapshot time_sync_snapshot;
 	uint32_t now_tick = HAL_GetTick();
+	uint8_t channel;
 
 	if (!Lifecycle_IsActive(&s_lifecycle))
 	{
@@ -187,83 +240,17 @@ void SensorTask_Process(void)
 		return;
 	}
 
-	status = AS5600_ReadSample(&s_single_encoder, &sample);
-
-	if (status != AS5600_STATUS_OK)
-	{
-		s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_COMM;
-		s_snapshot.comm_error_count++;
-		s_diag_word = SensorTask_PackDiagWord();
-		SensorTask_UpdateDebugMirrors();
-		SensorLatestValue_SetInvalid(&s_latest_values[0],
-		                             0u,
-		                             SENSOR_VALIDITY_COMMUNICATION_ERROR,
-		                             TimeService_NowUs());
-		return;
-	}
-
-	s_snapshot.last_raw_angle = sample.raw_angle;
-	s_snapshot.last_status = sample.status;
-	s_snapshot.last_timestamp_us = sample.timestamp_us;
 	TimeService_GetSyncSnapshot(&time_sync_snapshot);
 
-	if ((sample.status & AS5600_STATUS_MD) == 0u)
+	for (channel = 0u; channel < SENSOR_TASK_RECORD_COUNT; ++channel)
 	{
-		s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_MAGNET_NOT_DETECTED;
-		s_snapshot.magnet_error_count++;
-		s_diag_word = SensorTask_PackDiagWord();
-		SensorTask_UpdateDebugMirrors();
-		SensorLatestValue_SetInvalid(&s_latest_values[0],
-		                             sample.status,
-		                             SENSOR_VALIDITY_MAGNET_NOT_DETECTED,
-		                             sample.timestamp_us);
-		return;
+		SensorTask_ProcessChannel(channel, &time_sync_snapshot);
 	}
 
-	if ((sample.status & AS5600_STATUS_ML) != 0u)
-	{
-		s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_MAGNET_TOO_WEAK;
-		s_snapshot.magnet_error_count++;
-		s_diag_word = SensorTask_PackDiagWord();
-		SensorTask_UpdateDebugMirrors();
-		SensorLatestValue_SetInvalid(&s_latest_values[0],
-		                             sample.status,
-		                             SENSOR_VALIDITY_MAGNET_TOO_WEAK,
-		                             sample.timestamp_us);
-		return;
-	}
-
-	if ((sample.status & AS5600_STATUS_MH) != 0u)
-	{
-		s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_MAGNET_TOO_STRONG;
-		s_snapshot.magnet_error_count++;
-		s_diag_word = SensorTask_PackDiagWord();
-		SensorTask_UpdateDebugMirrors();
-		SensorLatestValue_SetInvalid(&s_latest_values[0],
-		                             sample.status,
-		                             SENSOR_VALIDITY_MAGNET_TOO_STRONG,
-		                             sample.timestamp_us);
-		return;
-	}
-
-	s_snapshot.result = SENSOR_TASK_BRINGUP_PASS;
-	s_snapshot.sample_ok_count++;
-	SensorLatestValue_SetValid(&s_latest_values[0],
-	                           sample.raw_angle,
-	                           (int32_t)(((uint32_t)sample.angle * 360000u) / 4096u),
-	                           sample.magnitude,
-	                           sample.agc,
-	                           sample.status,
-	                           sample.timestamp_us,
-	                           time_sync_snapshot.quality,
-	                           SENSOR_TASK_CALIBRATION_VERSION);
 	s_diag_word = SensorTask_PackDiagWord();
 	SensorTask_UpdateDebugMirrors();
 }
 
-/**
- * @brief Executes task get bringup result.
- */
 SensorTask_BringupResult SensorTask_GetBringupResult(void)
 {
 	return s_snapshot.result;
@@ -274,17 +261,11 @@ const SensorTask_BringupSnapshot *SensorTask_GetBringupSnapshot(void)
 	return &s_snapshot;
 }
 
-/**
- * @brief Executes task get bringup diag word.
- */
 uint32_t SensorTask_GetBringupDiagWord(void)
 {
 	return s_diag_word;
 }
 
-/**
- * @brief Executes task is active.
- */
 uint8_t SensorTask_IsActive(void)
 {
 	return s_snapshot.is_active;
