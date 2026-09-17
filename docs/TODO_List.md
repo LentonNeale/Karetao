@@ -1,26 +1,30 @@
 # TODO List (Consolidated from existing repository documentation)
 
 ## docs/architecture.md
-- Less mature or still being integrated: six-channel sensor scheduling.
-- Less mature or still being integrated: final SPI DMA/NSS hardware integration.
-- Less mature or still being integrated: complete TIME_SYNC dispatch through live SPI command handling.
+- Less mature or still being integrated: live Raspberry Pi <-> STM32 SPI transaction acceptance.
+- Less mature or still being integrated: 5 MHz physical SPI acceptance, including DMA timing, NSS, DATA_READY/GPIO timing, and signal integrity.
+- Less mature or still being integrated: sustained/repeated SPI transaction validation.
+- Less mature or still being integrated: scan timing and other six-channel sensor parameters that remain unfrozen.
+- Less mature or still being integrated: complete TIME_SYNC target validation.
 - Less mature or still being integrated: expanded health aggregation.
-- Less mature or still being integrated: end-to-end target-hardware evidence.
+- Less mature or still being integrated: CAN physical validation.
+- Less mature or still being integrated: calibration persistence.
+- Less mature or still being integrated: exact motor-controller semantics.
+- Less mature or still being integrated: independent safety validation.
 
 ## docs/hardware/arm-sensor-hub-baseline.md
-- Expand from single AS5600 bring-up to all six encoder channels via TCA9548A scheduling.
-- Define and implement the SPI host contract to Raspberry Pi.
 - Add CAN TX queueing policy, retry/timeout strategy, and bus-off recovery policy.
 - Add integration tests for end-to-end sensor-to-host data path.
+- Retain live SPI host validation, 5 MHz physical acceptance, and DATA_READY/NSS electrical validation as integration gates.
 
 ## docs/interfaces/spi-service-contract.md
-- Hardware DMA invocation remains future work.
-- Connect DMA/NSS handling and validate the 5 MHz initial maximum with Pi, DMA, GPIO, and signal-integrity tests.
+- Validate the implemented DMA/NSS path with a live Raspberry Pi host.
+- Validate the 5 MHz initial maximum with Pi, DMA, GPIO, NSS, and signal-integrity tests.
 
 ## docs/protocols/spi-contract.md
-- Maximum deployed clock rate remains an integration decision and must be frozen before DMA implementation.
-- The exact record schema is a separate data-model decision and must be frozen before the encoder is implemented.
-- The following remains an integration gate before SPI implementation is frozen: maximum SPI clock frequency and associated DMA timing.
+- Validate the implemented SPI3 DMA path with a live Raspberry Pi host.
+- Accept the 5 MHz maximum only after DMA timing, NSS behavior, DATA_READY/GPIO timing, signal integrity, sustained transactions, and real request/response evidence are recorded.
+- Retain the existing protocol/schema freeze decisions; do not turn implementation details into new requirements.
 - Lifecycle states permitted for each message type.
 
 ## docs/protocols/spi-payload-schema.md
@@ -32,31 +36,31 @@
 - Remaining schema decisions: whether future records use a tagged extension mechanism.
 
 ## docs/interfaces/raspberry-pi-spi.md
-- Confirm the final Linux SPI backend and bus/device path once Raspberry Pi OS packaging is chosen.
-- Confirm `DATA_READY` GPIO polarity, debounce expectations, and user-space access strategy against target hardware.
+- Confirm `DATA_READY` GPIO polarity, debounce expectations, and user-space access strategy against target hardware; the Raspberry Pi GPIO remains intentionally unassigned in the current baseline.
 - Confirm the maximum accepted SPI clock after the ARM-side 5 MHz integration gate is closed.
 - Confirm final request/response retry policy for stalled or partial transactions.
-- Confirm whether the Raspberry Pi should treat every transfer as fixed 512-byte frames or allow a future transport wrapper.
+- Retain fixed 512-byte transfers as the current transport implementation; revisit only through a versioned contract change.
 
 ## RaspberryPi_Sensor_Hub/README.md
-- Hardware-specific Linux SPI and GPIO choices remain TODO items until ARM contract gates are finalized.
+- Validate the implemented Linux `spidev` backend on the target Raspberry Pi.
+- Close the DATA_READY GPIO integration decision only when a Raspberry Pi GPIO is actually assigned and validated.
 
 ## Arm_Sensor_Hub/Documentation/CONTRACT_STATUS.md (Next action column)
 - Complete named CAN, SPI, motor, and safety gates.
 - Implement prerequisite validation and explicit post-recovery activation request.
-- Connect DMA/NSS handling and validate the 5 MHz initial maximum with Pi, DMA, GPIO, and signal-integrity tests.
+- Validate the 5 MHz initial SPI maximum with Pi, DMA, GPIO, NSS, and signal-integrity tests.
 - Validate exact controller, transceiver/topology/termination, candidate timing, measured load, retry timing, and recovery behavior.
 - Extend coverage as more motor/sensor fields become live and retain target validation evidence.
 - Expand producer coverage beyond the current commissioned sensor/motor set.
-- Connect DMA/NSS events and complete documented Pi/DMA/GPIO clock acceptance testing.
+- Complete documented Pi/DMA/GPIO clock acceptance testing with a live host.
 - Expand composite-access coverage and define broader arbitration/recovery behavior.
-- Implement complete six-channel scan and bind commissioned mapping/calibration versions.
+- Freeze scan period, per-channel timeout, settle time, and healthy-channel threshold against the measured ~46 ms full-six-axis sweep.
 - Validate end-to-end Pi-driven TIME_SYNC behavior on target hardware and retain build evidence.
 - Define canonical CRC serialization and flash persistence/power-loss handling.
 - Commission complete physical mapping and bind it to persisted configuration.
 - Implement response-level events and bounded recovery escalation.
 - Expand snapshot thresholds, host reporting cadence, and fault acknowledgement behavior.
-- Install arm-none-eabi toolchain in the runner and re-run Debug/Release builds to retain target-build evidence.
+- Preserve the successful CI firmware-build evidence, size/checksum output, and uploaded artifacts.
 - Verify exact controller behavior before freezing command semantics.
 
 ## Arm_Sensor_Hub/Documentation/Module_TODOs/CAN_Module_TODO.md
@@ -108,10 +112,8 @@
 - Applicable safety-rated relay/controller and safety architecture — BLOCKED: no artifact recorded.
 
 ## Arm_Sensor_Hub/Documentation/PHASE_1_FINAL_CLEARANCE_REPORT.md
-- Debug configure is blocked by missing `arm-none-eabi-gcc/g++`.
-- Re-establish target build evidence in CI/runner (P1, Blocking).
+- Historical report dated 2026-09-07 recorded missing ARM toolchain evidence at that review point. Do not treat that historical finding as the current repository build state; current CI evidence is tracked in `BUILD_CONTRACT.md` and `CONTRACT_STATUS.md`.
 - Deepen negative-path coverage for hardware-facing service flows beyond smoke level (P2, Non-blocking follow-up).
-- Clearance decision: `Blocked pending target build validation`.
 
 ## Arm_Sensor_Hub/Documentation/LIFECYCLE_CONTRACT.md
 - Automated host tests were intentionally deferred from first implementation pass; required future cases remain listed.
@@ -124,12 +126,10 @@
 ## Arm_Sensor_Hub/Documentation/Sprint_1_List.md
 - Remaining work (Task 07): canonical serialized CRC coverage using shared CRC-32/ISO-HDLC helper; redundant flash-sector allocation; erase/write ordering; endurance budget; power-loss recovery validation; wiring validated calibration state into mapping and lifecycle prerequisites.
 - Remaining work (Task 08): complete physical commissioning; persisted configuration binding; future mapping schema for coupled/differential joints.
-- Remaining work (Task 09): complete six-channel scanning and bind commissioned mapping/calibration versions to each record.
+- Remaining work (Task 09): freeze scan timing parameters against the commissioned SD2-SD7 mapping and measured ~46 ms full-axis sweep; calibration binding remains open.
 - Task 18 output is not implemented and deferred to when Motor Service work begins (open Sprint 2+ item).
 - Sprint 1 exit criteria checklist items remain unchecked.
 
 ## Code vs document consistency issues found in code review
-- `docs/interfaces/spi-service-contract.md` states fixed 512-byte request-frame validation, but `RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py` still has an open TODO to confirm whether production transfers are fixed 512-byte frames.
-- `docs/protocols/spi-contract.md` says the host shall validate `protocol_version`, but `RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py` decode currently accepts any `protocol_version` value without rejecting unsupported versions.
-- `docs/protocols/spi-contract.md` says the host shall track sequence numbers and reject stale/duplicate responses, but `RaspberryPi_Sensor_Hub/src/spi/spi_device.py` currently provides stateless transact/get_status helpers only.
-- `docs/interfaces/raspberry-pi-spi.md` says production backend and bus/device path are not yet frozen; `RaspberryPi_Sensor_Hub/src/spi/spi_bus.py` still carries placeholder defaults (`/dev/spidevTODO` and transfer `NotImplementedError`) that should be resolved once those contract gates are closed.
+- `spi_device.py` still provides stateless `transact/get_status` helpers; do not claim complete host-side outstanding-transaction state tracking merely because frame-level sequence/version validation exists.
+- Live Pi/STM32 request/response, DATA_READY GPIO assignment, NSS behavior, 5 MHz acceptance, and signal integrity remain physical validation work rather than implementation TODOs.
