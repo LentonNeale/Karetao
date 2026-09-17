@@ -9,6 +9,7 @@ This directory is the canonical home for project-level engineering documentation
 | System | [architecture.md](system/architecture.md) | Active | System architecture |
 | System | [development.md](system/development.md) | Active | Development workflow |
 | System | [TODO_List.md](system/TODO_List.md) | Active | Consolidated project TODOs |
+| System | [QUESTIONS.md](QUESTIONS.md) | Active | Open project questions requiring decisions or evidence |
 | Hardware | [arm-sensor-hub-baseline.md](hardware/arm-sensor-hub-baseline.md) | Active | Arm sensor hub hardware baseline |
 | Interfaces | [raspberry-pi-spi.md](interfaces/raspberry-pi-spi.md) | Active | Raspberry Pi SPI interface |
 | Interfaces | [spi-service-contract.md](interfaces/spi-service-contract.md) | Active | SPI service interface contract |
