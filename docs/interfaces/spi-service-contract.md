@@ -45,7 +45,7 @@ CAN service -> motor cache ----┘
 
 The snapshot mechanism is the producer-cache/Snapshot-Builder/two-frame-buffer policy in [Arm_Sensor_Hub/Documentation/SNAPSHOT_COHERENCY_CONTRACT.md](../../Arm_Sensor_Hub/Documentation/SNAPSHOT_COHERENCY_CONTRACT.md). If both frame buffers are unavailable, acquisition is not blocked; the newest replacement/drop is counted.
 
-`SpiSlaveService_StageSnapshot()` accepts a bounded serializer callback in task context and stages its output. `SpiSlaveService_BeginDmaTransfer()` exposes an immutable staged frame and marks it DMA-active; `SpiSlaveService_CompleteDmaTransfer()` releases it after deferred completion. Hardware DMA invocation remains future work.
+`SpiSlaveService_StageSnapshot()` accepts a bounded serializer callback in task context and stages its output. `SpiSlaveService_BeginDmaTransfer()` exposes an immutable staged frame and marks it DMA-active; `SpiSlaveService_CompleteDmaTransfer()` releases it after deferred completion. The production path now invokes the STM32 HAL full-duplex DMA transfer from `SpiSlaveService_ArmDma()`; this is implemented, while live-host and physical transport acceptance remain open.
 
 ## RX/TX and NSS
 
@@ -78,7 +78,7 @@ SensorTask does not drive DATA_READY in production.
 
 ## Hardware Validation Procedure
 
-Before approving the initial 5 MHz maximum, measure on the assembled STM32/Raspberry Pi path: DATA_READY rising edge only after a complete 512-byte frame is staged; Pi detection latency and missed-edge recovery through the 1 ms poll; NSS-to-DMA start and DMA completion timing; frame CRC/sequence correctness under continuous traffic and host stalls; GPIO/SCK/MISO signal integrity; and replacement/drop/host-stall diagnostics. Record the Pi driver settings, cable/topology, clock rate, logic-analyzer traces, error counts, and pass/fail limits. The 5 MHz maximum remains an integration gate until this evidence is accepted.
+Before approving the initial 5 MHz maximum, measure on the assembled STM32/Raspberry Pi path: DATA_READY rising edge only after a complete 512-byte frame has been handed to DMA ownership and the DMA transfer is armed; Pi detection latency and missed-edge recovery through the 1 ms poll; NSS-to-DMA start and DMA completion timing; frame CRC/sequence correctness under continuous traffic and host stalls; GPIO/SCK/MISO signal integrity; and replacement/drop/host-stall diagnostics. Record the Pi driver settings, cable/topology, clock rate, logic-analyzer traces, error counts, and pass/fail limits. The 5 MHz maximum remains an integration gate until this evidence is accepted.
 
 ## DMA and Deferred Processing
 
