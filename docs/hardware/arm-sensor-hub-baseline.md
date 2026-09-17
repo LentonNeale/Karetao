@@ -20,10 +20,10 @@ The firmware acts as a sensor hub on STM32F405:
   - STM32CubeMX generated startup, HAL drivers, linker/startup files.
   - FreeRTOS (CMSIS-RTOS v2) with a default task loop.
 - Application layer (`App/`):
-  - `sensor_task`: AS5600 bring-up and periodic sampling state machine.
+  - `sensor_task`: AS5600 bring-up and periodic six-axis sampling state machine.
   - `i2c_manager` + `tca9548a_mux`: I2C access and channel routing.
   - `can_service`: CAN transport-facing service and MKS protocol bridge.
-  - `spi_slave_service`: SPI slave service skeleton for host transfer path.
+  - `spi_slave_service`: SPI slave service, fixed-frame protocol path, DMA transfer ownership, and DATA_READY owner.
   - `health_monitor`: task-context aggregate health snapshot baseline.
 - Protocol library layer:
   - `Middlewares/Third_Party/MksServo`: C++17 protocol codec library.
@@ -35,8 +35,12 @@ The firmware acts as a sensor hub on STM32F405:
   - Root firmware project builds with C11 + C++17 support.
   - MksServo library is linked as a third-party module.
   - HostTests cover both protocol/data-plane primitives and minimal service smoke paths.
+  - CI builds HostTests, Debug firmware, and Release firmware; the current baseline run also records firmware size/checksum information and uploads the firmware artifacts.
 - I2C sensor path:
-  - AS5600 single-channel bring-up path implemented with diagnostics and status snapshots.
+  - Six stable logical sensor records are processed per scheduler pass.
+  - The commissioned logical mapping is axis 0-5 -> TCA9548A channels 2-7 (SD2-SD7), with configurable binding and activation gating for invalid maps.
+  - Physical commissioning evidence exists for all six mapped axes under the recorded bench conditions.
+  - The measured full six-axis sweep is approximately 46 ms; the 20 ms value is a scheduler period, not an accepted 20 ms full-scan completion time. Scan timing parameters remain unfrozen.
 - CAN path:
   - Thin C11 wrappers implemented for key MKS commands:
     - motor enable/disable,
@@ -47,30 +51,37 @@ The firmware acts as a sensor hub on STM32F405:
   - Per-motor registration supports model-specific config (Servo42/Servo57) and CAN ID validation.
   - RX FIFO processing includes MKS frame decode and per-motor response/error counters.
   - Lightweight periodic polling scheduler alternates encoder and speed requests.
+  - Physical CAN behavior remains unvalidated.
 - SPI path:
-  - Interface skeleton present; full payload protocol integration remains to be completed.
+  - Raspberry Pi SPI0 CE0 backend uses Linux `spidev` with `/dev/spidev0.0`, mode 0, 8 bits per word, configured maximum 5 MHz, and fixed 512-byte transfers.
+  - Raspberry Pi protocol decoding enforces protocol version, frame size/payload limits, CRC, and zero-padding rules.
+  - STM32 SPI3 uses RX/TX DMA with task-context error/host-stall recovery and the approved armed-then-assert DATA_READY model.
+  - The STM32 DMA software path has target evidence from a physical run, but no live Raspberry Pi transaction was clocked; 5 MHz, NSS, DATA_READY electrical timing, GPIO behavior, signal integrity, and sustained real transactions remain acceptance gates.
 - Health path:
   - Read-only aggregate snapshot baseline implemented for lifecycle states, sync validity, and core service counters.
 
 ### Runtime Flow (Current)
 
-1. `App_Init()` initializes managers/services and registers configured MKS motors.
+1. `App_Init()` initializes managers/services and registers configured MKS motors and commissioned sensor mux mapping.
 2. FreeRTOS default task repeatedly runs sensor processing and CAN service processing.
 3. CAN service transmits encoded MKS frames and decodes inbound responses.
 4. Sensor diagnostics and CAN response snapshots are retained in memory for integration/debug.
+5. `SpiSlaveService_Process()` manages staged frames, DMA recovery, request processing, and DATA_READY ownership.
 
 ### Open Work / Next Milestones
 
 - See [Arm_Sensor_Hub/Documentation/LIFECYCLE_CONTRACT.md](../../Arm_Sensor_Hub/Documentation/LIFECYCLE_CONTRACT.md) for the system-wide lifecycle vocabulary, transition rules, dependency model, and service contract template.
 
-- Expand from single AS5600 bring-up to all six encoder channels via TCA9548A scheduling.
-- Define and implement the SPI host contract to Raspberry Pi. The current pre-freeze/approval baseline is [docs/protocols/spi-contract.md](../protocols/spi-contract.md), reconciled by [Arm_Sensor_Hub/Documentation/CONTRACT_V1_FREEZE.md](../../Arm_Sensor_Hub/Documentation/CONTRACT_V1_FREEZE.md), and includes framing, timestamps, time synchronization, DATA_READY, and coherency rules.
+- Freeze the six-axis scan period, mux settle delay, per-channel timeout, and healthy-channel threshold against the measured approximately 46 ms full-axis sweep.
+- Validate the implemented SPI path with a live Raspberry Pi host and accept the 5 MHz maximum only after DMA timing, NSS, DATA_READY/GPIO timing, signal integrity, sustained transactions, and real request/response evidence are recorded.
 - Add CAN TX queueing policy, retry/timeout strategy, and bus-off recovery policy.
 - Add integration tests for end-to-end sensor-to-host data path.
+- Validate TIME_SYNC end-to-end on target hardware.
+- Complete calibration persistence, motor-controller semantics, and independent safety validation.
 
 ### API Reference (One-Page)
 
-This reference summarizes the currently exposed firmware interfaces and the draft host-facing SPI payload contract.
+This reference summarizes the currently exposed firmware interfaces and the host-facing SPI payload contract.
 
 #### CAN Service Public Functions
 
@@ -82,9 +93,9 @@ Header: App/Inc/can_service.h
 | CanService_Process(void) | Periodic service loop work (RX decode plus poll scheduler). | Call from a periodic task loop. |
 | CanService_RegisterMotor(uint8_t motor_index, uint8_t logical_joint_id, uint32_t configuration_version, CanService_MksModel model, uint16_t can_id) | Registers a logical motor slot bound to a joint mapping version, servo model, and CAN ID. | Valid motor index range is 0..CAN_SERVICE_MAX_MKS_MOTORS-1. |
 | CanService_SendMotorEnable(uint8_t motor_index, bool enable) | Sends motor enable or disable command via MKS encoder. | Returns MksStatus. |
-| CanService_SendEmergencyStop(uint8_t motor_index) | Sends emergency stop command. | Returns MksStatus. |
-| CanService_SendAbsolutePulseMove(uint8_t motor_index, uint16_t speed, uint8_t acc, int32_t absolute_pulses) | Sends absolute pulse move command. | Returns MksStatus. |
-| CanService_SendRelativePulseMove(uint8_t motor_index, bool dir_cw, uint16_t speed, uint8_t acc, uint32_t relative_pulses) | Sends relative pulse move command. | Returns MksStatus. |
+| CanService_SendEmergencyStop(uint8_t motor_index) | Sends emergency stop command via MKS encoder. | Returns MksStatus. |
+| CanService_SendAbsolutePulseMove(uint8_t motor_index, uint16_t speed, uint8_t acc, int32_t absolute_pulses) | Sends absolute pulse move command via MKS encoder. | Returns MksStatus. |
+| CanService_SendRelativePulseMove(uint8_t motor_index, bool dir_cw, uint16_t speed, uint8_t acc, uint32_t relative_pulses) | Sends relative pulse move command via MKS encoder. | Returns MksStatus. |
 | CanService_RequestEncoderValue(uint8_t motor_index) | Sends encoder value request. | Returns MksStatus. |
 | CanService_RequestRealtimeSpeed(uint8_t motor_index) | Sends realtime speed request. | Returns MksStatus. |
 | CanService_SetPollPeriodMs(uint32_t period_ms) | Sets internal CAN poll scheduler period. | Set 0 to disable automatic poll scheduling. |
@@ -122,7 +133,7 @@ Associated accessors:
 
 #### Expected SPI Data Contract
 
-The complete host contract is maintained in [docs/protocols/spi-contract.md](../protocols/spi-contract.md). The SPI service remains a transport scaffold; the document is the implementation target and explicitly separates transport, data model, and time synchronization.
+The complete host contract is maintained in [docs/protocols/spi-contract.md](../protocols/spi-contract.md). The SPI service implements the transport path and explicitly separates implementation state from remaining physical acceptance gates.
 
 The key timestamp distinction is:
 
@@ -130,9 +141,9 @@ The key timestamp distinction is:
 | --- | --- | --- | --- |
 | 10 | 8 | frame_time_us | Synchronized STM32 hub time at frame assembly; not a measurement timestamp. |
 
-Individual sensor and motor records must carry `measurement_timestamp_us`, representing acquisition time in the Raspberry Pi time domain. The STM32 derives that time as `local_time_us + time_offset_us`; it does not reset its monotonic local clock.
+Individual sensor and motor records carry `measurement_timestamp_us`, representing acquisition time in the Raspberry Pi time domain. The STM32 derives that time as `local_time_us + time_offset_us`; it does not reset its monotonic local clock.
 
-The contract also defines a `TIME_SYNC` message from the Raspberry Pi, synchronization validity reporting, sequence handling, CRC validation, explicit SPI buffer ownership, and DATA_READY semantics. The first synchronization implementation may use a direct offset update; two-way delay estimation is reserved for a later version.
+The contract also defines a `TIME_SYNC` message from the Raspberry Pi, synchronization validity reporting, sequence handling, CRC validation, explicit SPI buffer ownership, and armed-then-assert DATA_READY semantics. The first synchronization implementation may use a direct offset update; two-way delay estimation is reserved for a later version.
 
 Draft snapshot payload concept (message_type=1):
 

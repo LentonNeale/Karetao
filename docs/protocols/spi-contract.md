@@ -26,7 +26,7 @@ SPI contract
 | SPI slave, sensor hub, CAN interface | STM32F405 |
 | Data availability signal | STM32 DATA_READY -> Raspberry Pi |
 
-The Raspberry Pi initiates all SPI clocking. The STM32 asserts `DATA_READY` when a complete frame is available, then waits for the Raspberry Pi to assert NSS and clock the transaction.
+The Raspberry Pi initiates all SPI clocking. The STM32 asserts `DATA_READY` when a complete frame has been prepared, handed to DMA ownership, and the DMA transfer has been successfully armed; it then waits for the Raspberry Pi to assert NSS and clock the transaction.
 
 Current STM32 SPI3 mapping:
 
@@ -37,7 +37,7 @@ Current STM32 SPI3 mapping:
 | MISO | PC11 | Output |
 | MOSI | PC12 | Input |
 
-Current implementation uses 8-bit, 2-line, hardware NSS, with DMA1 Stream 0 for RX and Stream 5 for TX. SPI mode is mode 0 (CPOL=0, CPHA=0). Maximum deployed clock rate remains an integration decision and must be frozen before DMA implementation.
+Current implementation uses 8-bit, 2-line, hardware NSS, with DMA1 Stream 0 for RX and Stream 5 for TX. SPI mode is mode 0 (CPOL=0, CPHA=0). The STM32 SPI3 DMA path is implemented. The 5 MHz value remains the current integration ceiling and requires live-host and physical acceptance evidence before it is treated as an accepted maximum.
 
 ## 3. Protocol Rules
 
@@ -112,20 +112,20 @@ The Raspberry Pi uses sequence numbers to detect duplicates, missing frames, sta
 
 ## 8. DATA_READY
 
-`DATA_READY` is an STM32-to-Pi transport-availability signal:
+`DATA_READY` is an STM32-to-Pi transport-availability signal using the approved armed-then-assert model:
 
 ```text
-LOW   = no complete response frame staged
-HIGH  = complete response frame staged and ready for the Pi to clock
+LOW   = no complete response frame is currently armed for DMA transmission
+HIGH  = a complete response frame has been handed to DMA ownership and the DMA transfer is armed
 ```
 
-The SPI service owns DATA_READY in production. The STM32 asserts it only after serialization is complete and the response buffer is owned by the SPI service. SensorTask bring-up GPIO toggling is not production DATA_READY behavior.
+The frame being serialized is not sufficient to assert `DATA_READY`. A frame merely staged in a software buffer but not yet DMA-armed is not sufficient. Partial DMA activity is not sufficient. The production owner is `SpiSlaveService`; SensorTask never drives this GPIO.
 
 The STM32 may deassert `DATA_READY` after the frame is consumed according to the acknowledgement policy. The signal does not identify the message type.
 
 If a new snapshot replaces an unread response, the service increments a dropped/replaced counter and reports it through diagnostics.
 
-The production owner is `SpiSlaveService`; SensorTask never drives this GPIO. The service's configurable 1 ms polling fallback reasserts DATA_READY when a complete staged frame is present but notification state is low, and reports notification, poll-recovery, and host-stall counters. The initial 5 MHz maximum still requires Raspberry Pi/DMA/GPIO acceptance evidence.
+The service's configurable 1 ms polling fallback rechecks staged-frame availability. When staged data is present while DATA_READY is low and no transfer is armed, the service re-arms the DMA transfer, reasserts DATA_READY, and reports poll-recovery and host-stall counters. A 100 ms host-stall timeout aborts the active DMA transfer and returns the service to a re-armable state. These software recovery paths have been exercised on the STM32 target, but the physical DATA_READY waveform and Pi-side GPIO path remain unvalidated.
 
 ## 9. Snapshot Coherency and Ownership
 
@@ -246,7 +246,7 @@ The STM32 shall:
 - maintain a monotonic local clock and Pi-derived offset;
 - timestamp measurements at acquisition;
 - maintain snapshot coherency and explicit buffer ownership;
-- assert `DATA_READY` only for complete frames;
+- assert `DATA_READY` only after a complete frame is DMA-armed;
 - validate incoming frames before changing state;
 - maintain frame and synchronization sequence numbers;
 - report synchronization validity;
@@ -276,9 +276,16 @@ See [Arm_Sensor_Hub/Documentation/LIFECYCLE_CONTRACT.md](../../Arm_Sensor_Hub/Do
 
 Any incompatible change to field meaning/order, timestamp semantics, framing, CRC, or message semantics requires a protocol version increment.
 
-The following remains an integration gate before SPI implementation is frozen:
+DMA implementation is no longer a remaining work item. The remaining SPI integration gate is live-host and physical acceptance of the implemented transport, including:
 
-- maximum SPI clock frequency and associated DMA timing.
+- maximum 5 MHz clock acceptance and associated DMA timing;
+- NSS behavior and abort/recovery behavior under a real master;
+- DATA_READY electrical timing and Raspberry Pi GPIO behavior;
+- GPIO/SCK/MISO signal integrity;
+- sustained and repeated 512-byte transactions;
+- real Raspberry Pi <-> STM32 request/response behavior and sequence/correlation handling.
+
+The current 5 MHz value is an integration ceiling, not hardware approval.
 
 The following are approved v1.0 decisions and must not be redefined by lower-level documents: mode 0; 512-byte maximum frame; 490-byte maximum payload; CRC-32/ISO-HDLC parameters; pipelined request/response; five-second synchronization validity; one-way TIME_SYNC transaction-point estimate; direct offset stepping; producer-cache/Snapshot-Builder/two-frame ownership; fixed six-record sensor snapshots; and replace-if-new behavior with drop diagnostics.
 - lifecycle states permitted for each message type.
@@ -294,6 +301,6 @@ The following are approved v1.0 decisions and must not be redefined by lower-lev
 7. An SPI-owned DMA buffer cannot be modified during transmission.
 8. CRC failure cannot modify application state.
 9. Every frame has a sequence number.
-10. `DATA_READY` is asserted only for a complete available frame.
+10. `DATA_READY` is asserted only for a complete available frame whose DMA transfer is armed.
 11. Loss of synchronization is explicitly reported through `time_sync_valid`.
 12. Timestamp correlation uses the shared Pi time domain.
