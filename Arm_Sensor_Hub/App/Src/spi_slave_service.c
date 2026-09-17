@@ -7,6 +7,8 @@
 #include "sensor_task.h"
 #include "time_service.h"
 
+extern SPI_HandleTypeDef hspi3;
+
 static Lifecycle_Record s_lifecycle;
 static SnapshotFrame_Pool s_frame_pool;
 static SpiProtocol_State s_protocol;

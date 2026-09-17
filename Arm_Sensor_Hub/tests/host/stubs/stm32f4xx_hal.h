@@ -30,6 +30,10 @@ typedef struct {
 } CAN_HandleTypeDef;
 
 typedef struct {
+    void *Instance;
+} SPI_HandleTypeDef;
+
+typedef struct {
     uint32_t FilterBank;
     uint32_t FilterMode;
     uint32_t FilterScale;
@@ -62,6 +66,7 @@ typedef struct {
 } CAN_TxHeaderTypeDef;
 
 #define I2C1 ((void *)0x1)
+#define SPI3 ((void *)0x5)
 #define CAN_RX_FIFO0 0u
 #define CAN_ID_STD 0u
 #define CAN_RTR_DATA 0u
@@ -108,6 +113,14 @@ HAL_StatusTypeDef HAL_CAN_AddTxMessage(CAN_HandleTypeDef *hcan,
                                        CAN_TxHeaderTypeDef *header,
                                        uint8_t *data,
                                        uint32_t *mailbox);
+
+HAL_StatusTypeDef HAL_SPI_TransmitReceive_DMA(SPI_HandleTypeDef *hspi,
+                                              const uint8_t *tx_data,
+                                              uint8_t *rx_data,
+                                              uint16_t size);
+HAL_StatusTypeDef HAL_SPI_Abort(SPI_HandleTypeDef *hspi);
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi);
 
 uint32_t HAL_GetTick(void);
 void HAL_GPIO_WritePin(void *gpio_port, uint16_t gpio_pin, GPIO_PinState state);

@@ -23,6 +23,8 @@ void App_Init(void);
 void App_Start(void);
 uint32_t App_GetMksRegisterFailureCount(void);
 uint32_t App_GetLifecycleActivationFailureCount(void);
+/** Non-zero when the commissioned sensor axis-to-mux-channel map was rejected. */
+uint32_t App_GetSensorConfigureFailureCount(void);
 
 #ifdef __cplusplus
 }
