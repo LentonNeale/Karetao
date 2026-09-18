@@ -326,7 +326,7 @@ This framework is preparatory. The intended documentation refactoring sequence i
 11. Remove genuinely redundant material.
 12. Verify links and authority boundaries.
 
-Steps 4 onward are outside the scope of this framework-correction task.
+The audit and classification steps have been completed for this refactor; the active work is the subject-based reconciliation and establishment of the Karetao system documentation authority described above.
 
 ## Refactor scope
 
