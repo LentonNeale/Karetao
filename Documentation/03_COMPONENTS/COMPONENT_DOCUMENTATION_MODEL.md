@@ -4,6 +4,8 @@
 
 This document defines the documentation contract between Karetao and component repositories.
 
+**Authority relationship:** Karetao is the higher authority for the integrated Karetao system and system-level documentation. Component repositories are subordinate implementation authorities: they own how their component implements its assigned responsibilities, but they do not override or redefine Karetao system-level requirements or create a competing project-level documentation authority.
+
 The central boundary is:
 
 > Karetao defines **what the system requires from a component and its interfaces**. The component repository documents **how the component implements those responsibilities**.
@@ -11,6 +13,22 @@ The central boundary is:
 This document is normative for the integration model. It does not modify component repositories.
 
 ## Ownership boundary
+
+### Karetao as higher system authority
+
+For the integrated Karetao system, the authority relationship is:
+
+```text
+Karetao
+    higher authority
+        ↓
+Component repositories
+    subordinate implementation authorities
+```
+
+Karetao owns system-level requirements, architecture, interfaces, timing, synchronization, safety, integration, and system verification. Component repositories own implementation details within their component scope. A component document may explain or implement a Karetao requirement, but it must not replace, weaken, strengthen, or reinterpret it.
+
+Component README files and other navigation material must not identify an obsolete or component-local location as the canonical authority for Karetao system documentation. They must defer to the Karetao `Documentation/**` framework for system-level documentation.
 
 ### System-level component definition — Karetao
 
@@ -204,9 +222,12 @@ The physical location of a document does not determine its authority.
 When documentation conflicts:
 
 1. Identify the subject of the disputed statement.
-2. Identify the authority that owns that subject.
-3. Treat that authority as controlling for the subject.
-4. Update dependent documentation only as part of the appropriate review/refactoring process.
+2. Determine whether it is a Karetao system subject, component implementation subject, externally defined subject, or verification evidence.
+3. For Karetao system subjects, treat Karetao as the higher and controlling authority.
+4. For component implementation subjects, treat the responsible component repository as controlling within its scope, subject to Karetao system requirements.
+5. For externally defined equipment or protocol behaviour, treat the applicable external authority as controlling within that external subject domain.
+6. Treat verification records as evidence rather than as an authority that redefines requirements.
+7. Update dependent documentation only as part of the appropriate review/refactoring process.
 
 A lower-level document may explain how a higher-level requirement is implemented, but it must not redefine the higher-level requirement.
 
