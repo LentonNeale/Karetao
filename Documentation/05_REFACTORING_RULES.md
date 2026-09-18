@@ -1,6 +1,6 @@
 # Documentation Refactoring Rules
 
-These rules govern the later migration of existing documentation into the approved framework. This stage does not perform the migration.
+These rules govern the audit-derived documentation refactor into the approved framework. The framework is now the active destination; legacy content remains source/provenance material until its authoritative content has been reconciled.
 
 ## Inventory
 
