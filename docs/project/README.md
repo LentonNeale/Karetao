@@ -13,7 +13,7 @@ It remains useful as source material and provenance while system-level content i
 | System | [architecture.md](system/architecture.md) | Legacy source | System-level architecture reconciled into `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; component implementation details remain component-owned. |
 | System | [development.md](system/development.md) | Legacy source | Retain for reconciliation; do not promote automatically to system authority. |
 | System | [TODO_List.md](system/TODO_List.md) | Legacy source | Retain as project/process source material; unresolved work is not a system requirement by itself. |
-| System | [QUESTIONS.md](QUESTIONS.md) | Legacy source | Retain as source for unresolved questions; unresolved questions are not silently converted into requirements. |
+| System | [Open_Items_List.md](Open_Items_List.md) | Legacy source | Retain as source for unresolved questions; unresolved questions are not silently converted into requirements. |
 | System | [SYSTEM_DECISIONS.md](SYSTEM_DECISIONS.md) | Transitional decision provenance | SD-01 through SD-26 are reconciled into `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` and `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md`; this register remains for provenance during transition. |
 | Hardware | [arm-sensor-hub-baseline.md](hardware/arm-sensor-hub-baseline.md) | Legacy mixed source | Karetao system/component-role content is reconciled into `Documentation/03_COMPONENTS/`; implementation content remains Arm Sensor Hub-owned. |
 | Interfaces | [raspberry-pi-spi.md](interfaces/raspberry-pi-spi.md) | Legacy mixed source | System SPI requirements are reconciled into `Documentation/02_INTERFACES/`; Raspberry/STM32 implementation details remain component-owned. |
