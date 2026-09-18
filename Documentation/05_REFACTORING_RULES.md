@@ -67,7 +67,7 @@ During migration, the required sequence is:
 4. replace duplicated requirements with references to the authoritative requirement;
 5. preserve useful historical context in the appropriate archive when necessary.
 
-This migration sequence is not being performed in this framework-correction branch.
+This migration sequence governs the active audit-derived documentation refactor on this branch.
 
 ## Core Objective
 
