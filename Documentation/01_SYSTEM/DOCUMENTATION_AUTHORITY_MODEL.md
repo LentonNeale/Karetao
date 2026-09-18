@@ -4,26 +4,29 @@
 
 This document defines the normative authority model for Karetao documentation. It establishes which repository, external authority, or verification record owns each class of information and how conflicts are resolved.
 
-The model consists of separate authority domains. It is **not** a universal top-down hierarchy:
+The model uses authority domains with an explicit project-level relationship: **Karetao is the higher authority for the integrated Karetao system and for system-level documentation governance.** Component repositories are subordinate to Karetao for system-level matters. External authorities remain authoritative for externally defined equipment and protocol behaviour within their own subject domains, and verification records provide evidence rather than requirements.
 
 ```text
 Karetao
-    owns Karetao system requirements and system-level definitions
-
-Arm_Sensor_Hub
-    owns Arm Sensor Hub implementation documentation
-
-Raspberry_Sensor_Hub
-    owns Raspberry Sensor Hub implementation documentation
+    higher authority for the integrated system
+    owns system requirements and system-level definitions
+        │
+        ├── Arm_Sensor_Hub
+        │     subordinate component authority
+        │     owns component implementation documentation
+        │
+        └── Raspberry_Sensor_Hub
+              subordinate component authority
+              owns component implementation documentation
 
 Vendor/external documentation
-    owns externally defined equipment/protocol behaviour
+    external authority for externally defined behaviour
 
 Verification records
-    provide evidence
+    evidence; not requirement authority
 ```
 
-Authority is determined by **subject ownership**. A document's physical location does not by itself make it authoritative.
+Authority is determined by **subject ownership within this relationship**. A document's physical location does not by itself make it authoritative.
 
 ## Authority domains
 
@@ -90,15 +93,17 @@ Successful component verification does not automatically constitute system verif
 
 ## Critical authority rules
 
-> A document's physical location does not by itself make it authoritative. Authority is determined by subject ownership, not directory location.
+> Karetao is the higher authority for the integrated Karetao system and for system-level documentation governance.
+
+> A component repository is subordinate to Karetao for system-level requirements, architecture, interfaces, timing, synchronization, safety, configuration, integration, and system verification. It remains authoritative for implementation details within its component scope.
 
 > A lower-level implementation document may explain how a higher-level requirement is implemented, but it must not redefine the higher-level requirement.
 
-> Where two documents conflict, determine which authority owns the subject before resolving the conflict. Authority domains are not a universal precedence hierarchy.
+> Where two documents conflict, first determine whether the disputed subject is system-level, component-implementation-level, externally defined, or verification evidence. Karetao controls system-level subjects; the responsible component controls implementation subjects within its scope; external authorities control externally defined behaviour; verification records provide evidence and do not redefine requirements.
 
 > Vendor or external specifications remain authoritative for externally defined equipment or protocol behaviour. They do not override Karetao system requirements, and Karetao system requirements do not redefine externally owned equipment/protocol behaviour.
 
-A component document may reference and explain a Karetao requirement. It must not silently replace, weaken, strengthen, or reinterpret that requirement.
+A component document may reference and explain a Karetao requirement. It must not silently replace, weaken, strengthen, or reinterpret that requirement. A component README or other navigation document must not establish a competing project-level documentation authority; references for system-level documentation must defer to Karetao's `Documentation/**` framework.
 
 A vendor document may define external behavior that constrains an implementation. It must not become an accidental source of Karetao requirements.
 
