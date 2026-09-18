@@ -37,11 +37,18 @@
 - [ ] Verification relationship defined.
 - [ ] Archive/supersession rules defined.
 
+## Refactor State
+
+- [x] Framework established.
+- [x] Audit-derived system documentation reconciliation underway.
+- [ ] Legacy documentation fully reconciled and superseded where appropriate.
+- [ ] Final link and authority validation complete.
+
 ## Scope Control
 
-- [ ] Existing Karetao documents have not been migrated.
-- [ ] Existing Karetao documents have not been deleted.
-- [ ] Existing Karetao documents have not been rewritten.
+- [x] Component repositories remain unchanged by this refactor.
+- [x] Archived `docs/project/archive/**` content is excluded from current migration.
+- [ ] Legacy documents are only superseded after authoritative content and provenance are established.
 - [ ] Arm Sensor Hub documentation has not been copied.
 - [ ] Raspberry Sensor Hub documentation has not been copied.
 - [ ] Source code unchanged.
