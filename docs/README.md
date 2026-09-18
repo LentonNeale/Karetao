@@ -10,6 +10,10 @@ This framework establishes the documentation hierarchy, authority boundaries, in
 
 ## Authority model
 
+See [AUTHORITY.md](AUTHORITY.md) for the normative authority hierarchy, ownership boundaries, and conflict-resolution rules.
+
+
+
 | Documentation domain | Authority | Role |
 | --- | --- | --- |
 | Karetao system requirements | `LentonNeale/Karetao` | Defines what the complete system shall do. |
