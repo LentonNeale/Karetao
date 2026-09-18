@@ -2,33 +2,34 @@
 
 ## Purpose
 
-This document defines the normative authority model for Karetao documentation. It establishes which repository or record owns each class of information and how conflicts are resolved.
+This document defines the normative authority model for Karetao documentation. It establishes which repository, external authority, or verification record owns each class of information and how conflicts are resolved.
 
-The model is:
+The model consists of separate authority domains. It is **not** a universal top-down hierarchy:
 
-\`\`\`text
+```text
 Karetao
-    ↓
-System authority
+    owns Karetao system requirements and system-level definitions
 
-Component repositories
-    ↓
-Component implementation authority
+Arm_Sensor_Hub
+    owns Arm Sensor Hub implementation documentation
+
+Raspberry_Sensor_Hub
+    owns Raspberry Sensor Hub implementation documentation
 
 Vendor/external documentation
-    ↓
-External equipment/protocol authority
+    owns externally defined equipment/protocol behaviour
 
 Verification records
-    ↓
-Evidence
-\`\`\`
+    provide evidence
+```
 
-## Authority hierarchy
+Authority is determined by **subject ownership**. A document's physical location does not by itself make it authoritative.
+
+## Authority domains
 
 ### Karetao system authority
 
-\`LentonNeale/Karetao\` is authoritative for:
+`LentonNeale/Karetao` is authoritative for:
 
 - system requirements;
 - system architecture;
@@ -43,7 +44,7 @@ Evidence
 
 ### Arm Sensor Hub component authority
 
-\`LentonNeale/Arm_Sensor_Hub\` is authoritative for:
+`LentonNeale/Arm_Sensor_Hub` is authoritative for:
 
 - Arm Sensor Hub implementation;
 - STM32 firmware architecture;
@@ -59,7 +60,7 @@ It is **not** authoritative for Karetao system requirements.
 
 ### Raspberry Sensor Hub component authority
 
-\`LentonNeale/Raspberry_Sensor_Hub\` is authoritative for Raspberry Sensor Hub implementation documentation.
+`LentonNeale/Raspberry_Sensor_Hub` is authoritative for Raspberry Sensor Hub implementation documentation.
 
 It is **not** authoritative for Karetao system requirements.
 
@@ -89,15 +90,42 @@ Successful component verification does not automatically constitute system verif
 
 ## Critical authority rules
 
-> A document's physical location does not by itself make it authoritative. Authority is determined by the subject ownership defined by this model.
+> A document's physical location does not by itself make it authoritative. Authority is determined by subject ownership, not directory location.
 
-> A lower-level document may explain how a higher-level requirement is implemented, but it must not redefine the higher-level requirement.
+> A lower-level implementation document may explain how a higher-level requirement is implemented, but it must not redefine the higher-level requirement.
 
-> Where two documents conflict, determine which authority owns the subject before resolving the conflict.
+> Where two documents conflict, determine which authority owns the subject before resolving the conflict. Authority domains are not a universal precedence hierarchy.
+
+> Vendor or external specifications remain authoritative for externally defined equipment or protocol behaviour. They do not override Karetao system requirements, and Karetao system requirements do not redefine externally owned equipment/protocol behaviour.
 
 A component document may reference and explain a Karetao requirement. It must not silently replace, weaken, strengthen, or reinterpret that requirement.
 
 A vendor document may define external behavior that constrains an implementation. It must not become an accidental source of Karetao requirements.
+
+## Mixed-authority legacy documents
+
+A legacy document may contain information belonging to multiple authority domains. Authority is assigned to **individual significant statements/content by subject**, not necessarily to the document as a whole.
+
+During migration, each significant normative or factual statement must be:
+
+1. classified by subject authority;
+2. assigned to the authority that owns that subject;
+3. migrated to the appropriate authoritative location;
+4. represented elsewhere by a reference to the authoritative requirement or definition rather than a duplicated requirement, where applicable;
+5. retained as historical context in the appropriate archive when necessary.
+
+Where necessary, a mixed-authority legacy document must be split into:
+
+- system requirement;
+- system architecture/interface definition;
+- component implementation;
+- external/vendor reference;
+- verification evidence;
+- historical context.
+
+Simply moving a legacy document into a new directory does **not** make all of its contents authoritative for that directory.
+
+This classification and migration process is part of the later documentation migration phase. It is not being performed in this framework-correction branch.
 
 ## Normative and descriptive documentation
 
@@ -105,12 +133,12 @@ The framework distinguishes documents by role:
 
 | Document | Role |
 |---|---|
-| \`SYSTEM_REQUIREMENTS.md\` | Normative system requirements |
-| \`SYSTEM_ARCHITECTURE.md\` | Normative system architecture |
-| \`SYSTEM_TIMING.md\` | Normative system timing |
-| \`SYSTEM_SYNCHRONIZATION.md\` | Normative system synchronization |
-| \`SYSTEM_OVERVIEW.md\` | Descriptive system overview |
-| \`DOCUMENTATION_AUTHORITY_MODEL.md\` | Normative documentation authority |
+| `SYSTEM_REQUIREMENTS.md` | Normative system requirements |
+| `SYSTEM_ARCHITECTURE.md` | Normative system architecture |
+| `SYSTEM_TIMING.md` | Normative system timing |
+| `SYSTEM_SYNCHRONIZATION.md` | Normative system synchronization |
+| `SYSTEM_OVERVIEW.md` | Descriptive system overview |
+| `DOCUMENTATION_AUTHORITY_MODEL.md` | Normative documentation authority |
 | Component documentation | Implementation authority within component scope |
 | Vendor manuals | External authority |
 | Verification documents | Evidence |
@@ -125,7 +153,7 @@ Karetao defines what the system requires from an interface. The responsible comp
 
 The general boundary is:
 
-\`\`\`text
+```text
 Karetao
 └── 02_INTERFACES/
         └── CAN_SYSTEM_INTERFACE.md
@@ -139,7 +167,7 @@ Arm_Sensor_Hub
               │ implements
               ▼
 External controller/protocol
-\`\`\`
+```
 
 The same conceptual boundary applies to:
 
@@ -157,7 +185,7 @@ System interface, component implementation, and external protocol are separate a
 
 For example:
 
-\`\`\`text
+```text
 Karetao
     CAN system requirements
 
@@ -166,7 +194,7 @@ Arm_Sensor_Hub
 
 MKS documentation
     MKS CAN protocol/controller behavior
-\`\`\`
+```
 
 A vendor protocol manual must not redefine a Karetao system requirement.
 
@@ -178,7 +206,7 @@ Where a protocol imposes limitations on a system design, the limitation may be d
 
 System verification follows this relationship:
 
-\`\`\`text
+```text
 Karetao system requirement
         ↓
 Responsible component(s)
@@ -190,17 +218,27 @@ Component verification evidence
 Integration evidence
         ↓
 Karetao system verification
-\`\`\`
+```
 
 Component verification establishes evidence within component scope. It does not by itself establish that the integrated Karetao system satisfies the system requirement.
 
-The Karetao system verification matrix should eventually be the authoritative location for system-level verification status.
+`Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` is the **authoritative location for Karetao system-level verification status**.
+
+The distinction is explicit:
+
+```text
+Component verification evidence
+        ≠
+Karetao system verification
+```
+
+Only the Karetao system verification process and matrix establish system-level verification status.
 
 ## Component status semantics
 
 The framework retains the following status vocabulary:
 
-\`\`\`text
+```text
 SPECIFIED
 IMPLEMENTED
 VERIFIED
@@ -210,21 +248,21 @@ RELEASED
 SUPERSEDED
 DEFERRED
 BLOCKED
-\`\`\`
+```
 
 The meanings relevant to authority are:
 
-- \`IMPLEMENTED\` — the implementation exists.
-- \`VERIFIED\` — the relevant implementation behavior has been verified.
-- \`HARDWARE_VERIFIED\` — the behavior has been verified against actual hardware.
-- \`SYSTEM_VERIFIED\` — the result has been accepted at the Karetao system level.
-- \`RELEASED\` — the item has been formally released according to project process.
+- `IMPLEMENTED` — the implementation exists.
+- `VERIFIED` — the relevant implementation behavior has been verified.
+- `HARDWARE_VERIFIED` — the behavior has been verified against actual hardware.
+- `SYSTEM_VERIFIED` — the result has been accepted at the Karetao system level.
+- `RELEASED` — the item has been formally released according to project process.
 
-A component repository must not claim \`SYSTEM_VERIFIED\` solely because component-level testing has passed.
+A component repository must not claim `SYSTEM_VERIFIED` solely because component-level testing has passed.
 
 ## Component integration boundary
 
-Karetao owns the system definition of each component under \`Documentation/03_COMPONENTS/\`.
+Karetao owns the system definition of each component under `Documentation/03_COMPONENTS/`.
 
 Component repositories own the implementation documentation for those components.
 
@@ -238,11 +276,11 @@ The Karetao component document therefore describes:
 
 It must not become a copy of the component implementation documentation.
 
-The component documentation contract is defined in [\`03_COMPONENTS/COMPONENT_DOCUMENTATION_MODEL.md\`](../03_COMPONENTS/COMPONENT_DOCUMENTATION_MODEL.md).
+The component documentation contract is defined in [`03_COMPONENTS/COMPONENT_DOCUMENTATION_MODEL.md`](../03_COMPONENTS/COMPONENT_DOCUMENTATION_MODEL.md).
 
 ## Archive boundary
 
-\`Documentation/99_ARCHIVE/\` contains historical and non-normative material, including where applicable:
+`Documentation/99_ARCHIVE/` contains historical and non-normative material, including where applicable:
 
 - superseded specifications;
 - historical decisions;
@@ -260,8 +298,8 @@ This framework is preparatory. The intended documentation refactoring sequence i
 2. Establish component documentation model.
 3. Review and approve the framework.
 4. Inventory existing documentation.
-5. Classify documents.
-6. Determine authority of each document.
+5. Classify documents and significant statements.
+6. Determine subject authority.
 7. Refactor Karetao system documentation.
 8. Refactor component documentation.
 9. Establish cross-repository references.

@@ -16,8 +16,8 @@ This document is normative for the integration model. It does not modify compone
 
 The Karetao repository owns the system-level definition of each component:
 
-- [\`ARM_SENSOR_HUB.md\`](ARM_SENSOR_HUB.md)
-- [\`RASPBERRY_SENSOR_HUB.md\`](RASPBERRY_SENSOR_HUB.md)
+- [`ARM_SENSOR_HUB.md`](ARM_SENSOR_HUB.md)
+- [`RASPBERRY_SENSOR_HUB.md`](RASPBERRY_SENSOR_HUB.md)
 
 These documents describe:
 
@@ -37,7 +37,7 @@ The component repository owns implementation documentation within its component 
 
 For example:
 
-\`\`\`text
+```text
 Arm_Sensor_Hub
 └── Documentation/
     ├── architecture
@@ -46,7 +46,7 @@ Arm_Sensor_Hub
     ├── CAN
     ├── MKS
     └── verification
-\`\`\`
+```
 
 The component repository describes how the component implements its responsibilities, including implementation architecture, internal interfaces, hardware/software details, diagnostics, configuration, and component-level verification evidence.
 
@@ -56,7 +56,7 @@ The same model applies to Raspberry Sensor Hub and future components.
 
 The interface boundary follows this pattern:
 
-\`\`\`text
+```text
 Karetao
 └── 02_INTERFACES/
         └── CAN_SYSTEM_INTERFACE.md
@@ -70,7 +70,7 @@ Arm_Sensor_Hub
               │ implements
               ▼
 External controller/protocol
-\`\`\`
+```
 
 The same conceptual model applies to:
 
@@ -90,17 +90,17 @@ A component implementation document may explain how a system requirement is met,
 
 Three authority domains must remain distinct:
 
-\`\`\`text
+```text
 System interface
         ↓
 Component implementation
         ↓
 External protocol/equipment
-\`\`\`
+```
 
 For example:
 
-\`\`\`text
+```text
 Karetao
     CAN system requirements
 
@@ -109,7 +109,7 @@ Arm_Sensor_Hub
 
 MKS documentation
     MKS CAN protocol/controller behavior
-\`\`\`
+```
 
 Karetao remains authoritative for the system requirements placed on CAN.
 
@@ -135,7 +135,7 @@ A component repository should reference Karetao system requirements by stable id
 
 Component documentation should support the following traceability chain:
 
-\`\`\`text
+```text
 Karetao system requirement
         ↓
 Responsible component(s)
@@ -147,19 +147,21 @@ Component verification evidence
 Integration evidence
         ↓
 Karetao system verification
-\`\`\`
+```
 
 Component verification evidence demonstrates behavior within component scope.
 
 > Successful component verification does not automatically constitute system verification.
 
-System-level acceptance is owned by Karetao. The eventual Karetao system verification matrix should be the authoritative location for system-level verification status.
+System-level acceptance is owned by Karetao. [`Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`](../05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md) is the authoritative location for Karetao system-level verification status.
+
+Only the Karetao system verification process and matrix establish system-level verification status.
 
 ## Status semantics
 
 Component documentation may use the following status vocabulary:
 
-\`\`\`text
+```text
 SPECIFIED
 IMPLEMENTED
 VERIFIED
@@ -169,7 +171,7 @@ RELEASED
 SUPERSEDED
 DEFERRED
 BLOCKED
-\`\`\`
+```
 
 The meanings are:
 
@@ -183,7 +185,7 @@ The meanings are:
 - **DEFERRED** — intentionally postponed.
 - **BLOCKED** — progress or verification is prevented by an identified blocker.
 
-A component repository must not claim \`SYSTEM_VERIFIED\` solely because component-level testing has passed.
+A component repository must not claim `SYSTEM_VERIFIED` solely because component-level testing has passed.
 
 ## External documentation
 
@@ -210,7 +212,7 @@ A lower-level document may explain how a higher-level requirement is implemented
 
 ## Archive boundary
 
-Historical component documentation belongs in the appropriate repository's archive according to that repository's process. Karetao's [\`99_ARCHIVE/\`](../99_ARCHIVE/) is for historical/non-normative Karetao material.
+Historical component documentation belongs in the appropriate repository's archive according to that repository's process. Karetao's [`99_ARCHIVE/`](../99_ARCHIVE/) is for historical/non-normative Karetao material.
 
 Archived material may be retained for traceability but must never silently override current authoritative documentation.
 
@@ -218,7 +220,7 @@ Archived material may be retained for traceability but must never silently overr
 
 A future component can adopt this model by establishing:
 
-1. a Karetao component definition under \`Documentation/03_COMPONENTS/\`;
+1. a Karetao component definition under `Documentation/03_COMPONENTS/`;
 2. an implementation documentation structure in the component repository;
 3. an explicit authority declaration;
 4. references from implementation documentation to Karetao system requirement identifiers;
