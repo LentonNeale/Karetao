@@ -6,6 +6,12 @@ The framework establishes Karetao as the authority for system-level documentatio
 
  > **Framework status:** Active reconciliation/refactor. The authoritative Karetao system documentation is being established in `Documentation/**` from the Phase 2 authority audit. Legacy `docs/project/**` remains source material where not yet fully reconciled.
 
+## Mandatory authority notice
+
+**Use the Karetao Documentation authority framework as the only project documentation authority framework.** For Karetao system-level documentation and documentation governance, the authoritative framework is `Documentation/**` as defined by `01_SYSTEM/DOCUMENTATION_AUTHORITY_MODEL.md`. Do not treat `docs/project/**` as an alternative, parallel, or competing authority framework.
+
+All content under `docs/project/**` is **reference/source material only during this transition**. It is being retained solely to support reconciliation, provenance, and evidence review. Once the Karetao documentation is finalized, `docs/project/**` is intended to be removed; it must not be used as the current source of truth in the interim.
+
 ## Authority
 
 [`DOCUMENTATION_AUTHORITY_MODEL.md`](01_SYSTEM/DOCUMENTATION_AUTHORITY_MODEL.md) is the normative authority model.
