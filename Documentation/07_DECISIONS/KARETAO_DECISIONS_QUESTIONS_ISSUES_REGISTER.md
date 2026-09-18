@@ -321,7 +321,7 @@ SD-26 was added to `SYSTEM_DECISIONS.md` **after** the 2026-09-07 CTO approval a
 
 ## 2. Open Questions Register (145 questions)
 
-Source: `QUESTIONS.md` — a source register containing 145 project questions. The source document describes itself as "the canonical register of project questions that must be answered before the corresponding requirements, interfaces, implementation decisions, or release gates can be considered complete"; that is the source document's own characterization of its role, not an authority determination made by this register or established by the Karetao documentation authority model. **All 145 are currently unanswered in the source; none carry a recorded resolution.** Numbering and grouping are preserved from the original. *Italicized notes* are added cross-references to the decisions in Part 1 where the connection is direct — they are navigation aids, not resolutions.
+Source: `Open_Items_List.md` — a source register containing 145 project questions. The source document describes itself as "the canonical register of project questions that must be answered before the corresponding requirements, interfaces, implementation decisions, or release gates can be considered complete"; that is the source document's own characterization of its role, not an authority determination made by this register or established by the Karetao documentation authority model. **All 145 are currently unanswered in the source; none carry a recorded resolution.** Numbering and grouping are preserved from the original. *Italicized notes* are added cross-references to the decisions in Part 1 where the connection is direct — they are navigation aids, not resolutions.
 
 ### 2.1 System Scope and Architecture (Q1–10)
 *Related: SD-02, SD-23, SD-24; system issue #5 (motion-permission authority)*
@@ -722,7 +722,7 @@ See Section 3.4 for the more granular 14-item safety checklist mapped against th
 | `CAN_Module_TODO.md` | CAN bring-up/test checklist | Active — see Section 3.1 |
 | `CTO_DECISION_BRIEF.md` | Original proposal for SD-01–SD-25 | **Superseded** by `CTO_DECISION_FINAL.md`; retained for historical justification text only |
 | `CTO_DECISION_FINAL.md` | CTO's approved decisions, SD-01–SD-25 | **Approved baseline**, dated 2026-09-07, subject to the 7 release conditions in Part 4 |
-| `QUESTIONS.md` | Source register of 145 open project questions (describes itself as "canonical" — see Section 2's qualifying note) | Active — none marked answered |
+| `Open_Items_List.md` | Source register of 145 open project questions (describes itself as "canonical" — see Section 2's qualifying note) | Active — none marked answered |
 | `SYSTEM_DECISIONS.md` | Current SD-01–SD-26 index, carrying `CTO_DECISION_FINAL.md` forward and adding SD-26 with live open-issue tracking | **Current index, not independent approval evidence.** Its own note states: "Do not use this summary to override a newer approved system decision." SD-26 is not CTO-approved. |
 | `TODO_List.md` | Consolidated TODOs pulled from ~15 other repository documents | Active — reorganized in Section 3 |
 
