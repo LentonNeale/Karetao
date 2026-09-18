@@ -125,7 +125,7 @@ This is a **cross-document authority transition issue**: correcting the Karetao 
 
 A legacy document may contain information belonging to multiple authority domains. Authority is assigned to **individual significant statements/content by subject**, not necessarily to the document as a whole.
 
-During migration, each significant normative or factual statement must be:
+During reconciliation, each significant normative or factual statement must be:
 
 1. classified by subject authority;
 2. assigned to the authority that owns that subject;
@@ -144,7 +144,7 @@ Where necessary, a mixed-authority legacy document must be split into:
 
 Simply moving a legacy document into a new directory does **not** make all of its contents authoritative for that directory.
 
-This classification and migration process is part of the later documentation migration phase. It is not being performed in this framework-correction branch.
+The Phase 2 authority audit has established the refactor rule: mixed legacy material is separated by subject. System-owned statements are reconciled into Karetao authority documents; component implementation remains component-owned; external behaviour remains externally owned; verification evidence remains evidence.
 
 ## Normative and descriptive documentation
 
@@ -328,8 +328,6 @@ This framework is preparatory. The intended documentation refactoring sequence i
 
 Steps 4 onward are outside the scope of this framework-correction task.
 
-## Framework scope
+## Refactor scope
 
-This branch establishes the governance framework only. It does not migrate existing Karetao documentation, import component-repository documentation, copy vendor manuals, or modify component repositories.
-
-No existing system requirements are being rewritten by this framework document.
+The Phase 2 authority audit has authorized subject-based reconciliation on this branch. Karetao system documents may be populated from reconciled legacy sources. This does not transfer component implementation authority, copy vendor manuals into system authority, or promote verification evidence into requirements. Legacy source documents are retained unless a later explicit disposition authorizes removal.
