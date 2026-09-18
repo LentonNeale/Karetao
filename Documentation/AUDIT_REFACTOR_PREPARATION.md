@@ -2,7 +2,7 @@
 
 **Audit status:** Complete for the observable repository baseline and indexed documentation set  
 **Audit branch:** `doc/reconcile-karetao-mks`  
-**Audit commit observed:** `239626d33b49ab1f66b40c8912a83e5e761bb713`  
+**Audit source commit observed before writing this record:** `239626d33b49ab1f66b40c8912a83e5e761bb713`  
 **Refactor destination:** `doc/documentation-framework`  
 **Date:** 2026-09-18
 
@@ -27,7 +27,7 @@ Observed refs:
 - The audit branch was not modified except for this audit artefact.
 - No merge, rebase, reset, force-push, branch deletion, substitute branch creation, or destructive operation was performed.
 
-The indexed documentation baseline records Karetao tree commit `bb473df6cf8df8f997181f3d02beeb143298d17a`, Arm Sensor Hub `main` at `a86f83036a3fb97450e661bf5b09557af4064274`, and RaspberryPi Sensor Hub `main` at `087e6c3e0b102c2c... ` in the index. The audit therefore distinguishes the indexed baseline from the current remote branch state where necessary.
+The indexed documentation baseline records Karetao tree commit `bb473df6cf8df8f997181f3d02beeb143298d17a`, Arm Sensor Hub `main` at `a86f83036a3fb97450e661bf5b09557af4064274`, and RaspberryPi Sensor Hub `main` at `087e6c3e0b102c2e32dbf0dace30376e38b26123` in the index. The audit therefore distinguishes the indexed baseline from the current remote branch state where necessary.
 
 ## 3. Documentation inventory examined
 
