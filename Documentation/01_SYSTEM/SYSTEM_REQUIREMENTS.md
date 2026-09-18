@@ -27,6 +27,7 @@ This document is the authoritative Karetao system-requirement destination. Requi
 | SYS-SPI-001 | SPI transactions shall use a 512-byte frame, maximum 490-byte payload, Mode 0, little-endian fields, CRC-32/ISO-HDLC and deterministic request/response ownership. | SD-15 | Approved |
 | SYS-SPI-002 | Correlated GET_SNAPSHOT responses shall take priority; active DMA buffers shall remain immutable; replacement frames shall use replace-if-new semantics. | SD-16 | Approved; EKF state-age impact requires validation |
 | SYS-SPI-003 | DATA_READY may provide latency notification and polling shall provide recovery; polling is initially 1 ms and the Pi is SPI clock master. | SD-17 | Approved; physical DATA_READY assignment remains unresolved |
+| SYS-SPI-004 | The SPI connection shall use a cable with a length of 20–30 cm. The implemented SPI link shall be tested over the specified cable length to measure link performance and verify that the link operates as required. | Engineering specification | Proposed; physical-link measurement required |
 | SYS-SYNC-001 | Timestamp error target shall be no more than ±1 ms relative to the shared STM32/Pi time model; synchronization validity and age shall be exposed. | SD-18 | Approved; adequacy for 500 Hz EKF requires validation |
 | SYS-SYNC-002 | TIME_SYNC shall operate at 1 Hz nominal, configurable to 10 Hz; synchronization becomes invalid after five seconds without an accepted update. | SD-19 | Approved |
 | SYS-SYNC-003 | When synchronization is invalid, acquisition and diagnostics shall continue but time-dependent motion shall be inhibited. | SD-20 | Modified; exact motion scope requires definition |
@@ -47,5 +48,6 @@ SD-01 through SD-26 have been systematically reviewed. The table above captures 
 - Define the exact scope of “time-dependent motion” (SD-20).
 - Define system motion-permission authority and recovery-in-progress gating (SD-02/SD-23).
 - Define the safety boundary between application controlled-stop and independent safety functions (SD-25).
+- Define the measurement method and acceptance criteria for the SYS-SPI-004 physical-link test.
 - Validate provisional CAN, SPI, timing and synchronization values on target hardware.
 - Complete and verify the SD-26 mechanical transformation.
