@@ -4,7 +4,7 @@ This directory defines the **Karetao system documentation framework**.
 
 The framework establishes Karetao as the authority for system-level documentation while defining the boundary between system documentation, component implementation documentation, external documentation, and verification evidence.
 
-> **Framework status:** Preparatory. Existing documentation has not yet been migrated or refactored under this framework.
+ > **Framework status:** Active reconciliation/refactor. The authoritative Karetao system documentation is being established in `Documentation/**` from the Phase 2 authority audit. Legacy `docs/project/**` remains source material where not yet fully reconciled.
 
 ## Authority
 
@@ -151,6 +151,4 @@ The intended sequence is:
 11. Remove genuinely redundant material.
 12. Verify links and authority boundaries.
 
-**Steps 4 onward are not part of this branch's framework-correction task.**
-
-No existing Karetao requirements or component documentation are being migrated by this framework stage.
+**The Phase 2 authority audit has approved the transition into subject-based documentation refactoring.** Existing Karetao system content is being reconciled into the authority domains below. Component implementation authority remains in the component repositories.
