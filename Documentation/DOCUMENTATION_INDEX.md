@@ -4,6 +4,8 @@
 
 This document is the persistent cross-repository documentation inventory for the Karetao reconciliation project. It records the documentation landscape observed at a defined Git baseline before reconciliation or migration.
 
+**Persistent location:** `Documentation/DOCUMENTATION_INDEX.md`. This is the canonical location for the reconciliation documentation index; do not create a parallel `Document/` index.
+
 This is an inventory and traceability aid. It does **not** establish final authority, resolve technical conflicts, verify requirements, or decide what should be migrated.
 
 ### Interpretation rules
@@ -29,6 +31,9 @@ This is an inventory and traceability aid. It does **not** establish final autho
 - **Repositories:** 3
 - **Karetao source baseline:** `doc/documentation-framework`
 - **Karetao reconciliation branch:** `doc/reconcile-karetao-mks`
+- **Index file:** `Documentation/DOCUMENTATION_INDEX.md`
+- **Index commit:** `3fa986e5f0edb98b6be879dafa7bb9777eb516d9`
+- **Indexed tree commit:** `bb473df6cf8df8f997181f3d02beeb143298d17a`
 - **Requested Raspberry repository name:** `Raspberry_Sensor_Hub` was not found; the matching repository available is `LentonNeale/RaspberryPi_Sensor_Hub`.
 - **Last modified commit/date:** not individually resolved for every file in this baseline pass. The repository commit above is the last-indexed baseline; future maintenance should resolve Git path history for changed entries.
 
