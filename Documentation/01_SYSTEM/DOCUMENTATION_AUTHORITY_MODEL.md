@@ -2,6 +2,13 @@
 
 ## Purpose
 
+## Mandatory project authority rule
+
+**The Karetao Documentation authority framework is the only project documentation authority framework to use.** Use `Documentation/**` and its normative authority model for Karetao system-level documentation and documentation governance. Do not use `docs/project/**` as a competing or parallel authority framework.
+
+All `docs/project/**` content is **reference/source material only** during the documentation transition. It remains available for reconciliation, provenance, and evidence review, but it is not current authority. After the Karetao documentation is finalized, `docs/project/**` is intended to be removed.
+
+
 This document defines the normative authority model for Karetao documentation. It establishes which repository, external authority, or verification record owns each class of information and how conflicts are resolved.
 
 The model uses authority domains with an explicit project-level relationship: **Karetao is the higher authority for the integrated Karetao system and for system-level documentation governance.** Component repositories are subordinate to Karetao for system-level matters. External authorities remain authoritative for externally defined equipment and protocol behaviour within their own subject domains, and verification records provide evidence rather than requirements.
