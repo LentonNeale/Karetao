@@ -28,3 +28,8 @@ The component repositories remain authoritative for implementation details and c
 - Raspberry Sensor Hub implementation: `RaspberryPi_Sensor_Hub/`
 
 A component implementation document may explain how a Karetao requirement is implemented, but does not redefine the system requirement.
+## Mandatory documentation authority rule
+
+**The Karetao Documentation authority framework is the only project documentation authority framework to use.** Use `Documentation/**` and its authority model for Karetao system-level documentation and documentation governance. Do not use `docs/project/**` as a competing or parallel authority framework.
+
+All files in `docs/project/**` are **reference/source material only** during this transition. They are retained for reconciliation, provenance, and evidence review, but are not current authority. Once the Karetao documentation is finalized, the `docs/project/**` tree is intended to be removed.
