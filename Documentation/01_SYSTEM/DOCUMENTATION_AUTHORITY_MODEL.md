@@ -107,6 +107,20 @@ A component document may reference and explain a Karetao requirement. It must no
 
 A vendor document may define external behavior that constrains an implementation. It must not become an accidental source of Karetao requirements.
 
+## Cross-document authority transition
+
+The authority model applies to all repository entry points and navigation documents, including component README files. A README may provide local navigation, but it must not establish a competing project-level authority.
+
+During transition to this framework, existing references that identify `docs/project/` as the canonical project documentation location are legacy authority pointers. In particular, references in:
+
+- `Arm_Sensor_Hub/README.md`;
+- `RaspberryPi_Sensor_Hub/README.md`;
+- and any equivalent project-level entry-point documentation;
+
+must be treated as subordinate, transitional navigation content rather than as authority declarations. They must ultimately direct users to the Karetao `Documentation/**` framework for system-level documentation.
+
+This is a **cross-document authority transition issue**: correcting the Karetao authority model alone does not make existing README references authoritative. During the later reconciliation/refactoring phase, dependent entry points must be updated so that following documentation links cannot reasonably lead users to conclude that `docs/project/` supersedes or overrides Karetao `Documentation/**`.
+
 ## Mixed-authority legacy documents
 
 A legacy document may contain information belonging to multiple authority domains. Authority is assigned to **individual significant statements/content by subject**, not necessarily to the document as a whole.
