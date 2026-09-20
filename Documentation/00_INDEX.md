@@ -60,6 +60,10 @@ These are governance/process documents. They are not competing system requiremen
 
 The framework deliberately retains these top-level sections without introducing additional documentation categories.
 
+## Motion-permission documentation path
+
+The current motion-permission proposal is distributed according to the Karetao authority model: the decision proposal is tracked in `07_DECISIONS/ARCHITECTURE_DECISIONS.md`; system requirements, architecture, lifecycle/synchronization, CAN/host interfaces, safety, and verification records carry only the corresponding proposed/non-normative traceability until the system decision authority approves it.
+
 ## System authority
 
 Karetao is authoritative for:
