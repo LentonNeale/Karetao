@@ -118,15 +118,13 @@ A vendor document may define external behavior that constrains an implementation
 
 The authority model applies to all repository entry points and navigation documents, including component README files. A README may provide local navigation, but it must not establish a competing project-level authority.
 
-During transition to this framework, existing references that identify `docs/project/` as the canonical project documentation location are legacy authority pointers. In particular, references in:
+All repository entry points correctly direct users to the Karetao `Documentation/**` framework for system-level documentation:
 
-- `Arm_Sensor_Hub/README.md`;
-- `RaspberryPi_Sensor_Hub/README.md`;
-- and any equivalent project-level entry-point documentation;
+- Root `README.md` establishes `Documentation/**` as the sole authority framework.
+- `Arm_Sensor_Hub/README.md` and `RaspberryPi_Sensor_Hub/README.md` reference `../Documentation/` for system-level requirements and the authority model.
+- All legacy `docs/project/` references have been removed from entry points.
 
-must be treated as subordinate, transitional navigation content rather than as authority declarations. They must ultimately direct users to the Karetao `Documentation/**` framework for system-level documentation.
-
-This is a **cross-document authority transition issue**: correcting the Karetao authority model alone does not make existing README references authoritative. During the later reconciliation/refactoring phase, dependent entry points must be updated so that following documentation links cannot reasonably lead users to conclude that `docs/project/` supersedes or overrides Karetao `Documentation/**`.
+The documentation authority transition is complete. The Karetao Documentation framework is the single source of truth for all system-level documentation.
 
 ## Mixed-authority legacy documents
 
