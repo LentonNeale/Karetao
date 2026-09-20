@@ -165,6 +165,61 @@ Updated:
 
 ---
 
+## WP-3b: TIME System Interface (In Progress)
+
+**File processed:**
+- `docs/project/firmware/TIMESTAMP_SYNC_CONTRACT.md` (60 lines) → split: Karetao system interface + component internals
+
+### `docs/project/firmware/TIMESTAMP_SYNC_CONTRACT.md`
+
+| Statement | Classification | Destination | Disposition |
+|---|---|---|---|
+| Preamble: Status, Owner, Boundary | Context | TIME_SYSTEM_INTERFACE.md preamble | Noted; not copied |
+| §1 Time model: `hub_time_us = local_time_us + time_offset_us`, Pi authority, monotonicity | Karetao | TIME_SYSTEM_INTERFACE.md §1 | Moved |
+| §1 "measurement_timestamp_us" vs. "frame_time_us" distinction | Karetao | TIME_SYSTEM_INTERFACE.md §2 | Moved |
+| §2 Current source: TIM2, TimeService_NowUs(), wrap detection at ~4,295 seconds | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — timer peripheral and service implementation |
+| §2 "Readers must execute from one serialized task/system context...first version does not provide ISR-safe..." | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — task synchronization and concurrency model |
+| §2 AS5600 timestamp migration, raw TIM2 counter, long-lived I2C/CAN/SPI/diagnostic timestamps | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — peripheral and sensor integration details |
+| §2 "Measurement timestamp captured immediately after AS5600 bytes received and decoded" | Component | Arm_Sensor_Hub/Documentation/ (AS5600 integration) / Karetao (conceptual definition in §2) | Moved concept to TIME_SYSTEM_INTERFACE.md §2; peripheral timing details component |
+| §3 TIME_SYNC payload (pi_time_us, sync_seq, flags), STM32 capture and offset calculation | Karetao | TIME_SYSTEM_INTERFACE.md §3 | Moved |
+| §3 Required state: time_sync_valid, time_offset_us, last_sync_sequence, last_sync_local_time_us, age/fault status | Karetao | TIME_SYSTEM_INTERFACE.md §3 | Moved |
+| §3 TimeService_SyncStateAccept() semantics: initial bound (±24 hours), runtime bound (±1 second), sequence validation, atomic commit | Karetao (acceptance criteria) | TIME_SYSTEM_INTERFACE.md §4 | Moved (criteria); implementation function name component |
+| §3 TimeService_SyncStateGetSnapshot(), TimeService_AcceptSync(), TimeService_IsSyncValid(), TimeService_GetSyncSnapshot() | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — service API and task-context interfaces |
+| §3 "first implementation uses direct offset step; system_time_us permitted to jump; two-way RTT and slewing are future enhancements" | Karetao | TIME_SYSTEM_INTERFACE.md §4 | Moved verbatim (versioned enhancement note preserved) |
+| §4 Validity: 5-second timeout, unsynchronized marking, rejection of stale timestamps, export valid/unsynchronized quality | Karetao | TIME_SYSTEM_INTERFACE.md §4–5 | Moved |
+| §4 "Synchronization expiry does not stop acquisition or diagnostics...marks records unsynchronized...rejects or inhibits time-dependent motion" | Karetao | TIME_SYSTEM_INTERFACE.md §5 | Moved |
+| §4 Reset behavior: clears validity and volatile offset | Karetao | TIME_SYSTEM_INTERFACE.md §5 | Moved |
+| §4 "Only explicitly defined non-motion service operations may continue while sync invalid" | Karetao | TIME_SYSTEM_INTERFACE.md §5 | Moved |
+| §5 Atomicity and concurrency: sync update and validity as logical unit, readers see complete previous or new update, not partial | Karetao | TIME_SYSTEM_INTERFACE.md §6 | Moved |
+| §5 "Current implementation requires one serialized task/system-context owner...ISR code must defer...synchronization processing in task context" | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — task context ownership and ISR handling are implementation |
+| §6 Integration notes: one-way transaction point (SPI_CONTRACT.md), offset stepping approved, signed offset range bounds | Karetao (references) | TIME_SYSTEM_INTERFACE.md (§3 one-way note, §4 offset stepping) | Moved (with reference to SPI_SYSTEM_INTERFACE.md); range bounds component |
+| §6 "Host-visible timestamp quality must expose synchronized versus local-only data" | Karetao | TIME_SYSTEM_INTERFACE.md §4–5 | Moved (quality reporting requirement) |
+
+### Summary of Disposition
+
+**Moved to Karetao (TIME_SYSTEM_INTERFACE.md):**
+- Time model: hub_time_us formula, Pi authority, monotonicity invariant
+- Measurement vs. frame timestamp distinction and local-only marking
+- TIME_SYNC transaction structure (pi_time_us, sync_seq, flags) and STM32 processing
+- Required state (time_sync_valid, time_offset_us, sequence, local_time, age)
+- Acceptance criteria: initial ±24-hour bound, runtime ±1-second step bound, sequence validation
+- Direct offset step approved for v1; two-way RTT and slewing are future enhancements
+- 5-second validity timeout, unsynchronized marking, quality reporting
+- Motion inhibition while sync invalid
+- Reset behavior: clears validity and offset
+- Atomicity: readers see complete previous or new update
+- One-way transaction-point estimate rationale (reference to SPI_SYSTEM_INTERFACE.md)
+
+**Deliberately dropped (to component authority):**
+- TIM2 implementation: 32-bit counter, 1 MHz clock, ~4,295 second wrap
+- TimeService_NowUs() wrap detection mechanism and task context restriction
+- AS5600 timestamp capture timing and sensor-specific timestamp migration
+- Task synchronization model and ISR deferral pattern
+- TimeService_SyncStateAccept/Get/Is* API and internal state management
+- Signed offset range bounds and large-offset rejection limits (implementation)
+
+---
+
 ## Unresolved items
 
 (none yet)
