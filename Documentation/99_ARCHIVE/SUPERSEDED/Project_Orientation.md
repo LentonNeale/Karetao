@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Superseded proposal or earlier version
+- **Superseded by:** Current system documentation in `Documentation/` framework
+
+---
+
 # Project Orientation
 
 ## What This Project Is
@@ -92,4 +100,3 @@ Think of the firmware as a pipeline:
 5. expose that snapshot to the Raspberry Pi over SPI.
 
 If you keep that model in mind, the file structure becomes much easier to follow.
-

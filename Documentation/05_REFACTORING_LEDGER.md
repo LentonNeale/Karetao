@@ -552,6 +552,67 @@ None of these files define system requirements. All are implementation-specific 
 
 ---
 
+## WP-7: Archive Historical Content (In Progress)
+
+**Directories created:**
+- `99_ARCHIVE/CONVERSATIONS/` — Early-stage design conversations
+- `99_ARCHIVE/SPRINTS/` — Sprint planning and completion reports
+- `99_ARCHIVE/DECISIONS/` — System decision records and question inventories
+
+**Files moved to 99_ARCHIVE/CONVERSATIONS/ (with headers):**
+- CTO_DECISION_BRIEF.md (early decision narrative)
+- CTO_DECISION_FINAL.md (CTO approval of v1 baseline; **marked as approval origin for SD-01–SD-25**)
+- DeepSeek.md (AI-assisted design exploration)
+- GPT.md (AI-assisted design exploration)
+- InterAgent_Chat.md (multi-AI conversation record)
+- 2026-09-08-spi-options-engineering-assessment.md (engineering analysis)
+
+**Files moved to 99_ARCHIVE/SPRINTS/ (with headers):**
+- Sprint_1_List.md (sprint planning, obsolete)
+- Sprint_2_Readiness_Report.md (sprint completion report, obsolete)
+- PHASE_1_FINAL_CLEARANCE_REPORT.md (test/validation result from Phase 1)
+
+**Files moved to 99_ARCHIVE/SUPERSEDED/ (with headers):**
+- CONTRACT_V1_FREEZE.md (already archived in WP-4 with expanded header)
+- proposed_phase2.md (superseded proposal)
+- RASPBERRY_PI_BRINGUP_V0.md (superseded by V0.1)
+- First_Week_Guide.md (superseded onboarding)
+- Project_Orientation.md (superseded onboarding)
+- OnboardingDocs_README.md (superseded onboarding)
+
+**Files moved to 99_ARCHIVE/DECISIONS/ (with headers):**
+- SD/ directory (all 26 system decision files: SD-01.md through SD-26.md)
+- SYSTEM_DECISIONS.md (decision summary, superseded by register)
+- Open_Items_List.md (145-item question inventory; **specially marked: "canonical register" self-description is superseded**)
+- system_TODO_List.md (obsolete TODO tracking)
+- CONTRACT_STATUS.md (tracking record, obsolete)
+- SAFETY_RELEASE_CHECKLIST.md (checklist for Phase 1, obsolete)
+
+### Archive Headers
+
+All moved files include a standardized archive header block stating:
+- Archived date: 2026-09-20
+- Historical status: Marked as non-normative
+- Superseding document: Reference to current authoritative location in `Documentation/**`
+
+Special notes:
+- CTO_DECISION_FINAL.md explicitly states it is "the approval origin for SD-01–SD-25, not merely a conversation"
+- Open_Items_List.md explicitly states its "canonical register" self-description is superseded by the current decision register
+- CONTRACT_V1_FREEZE.md (from WP-4) explicitly lists all superseding documents and notes C-1 resolution
+
+### Disposition Summary
+
+| Category | Location | Volume | Content Type |
+|---|---|---|---|
+| Conversations | 99_ARCHIVE/CONVERSATIONS/ | 1,200 lines | Design exploration, AI-assisted analysis, approval decision |
+| Sprints | 99_ARCHIVE/SPRINTS/ | ~300 lines | Sprint planning, completion reports, Phase 1 clearance |
+| Superseded | 99_ARCHIVE/SUPERSEDED/ | ~1,100 lines | Obsolete proposals, onboarding material, earlier versions |
+| Decisions | 99_ARCHIVE/DECISIONS/ | ~2,000 lines | System decisions (SD-01–26), question inventory, status tracking |
+
+**Total archived:** ~4,600 lines of historical content
+
+---
+
 ## Unresolved items
 
 (none yet)

@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Early-stage design conversation and AI-assisted analysis
+- **Superseded by:** System architecture and interface documents in `Documentation/`
+
+---
+
 # InterAgent Chat - Important Notes Outside Sprint Scope
 
 Date: 2026-09-07

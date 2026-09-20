@@ -1,6 +1,17 @@
-# Karetao Project Questions Register
+⚠ **ARCHIVED — Non-normative historical document**
 
-This file is the canonical register of project questions that must be answered before the corresponding requirements, interfaces, implementation decisions, or release gates can be considered complete.
+- **Archived:** 2026-09-20
+- **Historical status:** Early-phase question inventory (145 items), superseded by current decision register
+- **Self-description:** This document previously claimed to be "the canonical register of project questions"
+- **Superseded by:** `07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md` (which maintains the authoritative project questions and their resolutions)
+
+---
+
+# Karetao Project Questions Register [ARCHIVED]
+
+This file was the canonical register of project questions that must be answered before the corresponding requirements, interfaces, implementation decisions, or release gates can be considered complete.
+
+**NOTE:** This document's role as the canonical register is now superseded by the current decision register. Questions are now tracked in the centralauthoritative register.
 
 Questions are grouped by topic. Answers should be recorded against the question, with a reference to the decision, requirement, test result, or other authoritative document where appropriate.
 

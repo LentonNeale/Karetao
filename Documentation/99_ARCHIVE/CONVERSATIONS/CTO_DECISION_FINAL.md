@@ -1,4 +1,12 @@
-# CTO Final Decisions - v1.0 Firmware Contracts
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Approval origin for system decisions SD-01 through SD-25. This is the CTO's formal approval of the v1 firmware architecture baseline, not a conversation record.
+- **Superseded by:** `07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md` (which records the approved decisions as system SYS-* requirements and SD-* identifiers)
+
+---
+
+# CTO Final Decisions - v1.0 Firmware Contracts [ARCHIVED]
 
 **Decision authority:** CTO review of `CTO_DECISION_BRIEF.md`
 

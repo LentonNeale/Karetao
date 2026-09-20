@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Sprint planning and completion reports, obsolete
+- **Superseded by:** Current project state in `Documentation/` and `07_DECISIONS/`
+
+---
+
 # Sprint 2 Readiness Report - Arm Sensor Hub
 
 Date: 2026-09-07  

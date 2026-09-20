@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Superseded proposal or earlier version
+- **Superseded by:** Current system documentation in `Documentation/` framework
+
+---
+
 Phase 2 Integration Plan
 
 Consolidated Recommendations, Proposed Decisions and Review Record

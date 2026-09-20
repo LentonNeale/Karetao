@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Early-stage design conversation and AI-assisted analysis
+- **Superseded by:** System architecture and interface documents in `Documentation/`
+
+---
+
 # CTO Decision Brief: System Decisions v1
 
 **Status:** Superseded by [CTO_DECISION_FINAL.md](CTO_DECISION_FINAL.md), which records the approved decisions. This brief is retained as the original proposal for historical context.

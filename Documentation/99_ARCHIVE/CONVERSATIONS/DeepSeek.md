@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Early-stage design conversation and AI-assisted analysis
+- **Superseded by:** System architecture and interface documents in `Documentation/`
+
+---
+
 I've researched each of the 25 decisions from your `SYSTEM_DECISIONS_V1.md` document. Below is a comprehensive breakdown of what each decision means and the industry and academic best practices that can guide your choices.
 
 ---

@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Superseded proposal or earlier version
+- **Superseded by:** Current system documentation in `Documentation/` framework
+
+---
+
 # First Week Guide
 
 ## Goal
@@ -86,4 +94,3 @@ You are ready for a small independent task when you can explain:
 - why host tests exist separately from target builds,
 - what the lifecycle model protects,
 - why a coherent snapshot matters before SPI transfer.
-

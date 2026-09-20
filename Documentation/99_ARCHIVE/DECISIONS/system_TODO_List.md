@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Superseded by current decision register
+- **Superseded by:** `07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md`
+
+---
+
 # TODO List (Consolidated from existing repository documentation)
 
 ## docs/architecture.md

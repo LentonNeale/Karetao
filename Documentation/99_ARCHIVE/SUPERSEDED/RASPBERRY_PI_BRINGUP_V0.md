@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Superseded proposal or earlier version
+- **Superseded by:** Current system documentation in `Documentation/` framework
+
+---
+
 # Raspberry Pi 5 Bring-Up Guide
 
 This procedure provisions a Raspberry Pi 5 (8 GB) as the Ubuntu Server, PREEMPT_RT, ROS 2, and STM32 host for Arm Sensor Hub. It assumes Ubuntu Server 24.04 LTS arm64, Ethernet during commissioning, and all post-imaging work performed over SSH.

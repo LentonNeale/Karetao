@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Early-stage design conversation and AI-assisted analysis
+- **Superseded by:** System architecture and interface documents in `Documentation/`
+
+---
+
 # SPI Options Engineering Assessment for Initial Driver Design
 
 Date: 2026-09-08

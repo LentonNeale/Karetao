@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Superseded proposal or earlier version
+- **Superseded by:** Current system documentation in `Documentation/` framework
+
+---
+
 # Intern Onboarding Docs
 
 This folder collects the fastest path for undergraduate interns to understand the Arm Sensor Hub subtree while using the monorepo root `docs/` tree as the shared source of truth.

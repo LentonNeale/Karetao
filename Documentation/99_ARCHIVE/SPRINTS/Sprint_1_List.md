@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Sprint planning and completion reports, obsolete
+- **Superseded by:** Current project state in `Documentation/` and `07_DECISIONS/`
+
+---
+
 # Sprint 1 Agent Task List
 
 **Source of truth:** `Documentation/Conversations/CTO_DECISION_FINAL.md`

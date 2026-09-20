@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Superseded by current decision register
+- **Superseded by:** `07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md`
+
+---
+
 > **Transitional status:** This legacy decision register remains decision provenance. Current system requirement wording is maintained in [Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md](../../Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md), and current architecture decisions are maintained in [Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md](../../Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md). SD identifiers, status, rationale and open issues remain preserved here during reconciliation. System-owned normative statements are reconciled into the requirements authority; component-only constraints and unresolved proposals are not promoted automatically.
 
 # Karetao System Decisions Register

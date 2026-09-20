@@ -1,3 +1,11 @@
+⚠ **ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Historical status:** Superseded by current decision register
+- **Superseded by:** `07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md`
+
+---
+
 # Energized-Motion Safety Release Checklist
 
 **Authority:** [CTO Final Decisions](Conversations/CTO_DECISION_FINAL.md), SD-25 and exceptions 1-7
