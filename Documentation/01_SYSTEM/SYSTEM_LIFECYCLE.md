@@ -134,6 +134,7 @@ Health Monitor ← (observes all)
 - Sensor `ACTIVE` requires I2C and the TCA9548A path to be available.
 - Motor `ACTIVE` requires CAN `ACTIVE`.
 - Time-dependent motion requires valid time synchronization. Its expiry inhibits that motion while acquisition, diagnostics, and explicitly defined non-motion service operations continue.
+- **Proposed system motion permission:** Individual service `ACTIVE` state does not by itself grant normal motor motion. The proposed aggregate gate must also be satisfied before normal motor motion is permitted.
 - SPI may be `INACTIVE` while acquisition continues, but host publication must be unavailable or marked stale.
 - Health Monitor may observe every state, including `ERROR` and shutdown diagnostics.
 - A dependency in `UNCONFIGURED` or `ERROR` prevents dependent activation.
