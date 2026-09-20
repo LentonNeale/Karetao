@@ -16,6 +16,7 @@ This document is the authoritative Karetao system-level verification status reco
 | SPI interface | OPEN | Pi/STM32 live framing, CRC, ownership, timing and physical-layer evidence |
 | Host command/state interface | OPEN | End-to-end acknowledgement, freshness, lifecycle and gating evidence |
 | Calibration/configuration | OPEN | Versioning, integrity, controlled transfer and recovery evidence |
+| System motion permission | OPEN / PROPOSED | Verify aggregate prerequisite logic, fail-closed behaviour, freshness/synchronization inputs, global inhibit handling, recovery, and explicit reactivation; normative verification awaits decision approval |
 | Fault/recovery | OPEN | System-level motion gating and dependency-ordered reactivation tests |
 | Independent safety mechanisms | OPEN | Risk assessment, safety architecture and independent-path fault evidence |
 
