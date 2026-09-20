@@ -38,6 +38,16 @@ This document is the authoritative Karetao system-requirement destination. Requi
 | SYS-SAFE-001 | Independent E-stop, motor-disable/power-removal path, watchdog, stop/brake behaviour, fault indication, reset behaviour and applicable safety-rated architecture are release gates. | SD-25 | Modified; safety boundary follows risk assessment |
 | SYS-MECH-001 | The differential end-effector motor-to-DOF mapping shall be represented explicitly rather than as independent one-to-one joints. | SD-26 | Proposed; do not treat as implemented until mechanical mapping is verified |
 
+## Proposed motion-permission requirements
+
+The following requirements are **proposed only** and are not part of the approved SD-01–SD-25 baseline until accepted by the system decision authority.
+
+| ID | Requirement | Source | Status / qualification |
+|---|---|---|---|
+| SYS-MOTION-001 | Normal motor-motion permission shall be granted only when the proposed system-level gate is true: CAN readiness, required I2C/sensor readiness and validity, healthy Raspberry Pi communication, valid time synchronization where required, required timestamp/data freshness, system operational state, and no active motion inhibit. | Proposed motion-permission decision | Proposed; exact prerequisite set, owner and thresholds require approval |
+| SYS-MOTION-002 | Loss of a required motion prerequisite shall fail closed for normal motor motion; acquisition and diagnostics may continue where their own prerequisites permit. | Proposed motion-permission decision | Proposed |
+| SYS-MOTION-003 | Recovery shall restore prerequisites and require explicit reactivation before normal motor motion resumes; clearing a fault condition alone shall not auto-resume motion. | Proposed motion-permission decision; SD-23/SD-24 | Proposed |
+
 ## Traceability rule
 
 SD-01 through SD-26 have been systematically reviewed. The table above captures requirement-bearing system content identified during that review. Decision rationale, open issues and proposal status remain in the decision records. Component-only implementation constraints are not promoted to system requirements merely because they are normative in a component contract.
@@ -46,7 +56,8 @@ SD-01 through SD-26 have been systematically reviewed. The table above captures 
 
 - Assign final project requirement identifiers and acceptance criteria.
 - Define the exact scope of “time-dependent motion” (SD-20).
-- Define system motion-permission authority and recovery-in-progress gating (SD-02/SD-23).
+- Decide the system motion-permission authority and recovery-in-progress gating (SD-02/SD-23; proposed SYS-MOTION-001..003).
+- Define the exact required I2C/sensor set and freshness thresholds for the proposed motion gate.
 - Define the safety boundary between application controlled-stop and independent safety functions (SD-25).
 - Define the measurement method and acceptance criteria for the SYS-SPI-004 physical-link test.
 - Validate provisional CAN, SPI, timing and synchronization values on target hardware.
