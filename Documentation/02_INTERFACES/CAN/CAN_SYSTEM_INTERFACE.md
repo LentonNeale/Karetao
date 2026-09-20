@@ -43,6 +43,7 @@ Motor commands are permitted **only while CAN is `ACTIVE`** (SD-06).
 
 The service enforces:
 - lifecycle gate validation at transmission time;
+- **system-level prerequisite note:** CAN `ACTIVE` is necessary but not sufficient for normal system motion; the proposed motion-permission gate may reject normal motion when other required prerequisites are invalid;
 - rejection of commands while CAN is `UNCONFIGURED`, `INACTIVE`, or `ERROR`;
 - explicit service reactivation as the only path to resume normal transmission after recovery.
 
