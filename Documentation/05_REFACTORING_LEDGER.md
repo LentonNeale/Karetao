@@ -613,6 +613,78 @@ Special notes:
 
 ---
 
+## WP-8: Verification Gate (Completed)
+
+**Acceptance criteria verification:**
+
+1. **No orphaned statement:** Every normative or factual statement migrated from `docs/project/**` is either:
+   - Represented in authoritative `Documentation/**` documents (all WPs completed)
+   - Present in `99_ARCHIVE/` marked historical (WP-7 completed)
+   - Recorded as open item in KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md (reconciled in WP-1)
+   - Listed in deliberately dropped notes with reasons (ledger documents all deliberate exclusions)
+
+   ✓ **Status:** All substantive content accounted for. Ledger documents disposition of ~60+ significant statements across 7 work packages.
+
+2. **No new authority:** Karetao documents do not assert ownership of subjects assigned elsewhere by the authority model.
+   - MKS protocol: referenced as external authority (CAN_SYSTEM_INTERFACE.md §11), not restated ✓
+   - Component test results: not promoted to SYSTEM_VERIFIED (rule 3 respected) ✓
+   - Vendor register maps: not copied (AS5600, TCA9548A, STM32 referenced as external) ✓
+   - TIME_SYNC internals: deferred to component authority ✓
+
+   ✓ **Status:** Authority model respected throughout.
+
+3. **Verification separation holds:** Everything from evidence documents lands as evidence or open gate, not requirement.
+   - CAN_BIT_TIMING_EVIDENCE.md: referenced in CAN_INTEGRATION_EVIDENCE.md (05_VERIFICATION/) ✓
+   - PHASE_1_FINAL_CLEARANCE_REPORT.md: archived as evidence, not elevated to requirement ✓
+   - CONTRACT_STATUS.md: archived as historical tracking, not promoted ✓
+
+   ✓ **Status:** Verification separation maintained.
+
+4. **Provisional stays provisional:** Provisional values not restated as settled.
+   - 5 MHz SPI: "integration ceiling pending validation" (SPI_SYSTEM_INTERFACE.md §16) ✓
+   - 1 Mbps CAN: "integration ceiling; current generated 875 kbps" (CAN_INTEGRATION_EVIDENCE.md, C-2) ✓
+   - ±1 ms timestamp error: "target" in SYSTEM_REQUIREMENTS.md, not "approved" ✓
+   - 500 Hz EKF: noted as provisional in architecture ✓
+
+   ✓ **Status:** All provisional qualifiers preserved.
+
+5. **Links resolve:** Every relative link in `Documentation/**` resolves to existing file.
+   - C-4 resolution: Created `07_DECISIONS/ARCHITECTURE_DECISIONS.md` placeholder ✓
+   - Provenance links: All reference correct legacy sources ✓
+   - No broken inbound links from Documentation/ to docs/ ✓
+
+   ✓ **Status:** All links resolve.
+
+6. **Implementable from Karetao alone:** Reader can derive full SPI wire format, time model, and lifecycle state machine from `Documentation/**`.
+   - SPI_SYSTEM_INTERFACE.md §3: 18-byte header table with all fields ✓
+   - SPI_SYSTEM_INTERFACE.md §5: all 10 message types (SNAPSHOT, EVENT, DIAGNOSTIC, GET_SNAPSHOT, GET_STATUS, TIME_SYNC, SET_MOTOR_COMMAND, GET_VERSION, ACK, NACK) ✓
+   - SPI_SYSTEM_INTERFACE.md §4: pipelined transaction model ✓
+   - SPI_SYSTEM_INTERFACE.md §17: all 12 contract invariants ✓
+   - TIME_SYSTEM_INTERFACE.md §1–6: complete time model, Pi authority, offset formula, TIME_SYNC structure ✓
+   - SYSTEM_LIFECYCLE.md §1–8: canonical states, transitions, fault handling ✓
+
+   ✓ **Status:** All substantive system contracts fully present.
+
+**Remaining legacy files (27 files):**
+- 6 pointer stubs (per §4.3, §8): to be deleted in this WP
+- 21 files: processed across WP-2 through WP-7 (moved, archived, or split)
+
+**`docs/project` references check:**
+- `grep -rn "docs/project" Documentation/` returns only provenance blocks (legitimate) ✓
+- No broken references in live documentation ✓
+- Archived SYSTEM_DECISIONS.md has one reference to non-existent ARCHITECTURE_DECISIONS.md (now created) ✓
+
+**Verification summary:**
+- All acceptance criteria met ✓
+- All substantive system contracts present ✓
+- Authority model respected ✓
+- No orphaned statements ✓
+- Provisional qualifiers preserved ✓
+
+**Remaining work:** WP-9 (update entry points).
+
+---
+
 ## Unresolved items
 
 (none yet)
