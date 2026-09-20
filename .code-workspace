@@ -1,0 +1,9 @@
+{
+  "folders": [
+    { "path": "." },
+    { "path": "Arm_Sensor_Hub" }
+  ],
+  "settings": {
+    "cmake.sourceDirectory": "${workspaceFolder:Arm_Sensor_Hub}"
+  }
+}
