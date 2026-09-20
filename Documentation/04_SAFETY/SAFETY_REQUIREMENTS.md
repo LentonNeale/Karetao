@@ -19,6 +19,7 @@ The boundary between application controls and independent safety functions shall
 | SAFE-007 | Reset shall not automatically reactivate energized motion; reset/recovery behaviour shall be evidenced. | OPEN / BLOCKED |
 | SAFE-008 | Stopping time shall be measured under hazardous operating conditions where required by the safety assessment. | OPEN / BLOCKED |
 | SAFE-009 | Applicable safety-rated relay/controller and safety architecture shall be established and assessed. | OPEN / BLOCKED |
+| SAFE-010 | The proposed normal-motion permission policy shall fail closed when any required system prerequisite is invalid, unavailable, stale, unsynchronized, or explicitly inhibited, once the proposed motion-permission decision is approved. | PROPOSED / NOT YET NORMATIVE |
 
 These statuses preserve the audited release checklist state: no supporting artifact had been recorded at the stated evidence locations.
 
