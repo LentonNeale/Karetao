@@ -220,6 +220,87 @@ Updated:
 
 ---
 
+## WP-3c: CAN System Interface (In Progress)
+
+**Files processed:**
+- `docs/project/firmware/CAN_SERVICE_CONTRACT.md` (133 lines) → split: Karetao system interface + component internals
+- `docs/project/firmware/CAN_BIT_TIMING_EVIDENCE.md` (48 lines) → verification reference; C-2 conflict documented
+
+### `docs/project/firmware/CAN_SERVICE_CONTRACT.md`
+
+| Statement | Classification | Destination | Disposition |
+|---|---|---|---|
+| Preamble: Status, Owner, Boundary (CanService, MKS library separation) | Component / External | CAN_SYSTEM_INTERFACE.md §11 (MKS authority only) | Noted; service boundary component-internal |
+| §1 Purpose: CAN transport, motor registration, polling, diagnostics | Karetao (observable behavior) | CAN_SYSTEM_INTERFACE.md | Moved (system-level semantics) |
+| §1 "MKS library owns command encoding, checksum, decoding; does not own HAL/queues/retries" | External / Component | CAN_SYSTEM_INTERFACE.md §11 (MKS authority); component docs | Moved (MKS as external authority); HAL details component |
+| §2 Public interface: Init, Activate, Process, RegisterMotor, command functions, response accessors, GetLatestMotorValues | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — API details |
+| §3 Lifecycle states: UNCONFIGURED, INACTIVE, ACTIVE, ERROR; state transitions; motion gate | Karetao | CAN_SYSTEM_INTERFACE.md §8 | Moved |
+| §3 "Normal motor commands permitted only while ACTIVE; enforced in CanService_TransmitFrame()" | Karetao | CAN_SYSTEM_INTERFACE.md §3 | Moved (system gate); implementation enforcement component |
+| §3 "Emergency stop currently fail-closed...future safety review may authorize while ERROR" | Karetao | CAN_SYSTEM_INTERFACE.md §3 | Moved verbatim (future exception caveat preserved) |
+| §4 Configuration: 11-bit IDs, CAN_BIT_TIMING_EVIDENCE reference, max motor ID 0x7FF, motor indices 0–7, eight-motor capacity, filter accepts all IDs, registered ID determines decode | Karetao / Verification | CAN_SYSTEM_INTERFACE.md §1 (11-bit, capacity); §6 (uniqueness); CAN_INTEGRATION_EVIDENCE.md (bitrate) | Moved config to interface; bitrate conflict documented in verification |
+| §4 "Duplicate IDs not currently rejected...must be rejected before production" | Karetao / Component | CAN_SYSTEM_INTERFACE.md §2 (requirement); component (enforcement) | Moved requirement; enforcement component |
+| §5 TX: CanTx_Queue bounded, priority ordered (SAFETY, MOTION, POLL), FIFO within priority | Karetao | CAN_SYSTEM_INTERFACE.md §4 | Moved |
+| §5 TX: frames encoded to fixed MksCanFrame, eight-entry queue, Process() drains one/pass, HAL retry three times, queue-full increments diagnostic, payloads copied to eight-byte buffer | Component / Karetao (retry bound, queue semantics visible) | Karetao: CAN_SYSTEM_INTERFACE.md §4 (priority, three-retry bound, queue-full behavior); Component: queue internals | Moved observable semantics; implementation details component |
+| §6 RX: drain FIFO until empty, discard DLC > 8, ignore unregistered IDs, pass to mks_decode, replace per-motor response, decode failure increments counter, successful decode updates latest-value with feedback/timestamp/quality/diagnostics | Karetao | CAN_SYSTEM_INTERFACE.md §4 (RX semantics) §6 (latest-value cache) | Moved |
+| §6 "RX overflow counters and recovery not yet implemented" | Verification (open gate) | CAN_INTEGRATION_EVIDENCE.md (integration blockers) | Referenced as open gate; implementation gap |
+| §7 Polling: 20 ms default, round-robin motors, alternate encoder/realtime requests, period zero disables, shared HAL path with commands | Karetao / Component | CAN_SYSTEM_INTERFACE.md §7 (observable behavior); Component (scheduler internals) | Moved observable semantics; scheduler component |
+| §8 Required production decisions (1–7): retry delay, RX overflow, duplicate IDs, polling period, HAL error mapping, emergency stop, bitrate/sample-point | Karetao / Verification | CAN_SYSTEM_INTERFACE.md (lifestyle, duplicate ID uniqueness, emergency stop); CAN_INTEGRATION_EVIDENCE.md (blockers) | Noted in integration gates |
+| §9 Bus-off policy: check HAL_CAN_ERROR_BOF in task context, stop CAN, inhibit queue draining, escalating recovery (100 ms–1 s), three events in 60 s enter ERROR, successful restart → INACTIVE, only CanService_Activate() resumes | Karetao | CAN_SYSTEM_INTERFACE.md §5 | Moved verbatim |
+| §9 "HAL error behavior, stop/start timing, controller/transceiver recovery...remain integration gates" | Verification | CAN_INTEGRATION_EVIDENCE.md (integration blockers) | Referenced as gate |
+| §10 Diagnostics: lifecycle, per-motor RX decode successes/failures, TX successes/HAL failures/queue drops, RX overflow, bus-off count, poll health, last response timestamp | Karetao | CAN_SYSTEM_INTERFACE.md §9 | Moved |
+| §10 "Counters task-owned; ISR callbacks record minimal flags and defer to task context" | Karetao / Component | CAN_SYSTEM_INTERFACE.md §10 (timing/concurrency); Component (ISR implementation) | Moved concurrency model; ISR details component |
+| §10 "Timestamps use 64-bit monotonic extension from TIM2, never HAL_GetTick()" | Karetao | CAN_SYSTEM_INTERFACE.md §9 | Moved (timestamp domain requirement) |
+| §11 Latest-value cache: Motor_LatestValue per motor, carries identity/CAN-ID/feedback/timestamp/quality/validity/counters; Snapshot Builder reads and copies; must not mutate or write SPI buffer | Karetao | CAN_SYSTEM_INTERFACE.md §6 | Moved |
+| §12 Timing and concurrency: Process() from task context, lifecycle/recovery/queue from task, no ISR mutations, bounded processing, multiple-task commands need mutex | Karetao | CAN_SYSTEM_INTERFACE.md §10 | Moved |
+| §13 Verification requirements (7 items covering modal behavior, decode, unknown IDs, malformed frames, polling, bus-off, queue) | Verification | CAN_INTEGRATION_EVIDENCE.md or SYSTEM_VERIFICATION_MATRIX.md | Not migrated as document; covered in verification strategy |
+
+### `docs/project/firmware/CAN_BIT_TIMING_EVIDENCE.md`
+
+| Statement | Classification | Destination | Disposition |
+|---|---|---|---|
+| Entire document (48 lines): Status "engineering calculation; not hardware validation", current 875 kbps config, candidate 1 Mbps calculation, provisional bus-load estimate, integration blockers | Verification (evidence) | CAN_INTEGRATION_EVIDENCE.md | **Moved and documented as evidence, not requirement** |
+| Current configuration: 42 MHz PCLK1, prescaler 16, BS1/BS2/SJW all 1 TQ, 875 kbps, 66.7% sample point | Verification / Implementation gap | CAN_INTEGRATION_EVIDENCE.md (C-2 conflict: 1 Mbps required, 875 kbps implemented) | Documented as open implementation gap; flagged as C-2 conflict |
+| Candidate 1 Mbps: prescaler 3, BS1 11, BS2 2, SJW 1, 85.7% sample point | Verification (candidate) | CAN_INTEGRATION_EVIDENCE.md | Recorded as candidate; **not approved**; marked for future CubeMX integration |
+| Bus-load estimate: 111–130 bits/frame, 1.3% load (single motor), 31.2% load (eight motors 100 Hz) | Verification | CAN_INTEGRATION_EVIDENCE.md (provisional estimate) | Recorded as provisional; neither is a validated worst case |
+| Integration blockers: 8 items covering MKS model, transceiver, topology, timing, and logic-analyzer evidence | Verification (open gates) | CAN_INTEGRATION_EVIDENCE.md (blockers section) | Moved and marked as blocker list |
+| "Target bitrate, candidate timing, load estimates are integration gates; do not validate physical network or authorize motion" | Verification (caveat) | CAN_INTEGRATION_EVIDENCE.md | Moved verbatim (non-validation caveat preserved) |
+
+### Summary of Disposition
+
+**Moved to Karetao (CAN_SYSTEM_INTERFACE.md):**
+- CAN configuration: 11-bit IDs, motor capacity, ID uniqueness requirement
+- Motor command lifecycle gating: ACTIVE-only transmission with state validation
+- Emergency stop exception caveat (future safety review)
+- TX queue semantics: priority ordering (SAFETY, MOTION, POLL), three-retry bound, queue-full behavior, frame ordering
+- RX semantics: frame validation, unregistered ID ignoring, decode error handling, latest-value update atomicity
+- Bus-off policy: detection, escalating recovery (100 ms–1 s), three-event escalation to ERROR, explicit reactivation requirement
+- Latest-value cache: freshness, staleness on decode failure, Snapshot Builder read-only access
+- Polling: 20 ms default, round-robin, alternating request types, period-zero disable
+- Diagnostics: 8 counters (RX/TX/bus-off/poll/overflow/decode)
+- Timing/concurrency: task context ownership, no ISR mutations, 64-bit monotonic timestamp requirement
+- MKS as external authority: command encoding, checksum, response decoding (not restated)
+
+**Deliberately dropped (to component authority):**
+- CanService API: Init, Activate, Process, RegisterMotor, command functions, response accessors
+- Queue implementation, HAL integration, priority scheduling
+- Polling scheduler: round-robin mechanics, request alternation
+- Per-motor response cache structure and update mechanics
+- ISR handler implementation (deferral pattern only mentioned in concurrency)
+- RX FIFO overflow implementation (marked as not-yet-implemented)
+- Task synchronization specifics
+
+**Deliberately dropped (to verification authority):**
+- CAN_BIT_TIMING_EVIDENCE.md: entire file, recorded as engineering calculation evidence
+- C-2 conflict: 1 Mbps requirement vs. 875 kbps implementation, documented as open gate
+- Candidate 1 Mbps configuration: recorded but not approved
+- 8 integration blockers: bus-off recovery, physical topology, logic-analyzer evidence, etc.
+
+**Notes on external authority:**
+- MKS controller protocol, command encoding, checksum, response format, feedback rate all remain external authority
+- Document references MKS requirements; does not restate vendor specifications
+
+---
+
 ## Unresolved items
 
 (none yet)
