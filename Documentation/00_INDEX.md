@@ -42,6 +42,7 @@ A document's physical location does not by itself make it authoritative. Authori
 The following root-level documents govern the documentation framework itself rather than defining Karetao system behaviour:
 
 - `05_REFACTORING_RULES.md` — rules governing the future documentation migration and reconciliation.
+- `05_REFACTORING_PLAN.md` — the proposed plan applying those rules to the remaining `docs/project/**` migration.
 - `06_IMPLEMENTATION_CHECKLIST.md` — checklist for implementing and reviewing the documentation framework.
 
 These are governance/process documents. They are not competing system requirements and do not override or replace authoritative system-level documentation.

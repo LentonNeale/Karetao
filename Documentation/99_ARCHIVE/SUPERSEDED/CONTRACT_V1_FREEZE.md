@@ -1,5 +1,23 @@
 # Contract v1.0 Freeze Specification
 
+**⚠ ARCHIVED — Non-normative historical document**
+
+- **Archived:** 2026-09-20
+- **Status:** Superseded by Karetao Documentation framework
+- **Superseding documents:** 
+  - Lifecycle: `01_SYSTEM/SYSTEM_LIFECYCLE.md`
+  - SPI contract: `02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md`, `02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md`
+  - Time contract: `02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md`
+  - CAN contract: `02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md`
+  - Configuration: `06_CONFIGURATION/SYSTEM_CONFIGURATION.md`
+  - Architecture: `01_SYSTEM/SYSTEM_ARCHITECTURE.md`
+
+This document's v1.0 decisions have been reconciled and distributed into Karetao's normative framework. The contract hierarchy diagram is superseded by the authority model. The DATA_READY semantics (conflict C-1) are resolved in favor of the armed-then-assert model (SPI_SYSTEM_INTERFACE.md §7).
+
+---
+
+# Contract v1.0 Freeze Specification [ARCHIVED]
+
 **Status:** Pre-freeze/approval baseline; approved v1.0 decisions are propagated, with only explicit integration gates remaining
 **Scope:** STM32F405 sensor hub and Raspberry Pi SPI integration  
 **Exclusions:** ROS runtime integration, MotorService implementation, and generated-code restructuring

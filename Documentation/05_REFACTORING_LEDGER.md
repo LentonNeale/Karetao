@@ -301,6 +301,146 @@ Updated:
 
 ---
 
+## WP-4: Build out `01_SYSTEM/` and `06_CONFIGURATION/` (In Progress)
+
+**Files processed:**
+- `docs/project/firmware/LIFECYCLE_CONTRACT.md` (240 lines) → Karetao
+- `docs/project/firmware/ERROR_HANDLING_STRATEGY.md` (68 lines) → Karetao
+- `docs/project/firmware/JOINT_MAPPING_CONTRACT.md` (28 lines) → Karetao/Configuration
+- `docs/project/firmware/CALIBRATION_CONTRACT.md` (30 lines) → Karetao/Configuration
+- `docs/project/firmware/APP_OVERVIEW.md` (8 lines) → Karetao (rewrite)
+- `docs/project/system/architecture.md` (110 lines) → Karetao
+- `docs/project/firmware/CONTRACT_V1_FREEZE.md` (209 lines) → Archive with header
+
+### `docs/project/firmware/LIFECYCLE_CONTRACT.md`
+
+| Section | Classification | Destination | Disposition |
+|---|---|---|---|
+| §1 Purpose and vocabulary | Karetao | SYSTEM_LIFECYCLE.md preamble | Moved |
+| §2 Canonical states (UNCONFIGURED, INACTIVE, ACTIVE, ERROR) | Karetao | SYSTEM_LIFECYCLE.md §1 | Moved |
+| §2 "Implementation states remain local" | Karetao | SYSTEM_LIFECYCLE.md §1 | Moved verbatim |
+| §3 Transition model with diagram and semantics | Karetao | SYSTEM_LIFECYCLE.md §2 | Moved |
+| §3 "recover always ends INACTIVE; shutdown is safety operation" | Karetao | SYSTEM_LIFECYCLE.md §2 | Moved verbatim |
+| §4 Fault convention (INFORMATIONAL/DEGRADED/FAULT/SAFETY_CRITICAL) | Karetao | SYSTEM_LIFECYCLE.md §3 | Moved |
+| §4 "not a PL/SIL mapping or formal machine safety rating" | Karetao | SYSTEM_LIFECYCLE.md §3 | Moved verbatim (caveat preserved) |
+| §4 Fault classes (transient/persistent/fatal/configuration) | Karetao | SYSTEM_LIFECYCLE.md §3 | Moved |
+| §5 Subsystem mapping table | Karetao | SYSTEM_LIFECYCLE.md §6 | Moved |
+| §6 Dependency rules and graph | Karetao | SYSTEM_LIFECYCLE.md §7 | Moved |
+| §7 Startup and shutdown sequence diagrams | Karetao | SYSTEM_LIFECYCLE.md §8 | Moved |
+| §7 "CubeMX is hardware initialization, not configure; lifecycle recovery != task recovery" | Karetao | SYSTEM_LIFECYCLE.md §8 | Moved verbatim (semantic distinction preserved) |
+| §8 C11 API pattern and principles | Component | SYSTEM_LIFECYCLE.md §10 (structure), Arm_Sensor_Hub docs (implementation) | Moved structure/principles; implementation component |
+| §9 Lifecycle contract template (25 items) | Karetao (structure) | SYSTEM_LIFECYCLE.md §10 | Noted as guidance; individual service contracts own their items |
+| §10–13 Initial interface contracts (I2C, CAN, SPI, Sensor, Motor, HealthMonitor) | Component (mostly) | SYSTEM_LIFECYCLE.md §6 (subsystem mapping only); service contracts elsewhere | Moved system-visible lifecycle states; service-specific details component |
+| §14 RTOS and timing rules | Karetao / Component | SYSTEM_LIFECYCLE.md §8 (timing rules); Component (implementation) | Moved rules; implementation component |
+| §15 Validation matrix (automated tests) | Verification | Not migrated at this stage | Implementation gate; reference for test strategy |
+
+### `docs/project/firmware/ERROR_HANDLING_STRATEGY.md`
+
+| Section | Classification | Destination | Disposition |
+|---|---|---|---|
+| Preamble and purpose | Karetao | SYSTEM_LIFECYCLE.md preamble | Contextual; integrated |
+| §1 Firmware response levels (INFORMATIONAL/DEGRADED/FAULT/SAFETY_CRITICAL) | Karetao | SYSTEM_LIFECYCLE.md §3 | Moved (already in LIFECYCLE_CONTRACT; reinforced) |
+| §1 "not a PL/SIL mapping..." caveat | Karetao | SYSTEM_LIFECYCLE.md §3 | Moved verbatim |
+| §2 Fault classes (transient/persistent/fatal/configuration) | Karetao | SYSTEM_LIFECYCLE.md §3 | Moved (already in LIFECYCLE_CONTRACT; reinforced) |
+| §2 Fault diagnostics: subsystem, operation, code, timestamp, occurrence, state | Karetao | SYSTEM_LIFECYCLE.md §3 | Moved |
+| §2 Timestamp use (64-bit monotonic, Pi-synchronized quality) | Karetao | SYSTEM_LIFECYCLE.md §3 | Moved |
+| §3 Ownership: service owns local retry; lifecycle owner decides state; HealthMonitor observes | Karetao | SYSTEM_LIFECYCLE.md §11 | Moved |
+| §3 "ISR callbacks set minimal flags/counters; defer to task context" | Karetao | SYSTEM_LIFECYCLE.md §11 | Moved verbatim |
+| §4 Escalation policy (classify → retry → reset → ERROR → INACTIVE → activate) | Karetao | SYSTEM_LIFECYCLE.md §4 | Moved |
+| §4 "Thresholds remain per-service decisions" | Karetao | SYSTEM_LIFECYCLE.md §4 | Moved verbatim |
+| §5 Safety outputs (CAN/Sensor/SPI inactive, motor fault, shutdown) | Karetao | SYSTEM_LIFECYCLE.md §9 | Moved |
+| §5 "TIME_SYNC expiry: acquisition continues, motion inhibited, non-motion ops continue" | Karetao | SYSTEM_LIFECYCLE.md §5 | Moved verbatim |
+| §6 Reporting: diagnostics internal first, then via SPI; explicit clear semantics | Karetao | SYSTEM_LIFECYCLE.md §11 | Moved |
+| §7 Open decisions (fault codes, retry/escalation thresholds, recovery, watchdog, history, host clear) | Verification/Component | Not migrated as requirements | Noted as open integration decisions |
+
+### `docs/project/firmware/JOINT_MAPPING_CONTRACT.md`
+
+| Section | Classification | Destination | Disposition |
+|---|---|---|---|
+| Preamble: Status, Owner, Boundary | Karetao | SYSTEM_CONFIGURATION.md §2 | Noted |
+| §1 Mapping model: one-to-one joint/sensor/motor, schema v1 details | Karetao | SYSTEM_CONFIGURATION.md §2 | Moved |
+| §1 "Schema v1 cannot represent differential, coupled, multi-motor joints...must not be encoded as multiple records...require new schema" | Karetao | SYSTEM_CONFIGURATION.md §2 | Moved verbatim (SYS-MECH-001 caveat preserved) |
+| §2 Validation and activation | Karetao | SYSTEM_CONFIGURATION.md §2 | Moved |
+| §2 "Current mapping reflects bring-up registration only; commissioning required before release" | Karetao | SYSTEM_CONFIGURATION.md §2 | Moved verbatim |
+| §3 Consumer ownership (SensorTask, MotorService, Calibration) | Karetao | SYSTEM_CONFIGURATION.md §2 | Moved |
+| §4 Open integration work (commission physical mapping, bind to calibration, define coupled schema) | Verification/Future | Not migrated as requirements | Noted as integration work |
+
+### `docs/project/firmware/CALIBRATION_CONTRACT.md`
+
+| Section | Classification | Destination | Disposition |
+|---|---|---|---|
+| Preamble: Status, Owner, Boundary | Karetao | SYSTEM_CONFIGURATION.md §3 | Noted |
+| §1 Ownership: offline computed, Pi/workstation, STM32 validates only | Karetao | SYSTEM_CONFIGURATION.md §3 | Moved |
+| §2 Record model: schema, fields, CRC coverage | Karetao | SYSTEM_CONFIGURATION.md §3 | Moved |
+| §3 Validation and selection rules (redundancy, modulo-32-bit ordering, CRC) | Karetao | SYSTEM_CONFIGURATION.md §3 | Moved |
+| §3 "Do not select older/corrupted fallback record when validation fails" | Karetao | SYSTEM_CONFIGURATION.md §3 | Moved verbatim |
+| §3 ActiveVersion reporting | Karetao | SYSTEM_CONFIGURATION.md §3 | Moved |
+| §4 Open integration work (canonical serialization, flash layout, power-loss recovery, lifecycle binding) | Verification/Component | Not migrated as requirements | Noted as integration work |
+
+### `docs/project/firmware/APP_OVERVIEW.md`
+
+| Content | Classification | Destination | Disposition |
+|---|---|---|---|
+| "STM32 is a Sensor hub...collects sensor data from CAN and I2C...sends over SPI to Raspberry Pi" | Karetao | SYSTEM_OVERVIEW.md (rewritten at system scope) | Used as seed; rewritten to system scope |
+| List of functions (collect encoders, skeleton CAN, timestamp, send SPI, DATA_READY) | Karetao | SYSTEM_OVERVIEW.md §2 (purpose and responsibilities) | Abstracted to system responsibilities |
+
+### `docs/project/system/architecture.md`
+
+| Section | Classification | Destination | Disposition |
+|---|---|---|---|
+| Preamble: Transitional status note | Context | Archived; noted in provenance | Noted (legacy was already marked transitional) |
+| §1 Platform Layer (CubeMX, HAL, interrupts, FreeRTOS) | Component | SYSTEM_ARCHITECTURE.md startup flow (references only); Arm_Sensor_Hub docs (details) | Framework only; implementation component |
+| §2 Application Layer modules (app_init, sensor_task, i2c_manager, can_service, spi_slave_service, time_service, snapshot_builder, health_monitor) | Karetao (names/responsibilities) | SYSTEM_ARCHITECTURE.md (implicit in data flow); component docs (details) | Moved responsibility mapping; implementation component |
+| §3 Protocol Library Layer (MksServo C++17) | Component | Arm_Sensor_Hub docs | Not migrated; component integration detail |
+| §4 Startup Flow (1–5 steps: HAL → RTOS → App_Init → tasks → kernel start → processing) | Karetao | SYSTEM_ARCHITECTURE.md §2 | Moved |
+| §5 Data Flow (sensor path, motor/CAN path, host/SPI path, time sync path) | Karetao | SYSTEM_ARCHITECTURE.md §3 | Moved |
+| §6 "What Is Mature Vs Emerging" (14 items) | Verification / Component | SYSTEM_OVERVIEW.md §3 (current status); implementation details component | Moved status summary to overview; details component |
+| §7 "Files Interns Should Learn Early" (7 file references) | Component | Arm_Sensor_Hub docs | **Not migrated** — component-specific learning path |
+
+### `docs/project/firmware/CONTRACT_V1_FREEZE.md`
+
+| Section | Classification | Destination | Disposition |
+|---|---|---|---|
+| Entire document (209 lines) | Historical / Distributed | `99_ARCHIVE/SUPERSEDED/CONTRACT_V1_FREEZE.md` with archive header | **Moved and archived.** v1.0 decisions distributed into: SYSTEM_LIFECYCLE.md (lifecycle/startup), SPI_SYSTEM_INTERFACE.md (SPI/DATA_READY/CRC/frame), SPI_PAYLOAD_SCHEMA.md (schema), TIME_SYSTEM_INTERFACE.md (time model), CAN_SYSTEM_INTERFACE.md (CAN ownership), SYSTEM_CONFIGURATION.md (snapshot records, mapping, calibration), SYSTEM_ARCHITECTURE.md (startup order). Contract hierarchy diagram superseded by authority model. |
+| C-1 conflict resolution (DATA_READY semantics) | Karetao / Historical | SPI_SYSTEM_INTERFACE.md §7 (armed-then-assert authoritative); archive header notes C-1 resolution | Armed-then-assert model from spi-contract.md §8 is authoritative; freeze document "staged-then-assert" wording superseded. |
+
+### Summary of WP-4 Disposition
+
+**Created:**
+- `01_SYSTEM/SYSTEM_LIFECYCLE.md` (new, 280 lines) — Lifecycle vocabulary, state machine, fault handling, escalation, safety gates, subsystem mapping, dependency rules, startup/shutdown, ownership
+
+**Updated:**
+- `01_SYSTEM/SYSTEM_OVERVIEW.md` — Rewritten from 3-line placeholder to 40-line system overview
+- `01_SYSTEM/SYSTEM_ARCHITECTURE.md` — Expanded with startup flow and data flow details (system-level only)
+- `06_CONFIGURATION/SYSTEM_CONFIGURATION.md` — Expanded with joint mapping schema, calibration record model, and system time representation
+
+**Archived:**
+- `docs/project/firmware/CONTRACT_V1_FREEZE.md` → `99_ARCHIVE/SUPERSEDED/CONTRACT_V1_FREEZE.md` with archive header and superseding references
+
+**Deliberately dropped (to component authority):**
+- Lifecycle contract template details (25 items) — each service owns its contract
+- Service-specific API and implementation (I2C_MANAGER_CONTRACT, CAN_SERVICE_CONTRACT, SPI_SERVICE_CONTRACT sections) — component authority
+- C11 API implementation pattern — component internals
+- Platform layer details (CubeMX, HAL, interrupts, FreeRTOS configuration) — component authority
+- Application layer module implementation details (task scheduling, queue internals, codec specifics) — component authority
+- Protocol Library Layer details (MksServo C++17 internals) — component/vendor authority
+- Files for intern learning — component-specific training material
+
+**Deliberately dropped (to verification authority):**
+- Validation matrix and test cases — implementation gates
+- "What Is Mature vs Emerging" detailed assessment — moved to SYSTEM_OVERVIEW.md as current status
+
+**Caveats preserved verbatim:**
+- "not a PL/SIL mapping or formal machine safety rating"
+- "schema v1 cannot represent differential, coupled, or multi-motor joints"
+- "thresholds and retry delays remain per-service contract decisions"
+- "recover always ends INACTIVE; explicit activation required"
+- "do not select older/corrupted fallback record when validation fails"
+- "commissioning and validation required before energized-motion release"
+- "firmware response levels define application behavior only"
+
+---
+
 ## Unresolved items
 
 (none yet)

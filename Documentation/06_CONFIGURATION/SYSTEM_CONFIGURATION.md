@@ -2,19 +2,108 @@
 
 ## Authority
 
-This document is the authoritative Karetao destination for system-level controlled configuration. Component-specific build/toolchain, driver and implementation configuration remains component authority.
+This document is the authoritative Karetao destination for system-level controlled configuration. Component-specific build/toolchain, driver, and implementation configuration remains component authority.
 
-## Current system configuration constraints
+---
 
-- CAN nominal rate: **1 Mbps** for v1, standard 11-bit IDs (SD-05).
-- SPI initial maximum: **5 MHz**, pending target-system validation (SD-01, SD-15).
-- SPI framing: 512-byte frame, maximum 490-byte payload, Mode 0, little-endian, CRC-32/ISO-HDLC (SD-15).
-- TIME_SYNC: 1 Hz nominal, configurable to 10 Hz; invalid after 5 s without accepted update (SD-19).
-- Host/API authoritative joint representation: calibrated radians (SD-12).
-- Calibration data is versioned and integrity-protected, with redundant STM32 storage and a host-side source copy (SD-11).
+## 1. Physical Interface Configuration
 
-## Configuration authority boundary
+- **CAN nominal rate:** **1 Mbps** for v1, standard 11-bit IDs (SD-05).
+- **SPI initial maximum:** **5 MHz**, pending target-system validation (SD-01, SD-15).
+- **SPI framing:** 512-byte frame, maximum 490-byte payload, Mode 0, little-endian, CRC-32/ISO-HDLC (SD-15).
+- **TIME_SYNC:** 1 Hz nominal, configurable to 10 Hz; invalid after 5 s without accepted update (SD-19).
 
-Concrete STM32 build/toolchain settings, driver settings, Raspberry provisioning and component-specific configuration are not system configuration authority and remain in the component repositories.
+---
 
-Values marked provisional or validation-dependent must not be represented as final release configuration until the corresponding evidence is accepted.
+## 2. Joint, Sensor, and Motor Mapping
+
+**Schema version:** 1 (current). **Status:** Approved implementation baseline.
+
+The mapping model defines a one-to-one relationship between:
+- Logical joint identity (0–5 for six axes)
+- AS5600 sensor identity (I2C channel and sensor select)
+- Motor index (0–7)
+- CAN motor ID (11-bit standard CAN identifier)
+- Direction convention (`+1` or `−1`)
+- Zero offset (millidegrees)
+- Transmission ratio (numerator/denominator)
+
+**Schema v1 capabilities:**
+- One-to-one logical joint ↔ sensor ↔ motor mapping.
+- Supports logical joints 0–5, AS5600 sensors 0–5, motor indices 0–7, standard 11-bit CAN IDs.
+- Direction and transmission-ratio scaling for each joint.
+
+**Schema v1 limitations:**
+- **Does not represent differential, coupled, or multi-motor joints.** Those topologies require a new schema version and explicit semantics; they must not be encoded as multiple v1 records for one logical joint (SD-26, SYS-MECH-001).
+
+**Validation and activation:**
+- Configuration is validated before activation.
+- `JointMapping_Validate()` rejects unsupported schema versions, invalid IDs, invalid direction, zero transmission-ratio components, and duplicate assignments.
+- A failed mapping blocks CAN registration and CAN/SensorTask activation; I2C and SPI remain available for fault reporting.
+- SensorTask uses the validated record's logical joint and AS5600 IDs to keep latest-value records at stable positions.
+- Future MotorService uses the matching logical joint, motor index, CAN ID, direction, offset, and transmission ratio when translating logical commands and feedback.
+
+**Current status:**
+- Single-entry mapping reflects existing bring-up registration only.
+- Full commissioning of the complete physical mapping is required before energized-motion release.
+
+---
+
+## 3. Calibration Data
+
+**Schema version:** 1 (current). **Status:** Approved implementation baseline.
+
+The calibration model is versioned and integrity-protected.
+
+**Record structure:**
+- Schema version, logical sensor and joint identity
+- Zero offset (millidegrees), scale (parts per million)
+- Direction (`−1` or `+1`), generation number
+- CRC-32/ISO-HDLC value (covering record fields, excluding CRC and validity marker)
+- Validity marker
+
+**Current capabilities:**
+- Supports logical IDs 0–5.
+- Supports nonzero scale and direction `−1` or `+1`.
+- Generation number supports modulo-32-bit ordering for redundant record selection.
+
+**Ownership:**
+- Calibration is computed offline on the Raspberry Pi or engineering workstation.
+- The STM32 does not estimate or modify calibration parameters.
+- STM32 validates received or loaded records, applies only a selected valid record, and reports active schema version and generation.
+
+**Validation and selection:**
+- Reject null, unsupported-schema, malformed identity/parameter, zero-generation, invalid-marker, and CRC-mismatched records.
+- Reject duplicate sensor/joint identities in one active configuration set.
+- For redundant records of the same identity, validate both and select the newer generation using modulo-32-bit ordering.
+- Reject equal generations for redundant records as ambiguous.
+- Do not select an older or corrupted fallback record when candidate validation fails.
+- `Calibration_ActiveVersion` reports the selected record, schema version, and generation.
+
+**Redundancy:**
+- The system stores redundant copies in STM32 flash slots.
+- A host-side source copy is maintained and synchronized.
+- Flash slot placement, write ordering, and power-loss handling are component concerns (not system configuration).
+
+---
+
+## 4. System Time Representation
+
+- **Host/API authoritative joint representation:** Calibrated radians (SD-12).
+- **STM32 internal time domain:** Hub time in microseconds (`hub_time_us = local_time_us + time_offset_us`), synchronized from Pi.
+- **Timestamp acquisition:** Measurement timestamps captured immediately after successful sensor read/decode, in hub-time domain.
+- **Synchronization quality:** Timestamps marked `SYNCHRONIZED` when valid `TIME_SYNC` is less than 5 seconds old; otherwise marked `UNSYNCHRONIZED`.
+
+---
+
+## 5. Configuration Authority Boundary
+
+Concrete STM32 build/toolchain settings, driver settings, Raspberry provisioning, and component-specific configuration are not system configuration authority and remain in the component repositories.
+
+**Provisional values:** Values marked provisional or validation-dependent (5 MHz SPI, 1 Mbps CAN, ±1 ms timestamp error, 500 Hz EKF) must not be represented as final release configuration until the corresponding integration evidence is accepted.
+
+---
+
+## Provenance
+
+Reconciled from `docs/project/firmware/JOINT_MAPPING_CONTRACT.md` (joint/sensor/motor mapping schema, validation, and current status) and `docs/project/firmware/CALIBRATION_CONTRACT.md` (calibration record model, ownership, validation, redundancy, and integration work). All caveats preserved verbatim: schema v1 cannot represent differential end effectors (SYS-MECH-001); redundant selection requires modulo-32-bit ordering; calibration is offline-computed, never on-device; commissioning validation required before motion release.
