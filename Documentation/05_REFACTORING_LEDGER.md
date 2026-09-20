@@ -441,6 +441,73 @@ Updated:
 
 ---
 
+## WP-5: Complete `03_COMPONENTS/` (In Progress)
+
+**File processed:**
+- `docs/project/hardware/arm-sensor-hub-baseline.md` (226 lines) → split: Karetao system-visible + component-internal
+
+### `docs/project/hardware/arm-sensor-hub-baseline.md`
+
+| Section | Classification | Destination | Disposition |
+|---|---|---|---|
+| § System Objective | Karetao | ARM_SENSOR_HUB.md §2 (System Responsibilities) | Moved (abstracted) |
+| § Architecture Overview (platform/application/protocol layers) | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — service architecture, implementation details |
+| § Current Implementation Status (build, I2C path, CAN path, SPI path, health) | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — implementation status and details |
+| § Runtime Flow | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — execution architecture |
+| § Open Work / Next Milestones | Verification / Component | (referenced via integration gates) | **Not migrated** — implementation roadmap |
+| § API Reference: CAN Service functions | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — service API |
+| § API Reference: Sensor Task diagnostics | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — diagnostic structure |
+| § Expected SPI Data Contract | Karetao (referenced) | ARM_SENSOR_HUB.md (provenance) | **Referenced only** — full contract in SPI_SYSTEM_INTERFACE.md |
+| § MCU: STM32F405RGT6, 8 MHz HSE, 168 MHz SYSCLK | Karetao | ARM_SENSOR_HUB.md §3 (Hardware Baseline) | Moved |
+| § Clock tree: APB1 42 MHz (constrains CAN/SPI), APB2 84 MHz | Karetao | ARM_SENSOR_HUB.md §3 | Moved with caveat: "constrains CAN/SPI timing" |
+| § Timing constraints: CAN 1 Mbps target, SPI 5 MHz ceiling, 46 ms sensor sweep | Karetao | ARM_SENSOR_HUB.md §3 | Moved with integration ceiling caveats |
+| § SPI3 Pinout: PA15 (NSS), PC10 (SCK), PC11 (MISO), PC12 (MOSI) | Karetao | ARM_SENSOR_HUB.md §4 (SPI3) | Moved |
+| § SPI3 hardware notes: slave mode, 8-bit, 2-line, hardware NSS, DMA1 streams | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — DMA and peripheral configuration |
+| § I2C1 Pinout: PB6 (SCL), PB7 (SDA), 400 kHz fast mode | Karetao | ARM_SENSOR_HUB.md §3 (I2C1) | Moved |
+| § CAN1 Pinout: PB8 (RX), PB9 (TX) | Karetao | ARM_SENSOR_HUB.md §3 (CAN1) | Moved |
+| § CAN1 notes: ISO 11898-1, CubeMX configuration | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — peripheral and build details |
+| § DATA_READY GPIO: PA8 (output, push-pull) | Karetao | ARM_SENSOR_HUB.md §3 (DATA_READY GPIO) | Moved |
+| § SWD Debug pinout (PA13, PA14) | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — debug/development pinout |
+| § Clock pinout (PH0, PH1) | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — oscillator detail |
+| § GPIO detail (PA8 DATA_READY) | Karetao (noted above) | — | Already moved |
+| § Peripheral notes: FreeRTOS, DMA priorities, CAN mapping | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — implementation configuration |
+| § Build: CMake presets and workflow | Component | Arm_Sensor_Hub/Documentation/ | **Not migrated** — build system |
+
+### Summary of WP-5 Disposition
+
+**Updated:**
+- `03_COMPONENTS/ARM_SENSOR_HUB.md` — Expanded from 20-line stub to 90-line system-level component document
+
+**System-visible content moved to Karetao:**
+- MCU family (STM32F405RGT6), clock tree (HSE 8 MHz, SYSCLK 168 MHz, APB1 42 MHz, APB2 84 MHz)
+- Timing constraints: CAN 1 Mbps target (integration ceiling), SPI 5 MHz maximum (integration ceiling), sensor sweep ~46 ms
+- Interface pin assignments visible to other components:
+  - I2C1: PB6 (SCL), PB7 (SDA), 400 kHz fast mode
+  - CAN1: PB8 (RX), PB9 (TX), ISO 11898-1
+  - SPI3: PA15 (NSS), PC10 (SCK), PC11 (MISO), PC12 (MOSI), slave mode 0, hardware NSS
+  - DATA_READY: PA8, push-pull output, active high
+
+**Deliberately dropped (to component authority):**
+- Service architecture (I2CManager, CAN Service, SPI Slave Service, Sensor Task, Health Monitor)
+- Firmware APIs and internal state machines
+- DMA configuration (DMA1 Stream 0 RX, Stream 5 TX, priorities)
+- FreeRTOS task structure and scheduling
+- Build configuration (CMake presets, toolchain)
+- Full peripheral pinout (SWD debug, clock oscillator)
+- Diagnostic structures and testing details
+
+**Authority boundary clarified:**
+- Karetao owns system role, responsibilities, and interface contracts
+- Karetao owns MCU family, clock tree, timing constraints, and interface pin assignments other components depend on
+- Arm Sensor Hub owns service architecture, APIs, DMA/ISR handling, FreeRTOS, build system, full pinout, peripheral configuration
+
+**Caveats preserved:**
+- "5 MHz SPI maximum is integration ceiling pending target-system validation"
+- "CAN 1 Mbps target is integration ceiling; current generated configuration produces 875 kbps (implementation gap)"
+- "Sensor sweep ~46 ms full-axis scan time"
+
+---
+
 ## Unresolved items
 
 (none yet)
