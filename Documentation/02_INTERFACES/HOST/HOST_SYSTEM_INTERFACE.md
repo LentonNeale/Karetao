@@ -13,6 +13,10 @@ This document defines the Karetao system-level host interface between the Raspbe
 - Calibration is computed on the Pi/workstation and transferred through a controlled validated configuration path (SD-10).
 - Measurement history and estimator history are owned on the Raspberry/EKF side; STM32 provides bounded latest-value/coherent records (SD-09).
 
+## Motion-permission integration
+
+The Raspberry Pi heartbeat is one prerequisite of the proposed system-level normal-motion gate. A healthy heartbeat does not by itself grant motion permission. Under the existing approved SD-03 behaviour, loss of a valid heartbeat for 500 ms rejects new motion commands and initiates the approved controlled-stop/motor-disable response where the transport remains usable.
+
 ## Open integration definitions
 
 Command acknowledgement/freshness semantics, exact timeout/cancellation rules, and final motion-permission ownership remain open items in the decision records.
