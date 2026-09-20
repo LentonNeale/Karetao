@@ -152,6 +152,7 @@ Health Monitor ← (observes all)
 4. Task creation (establishes execution context; not itself activation).
 5. `osKernelStart()` (scheduler begins).
 6. System/application task performs dependency-ordered activation (I2C → CAN → SPI → Sensor → Motor → application).
+7. Normal motor motion remains inhibited until the proposed system-level motion-permission prerequisites are satisfied and explicit activation has been accepted.
 
 **Shutdown order** (reverse of safety order):
 1. Inhibit motor commands.
@@ -181,10 +182,13 @@ While subsystems are not `ACTIVE` or during shutdown:
 - **Sensor not `ACTIVE`:** Publish records as invalid/stale.
 - **SPI not `ACTIVE`:** DATA_READY low and no normal publication.
 - **Any motor safety fault:** Inhibit motion and preserve emergency-stop policy.
+- **System motion permission false (proposed):** Inhibit normal motor motion even when individual services are otherwise `ACTIVE`.
 
 ---
 
 ## 10. Ownership and Reporting
+
+- **Motion-permission ownership (proposed):** The final normal-motion decision is a system-level coordination function above individual service lifecycle ownership. The exact owning component/API remains a proposed decision and must be approved before implementation claims are made.
 
 - The service that detects a fault owns local retry and recovery.
 - The lifecycle owner decides state transition.
