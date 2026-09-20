@@ -1,8 +1,15 @@
 """Raspberry Pi SPI bus implementation.
 
 The production path uses Linux spidev on SPI0 CE0. DATA_READY remains an
-optional GPIO input because its Raspberry Pi GPIO number is not yet part of
-the supplied hardware definition.
+optional GPIO input. The harness candidate is GPIO25 (BCM numbering,
+`gpiochip4` line 25 on the Ubuntu 24.04 kernel, header pin 22; see
+RaspberryPi_Sensor_Hub/Documentation/README.md and RASPBERRY_PI_BRINGUP_V1.md
+E1). This is a Raspberry Sensor Hub harness assignment, not a validated one:
+SD-17's electrical and timing acceptance (SPI_SYSTEM_INTERFACE.md §16) has
+not been performed. `data_ready_gpio` therefore still defaults to None below;
+callers should not pass 25 as a production default until that acceptance is
+recorded, since doing so would make interrupt-driven behaviour depend on an
+unvalidated electrical path.
 """
 
 from __future__ import annotations

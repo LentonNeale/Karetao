@@ -63,6 +63,32 @@ Integration with Karetao system verification
 
 Component verification (host protocol tests, integration testing with STM32, ROS 2 integration testing) provides evidence that this component implements its assigned responsibilities. It does not by itself constitute Karetao system-level verification. System verification is owned by Karetao and recorded in `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`.
 
+## SPI Interface Pin Mapping
+
+Raspberry Pi header pins (implementation default: SPI0 CE0, `/dev/spidev0.0`; `RaspberryPi_Sensor_Hub/src/spi/spi_bus.py`):
+
+![RPi 5: Pinout](https://cdn.shopify.com/s/files/1/0474/7729/3217/files/1_8689da43-cdc0-488c-87f7-1ccefbff39c0.png?v=1769594138&width=2048) 
+
+| Signal | Header pin |
+| --- | --- |
+| MOSI | 19 |
+| MISO | 21 |
+| SCLK | 23 |
+| CE0 | 24 |
+| DATA_READY (candidate) | 22 (GPIO25, `gpiochip4` line 25) |
+
+DATA_READY harness candidate: **GPIO25** (BCM numbering), `gpiochip4` line 25 on the Ubuntu 24.04 kernel (physical header pin 22), requested via libgpiod as an input with rising-edge events, Schmitt trigger enabled, and no internal pull (the STM32 drives the line push-pull). This is a Raspberry Sensor Hub harness decision, not a Karetao system requirement (SD-17, still open; register §3.2); the Karetao contract leaves the physical GPIO unspecified and requires it to be validated, not merely selected. Electrical and timing acceptance per `SPI_SYSTEM_INTERFACE.md` §16 has not been performed. Until that acceptance is recorded, the host runs polling-only at 1 ms, unchanged from the SD-17 baseline.
+
+STM32 SPI3 side, for reference (`Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md`, `Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md`):
+
+| Signal | STM32 pin | Direction |
+| --- | --- | --- |
+| NSS | PA15 | Input |
+| SCK | PC10 | Input |
+| MISO | PC11 | Output |
+| MOSI | PC12 | Input |
+| DATA_READY | PA8 | Output |
+
 ## Documentation Structure
 
 This documentation directory follows the Karetao component documentation model:
