@@ -40,6 +40,28 @@ Raspberry Sensor Hub owns implementation of its host-side integration.
 
 External vendors define the behaviour of their equipment and protocols.
 
+## Motion permission architecture
+
+A **system-level normal-motion permission gate** is proposed above individual subsystem readiness. This proposal is not yet an approved system decision.
+
+Conceptually:
+
+CAN readiness
+I2C / required sensor readiness
+Raspberry Pi communication health
+Time synchronization validity
+Required timestamp/data freshness
+System lifecycle / fault readiness
+Global motion inhibit
+            |
+            v
+   Motion Permission Gate
+            |
+            v
+    Normal motor motion
+
+Individual services remain responsible for their own lifecycle and health. The aggregate gate is intended to provide one system-level normal-motion decision; CAN ACTIVE is necessary but not sufficient. The exact owner/API, prerequisite set, freshness thresholds, inhibit sources, and controlled-stop boundary remain subject to decision approval.
+
 ## Data and control flow
 
 At system level:
@@ -99,7 +121,7 @@ The system startup sequence ensures dependency ordering and safe initialization:
 - **100 Hz baseline:** Baseline sensor/state publication and initial control-loop rate; current EKF is 500 Hz subject to integration constraints (SD-01).
 - **Six-axis sampling:** Approximately 46 ms physical sweep (measured on target hardware, 2026-09-17) is not a 500 Hz full-sweep rate; estimator behavior depends on timestamped/latest-value handling (SD-01, SD-08). A datasheet-derived I2C protocol-timing analysis (`Arm_Sensor_Hub/Documentation/I2C_SCAN_TIMING_ANALYSIS.md`) establishes a theoretical protocol floor of ~690 µs for the six-sensor scan; the gap indicates firmware/scheduling overhead dominates, and reducing measured sweep time toward that floor is a desired improvement, not yet scheduled or achieved.
 - **Differential end effector:** Requires explicit motor-to-DOF transformation; v1 schema cannot represent it (SD-26, SYS-MECH-001).
-- **Motion authority:** System-level motion permission must be a defined authority rather than emergent property of individual state machines (SD-02, SD-23).
+- **Motion authority:** A system-level motion-permission gate is proposed as an aggregate authority above individual service lifecycle state (SD-02, SD-23 issue closure); it is not yet approved.
 - **Independent safety:** Safety functions remain distinct from application controlled-stop behavior (SD-25).
 - **Synchronization requirement:** Time-dependent motion requires valid time synchronization; expiry inhibits motion without stopping acquisition (SD-20).
 
