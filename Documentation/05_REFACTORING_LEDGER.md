@@ -508,6 +508,50 @@ Updated:
 
 ---
 
+## WP-6: Component Documentation Directories (In Progress)
+
+**Directories created:**
+- `Arm_Sensor_Hub/Documentation/` with `README.md` (authority declaration)
+- `RaspberryPi_Sensor_Hub/Documentation/` with `README.md` (authority declaration)
+
+**Files moved to Arm_Sensor_Hub/Documentation/:**
+- `docs/project/firmware/BUILD_CONTRACT.md` (73 lines) — C11/C++17 split, CMake presets, toolchain, HostTests
+- `docs/project/firmware/I2C_MANAGER_CONTRACT.md` (69 lines) — I2C1 transfer serialization, HAL status mapping
+- `docs/project/firmware/HEALTH_MONITOR_CONTRACT.md` (51 lines) — HealthMonitor internals, design target
+- `docs/project/system/development.md` (115 lines) — Local build/test commands
+
+**Files moved to RaspberryPi_Sensor_Hub/Documentation/:**
+- `docs/project/operations/RASPBERRY_PI_BRINGUP_V0.1.md` (1,757 lines) — Pi 5 provisioning, imager, cloud-init, PREEMPT_RT, ROS 2 Jazzy, SPI enable
+
+### Authority Declarations
+
+Each component `README.md` includes:
+- Component repository and name
+- Component implementation documentation authority (what it owns)
+- Karetao system authority (what Karetao owns, with SYS-* references only)
+- Relevant external authorities (MKS, AS5600, TCA9548A, ROS 2, etc.)
+- Verification traceability model (component evidence → system verification)
+- Documentation structure guidelines
+
+Both authority declarations explicitly state:
+- "This directory does **not** define system requirements or redefine Karetao system contracts"
+- Component references to Karetao use stable identifiers (SYS-*, SD-*) rather than copying requirement text
+- System verification is owned by Karetao and recorded in `SYSTEM_VERIFICATION_MATRIX.md`
+
+### Disposition of Moved Content
+
+| File | Moved to | Classification | Notes |
+|---|---|---|---|
+| BUILD_CONTRACT.md | Arm_Sensor_Hub/Documentation/ | Component-internal | C11/C++17 toolchain, CMake presets, build configuration |
+| I2C_MANAGER_CONTRACT.md | Arm_Sensor_Hub/Documentation/ | Component-internal | I2C service API, HAL integration, transfer serialization |
+| HEALTH_MONITOR_CONTRACT.md | Arm_Sensor_Hub/Documentation/ | Component-internal | Health aggregation service, diagnostic snapshot |
+| development.md | Arm_Sensor_Hub/Documentation/ | Component-internal | Build/test procedures for STM32 firmware |
+| RASPBERRY_PI_BRINGUP_V0.1.md | RaspberryPi_Sensor_Hub/Documentation/ | Component-internal | Operational runbook: Pi provisioning, OS setup, ROS 2 install |
+
+None of these files define system requirements. All are implementation-specific content correctly owned by components.
+
+---
+
 ## Unresolved items
 
 (none yet)
