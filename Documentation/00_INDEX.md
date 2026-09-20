@@ -60,6 +60,10 @@ These are governance/process documents. They are not competing system requiremen
 
 The framework deliberately retains these top-level sections without introducing additional documentation categories.
 
+## Distributed motion-control research
+
+[`01_SYSTEM/DISTRIBUTED_MKS_MOTION_CONTROL_RESEARCH.md`](01_SYSTEM/DISTRIBUTED_MKS_MOTION_CONTROL_RESEARCH.md) records the non-normative research/design direction for six-axis MKS CAN motion control, including timestamped feedback, synchronized actuation, CAN arbitration/jitter, and timing experiments. It does not override the authoritative system timing, synchronization, CAN interface, safety, verification, or external MKS documentation.
+
 ## Motion-permission documentation path
 
 The current motion-permission proposal is distributed according to the Karetao authority model: the decision proposal is tracked in `07_DECISIONS/ARCHITECTURE_DECISIONS.md`; system requirements, architecture, lifecycle/synchronization, CAN/host interfaces, safety, and verification records carry only the corresponding proposed/non-normative traceability until the system decision authority approves it.
