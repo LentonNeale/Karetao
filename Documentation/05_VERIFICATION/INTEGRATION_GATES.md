@@ -14,6 +14,7 @@ These gates define the evidence expected before Karetao system verification can 
 | SPI | Live Pi/STM32 framing, CRC, ownership, timing and physical-layer evidence | OPEN |
 | Host command/state | End-to-end acknowledgement, freshness, lifecycle and gating | OPEN |
 | Calibration/configuration | Versioning, integrity, controlled transfer and recovery | OPEN |
+| System motion permission | Aggregate prerequisite evaluation, fail-closed normal-motion gating, explicit inhibit, recovery and reactivation behaviour | OPEN / PROPOSED |
 | Fault/recovery | System-level motion gating and dependency-ordered reactivation | OPEN |
 | Independent safety | Risk assessment, safety architecture and independent-path evidence | OPEN |
 
