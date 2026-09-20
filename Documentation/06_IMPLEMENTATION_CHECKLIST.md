@@ -46,8 +46,8 @@
 
 ## Scope Control
 
-- [x] Component repositories remain unchanged by this refactor.
-- [x] Archived `docs/project/archive/**` content is excluded from current migration.
+- [x] Component repositories receive `Documentation/` directories with authority declarations (WP-6).
+- [x] Archived `docs/project/archive/**` content is migrated to `99_ARCHIVE/` (WP-7).
 - [ ] Legacy documents are only superseded after authoritative content and provenance are established.
 - [ ] Arm Sensor Hub documentation has not been copied.
 - [ ] Raspberry Sensor Hub documentation has not been copied.
