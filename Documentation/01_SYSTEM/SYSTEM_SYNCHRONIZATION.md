@@ -13,6 +13,12 @@ This document defines Karetao system synchronization requirements. Component imp
 - Implausible time-offset updates shall be rejected without silent slew; initial and runtime validation use distinct bounds (SD-21).
 - Reset clears synchronization validity and volatile offset; timestamps remain unsynchronized until a new accepted TIME_SYNC update (SD-22).
 
+## Motion-permission integration
+
+The synchronization rule is one prerequisite of the proposed system-level motion-permission gate. Loss of synchronization must be propagated to the single normal-motion permission authority rather than independently interpreted by each motion-producing subsystem.
+
+This proposal does not change the approved SD-18 through SD-22 behaviour. The exact scope of time-dependent motion and any additional freshness limits remain open for system decision.
+
 ## Integration obligations
 
 The system must define exactly which operations constitute time-dependent motion and ensure one motion-permission authority enforces the rule consistently. Consumers, especially the 500 Hz EKF, must not treat unsynchronized timestamps as valid. Validation of drift between sync updates remains required.
