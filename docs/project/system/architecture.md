@@ -1,3 +1,5 @@
+> **Transitional status:** This legacy document is retained as source material. It is not the current Karetao system architecture authority. The current authority is [Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md](../../../Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md). The legacy content is mixed; system-level statements are reconciled into Karetao documentation while implementation details remain component-owned.
+
 # Architecture and Runtime Flow
 
 ## High-Level Layers
