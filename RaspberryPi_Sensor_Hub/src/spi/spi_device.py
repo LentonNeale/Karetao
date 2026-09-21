@@ -53,8 +53,11 @@ class SpiDevice:
         firmware will still answer a retried request.
         """
         request_seq = self.next_sequence() if seq is None else seq
-        self.transact(SpiFrame(
-            message_type=MessageType.GET_VERSION, seq=request_seq, payload=bytes([1])))
+        try:
+            self.transact(SpiFrame(
+                message_type=MessageType.GET_VERSION, seq=request_seq, payload=bytes([1])))
+        except ValueError:
+            pass  # result is unused either way; this call only needs to get the request onto the wire
 
         for attempt in range(max_transactions):
             if attempt > 0:

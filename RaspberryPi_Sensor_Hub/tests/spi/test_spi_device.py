@@ -159,6 +159,31 @@ class SpiDeviceTests(unittest.TestCase):
 
         self.assertEqual(version.response_to_seq, 7)
 
+    def test_get_version_tolerates_corruption_on_the_initial_send(self) -> None:
+        """The very first transfer (sending the GET_VERSION request itself)
+        can also come back corrupted; that call's result is discarded
+        either way, so a decode failure there must not propagate either."""
+        class FlakyFirstCallBackend:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def open(self, config: SpiBusConfig) -> None:
+                return None
+
+            def transfer(self, tx_data: bytes) -> bytes:
+                self.calls += 1
+                if self.calls == 1:
+                    return b'\xff' * 512  # garbage: bad magic, on the request-sending transfer itself
+                return SpiFrame(message_type=MessageType.VERSION, seq=self.calls,
+                                payload=build_version_payload(response_to_seq=7)).encode()
+
+        bus = SpiBus(SpiBusConfig(), backend=FlakyFirstCallBackend())
+        bus.open()
+
+        version = SpiDevice(bus).get_version(seq=7, retry_delay_s=0)
+
+        self.assertEqual(version.response_to_seq, 7)
+
     def test_get_version_ignores_version_frame_for_another_request(self) -> None:
         stale = SpiFrame(message_type=MessageType.VERSION, seq=1,
                          payload=build_version_payload(response_to_seq=999)).encode()
