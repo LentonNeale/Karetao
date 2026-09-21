@@ -1,5 +1,6 @@
 import struct
 import sys
+import time
 from pathlib import Path
 import unittest
 
@@ -135,6 +136,85 @@ class TimingSessionTests(unittest.TestCase):
         session._seq = 0xFFFFFFFF
         self.assertEqual(session.next_sequence(), 0xFFFFFFFF)
         self.assertEqual(session.next_sequence(), 1)
+
+
+class FakeDataReady:
+    """Fake satisfying DataReadyLike, so pacing logic is testable without a real GPIO chip."""
+
+    def __init__(self, ready_sequence=None, always_ready=True) -> None:
+        self._ready_sequence = list(ready_sequence) if ready_sequence is not None else None
+        self._always_ready = always_ready
+        self.wait_calls = 0
+
+    def is_ready(self) -> bool:
+        return self._always_ready
+
+    def wait_for_ready(self, timeout_s: float) -> bool:
+        self.wait_calls += 1
+        if self._ready_sequence is not None:
+            return self._ready_sequence.pop(0) if self._ready_sequence else False
+        return self._always_ready
+
+
+class PacingTests(unittest.TestCase):
+    def _session(self, **kwargs) -> TimingSession:
+        bus = SpiBus(SpiBusConfig(), backend=PipelinedBackend())
+        bus.open()
+        return TimingSession(bus=bus, block_id='pacing', **kwargs)
+
+    def test_data_ready_wait_recorded_when_already_asserted(self) -> None:
+        watcher = FakeDataReady(always_ready=True)
+        session = self._session(data_ready=watcher)
+
+        record = session.transact(MessageType.GET_STATUS, b'\x01')
+
+        self.assertEqual(watcher.wait_calls, 1)
+        self.assertIsNotNone(record.data_ready_wait_ns)
+        self.assertFalse(record.data_ready_timed_out)
+        self.assertEqual(session.counters.data_ready_timeouts, 0)
+
+    def test_data_ready_timeout_does_not_abort_transaction(self) -> None:
+        watcher = FakeDataReady(always_ready=False)
+        session = self._session(data_ready=watcher, data_ready_timeout_s=0.001)
+
+        record = session.transact(MessageType.GET_STATUS, b'\x01')
+
+        self.assertTrue(record.ok)  # the transfer still happens
+        self.assertTrue(record.data_ready_timed_out)
+        self.assertEqual(session.counters.data_ready_timeouts, 1)
+
+    def test_no_pacing_by_default(self) -> None:
+        session = self._session()
+        record = session.transact(MessageType.GET_STATUS, b'\x01')
+        self.assertIsNone(record.data_ready_wait_ns)
+        self.assertFalse(record.data_ready_timed_out)
+
+    def test_min_interval_enforces_spacing_between_transfers(self) -> None:
+        session = self._session(min_interval_s=0.02)
+
+        session.transact(MessageType.GET_STATUS, b'\x01')
+        start = time.monotonic()
+        session.transact(MessageType.GET_STATUS, b'\x01')
+        elapsed = time.monotonic() - start
+
+        self.assertGreaterEqual(elapsed, 0.015)  # allow scheduler slack below the 20ms target
+
+    def test_min_interval_does_not_delay_first_transaction(self) -> None:
+        session = self._session(min_interval_s=1.0)
+        start = time.monotonic()
+        session.transact(MessageType.GET_STATUS, b'\x01')
+        self.assertLess(time.monotonic() - start, 0.5)
+
+    def test_data_ready_takes_precedence_over_min_interval(self) -> None:
+        watcher = FakeDataReady(always_ready=True)
+        session = self._session(data_ready=watcher, min_interval_s=1.0)
+
+        start = time.monotonic()
+        session.transact(MessageType.GET_STATUS, b'\x01')
+        session.transact(MessageType.GET_STATUS, b'\x01')
+        elapsed = time.monotonic() - start
+
+        self.assertLess(elapsed, 0.5)  # would be >=1s if min_interval_s were also applied
 
 
 class StatisticsTests(unittest.TestCase):

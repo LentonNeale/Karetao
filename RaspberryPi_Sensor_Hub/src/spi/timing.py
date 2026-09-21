@@ -17,6 +17,7 @@ import struct
 import time
 from typing import Optional
 
+from .data_ready import DataReadyLike
 from .spi_bus import SpiBus
 from .spi_protocol import MessageType, SpiFrame
 
@@ -84,6 +85,8 @@ class TransactionRecord:
     round_trip_ns: Optional[int] = None
     nack_status_code: Optional[int] = None
     nack_detail_code: Optional[int] = None
+    data_ready_wait_ns: Optional[int] = None
+    data_ready_timed_out: bool = False
 
     def as_row(self) -> dict:
         return asdict(self)
@@ -99,14 +102,31 @@ class SessionCounters:
     nacks: int = 0
     uncorrelated_responses: int = 0
     correlation_misses: int = 0
+    data_ready_timeouts: int = 0
 
 
 @dataclass
 class TimingSession:
-    """Clocks measured transactions over an open bus and correlates replies."""
+    """Clocks measured transactions over an open bus and correlates replies.
+
+    `data_ready` is duck-typed (see data_ready.DataReadyLike) so tests can
+    substitute a fake without a real GPIO chip. When set, the session waits
+    for DATA_READY before each transfer instead of clocking unconditionally;
+    a timeout does not abort the transaction, since the polling model
+    (SPI_SYSTEM_INTERFACE.md section 7) is the documented fallback and the
+    transaction still needs to be attempted either way. `min_interval_s`
+    is a plain fixed-delay fallback for when no DATA_READY watcher is
+    configured; it exists because the host has no other pacing mechanism
+    and back-to-back transactions can outrun the firmware's bare-metal
+    main-loop re-arm (observed on the bench: transactions clocked with no
+    gap between them return stale/zeroed frames).
+    """
 
     bus: SpiBus
     block_id: str = ''
+    data_ready: Optional[DataReadyLike] = None
+    data_ready_timeout_s: float = 0.1
+    min_interval_s: float = 0.0
     counters: SessionCounters = field(default_factory=SessionCounters)
 
     def __post_init__(self) -> None:
@@ -114,6 +134,7 @@ class TimingSession:
         self._index = 0
         self._pending: dict[int, int] = {}
         self._previous_hub_time_us: Optional[int] = None
+        self._last_transfer_end_ns: Optional[int] = None
 
     def reset_counters(self) -> None:
         """Discard counts accumulated during warmup."""
@@ -126,9 +147,31 @@ class TimingSession:
         self._seq = (self._seq + 1) & 0xFFFFFFFF or 1
         return sequence
 
+    def _pace(self) -> tuple[Optional[int], bool]:
+        """Wait before clocking the next transfer. Returns (wait_ns, timed_out).
+
+        Neither path aborts the transaction on timeout: DATA_READY not
+        asserting yet is expected under the documented polling fallback
+        (SPI_SYSTEM_INTERFACE.md section 7), and a fixed delay has no
+        failure mode to report.
+        """
+        if self.data_ready is not None:
+            wait_start = now_ns()
+            became_ready = self.data_ready.wait_for_ready(self.data_ready_timeout_s)
+            return (now_ns() - wait_start, not became_ready)
+        if self.min_interval_s > 0 and self._last_transfer_end_ns is not None:
+            remaining_s = self.min_interval_s - (now_ns() - self._last_transfer_end_ns) / 1e9
+            if remaining_s > 0:
+                time.sleep(remaining_s)
+        return (None, False)
+
     def transact(self, message_type: MessageType, payload: bytes = b'') -> TransactionRecord:
         sequence = self.next_sequence()
         request = SpiFrame(message_type=message_type, seq=sequence, payload=payload)
+
+        data_ready_wait_ns, data_ready_timed_out = self._pace()
+        if data_ready_timed_out:
+            self.counters.data_ready_timeouts += 1
 
         t_realtime = time.clock_gettime_ns(time.CLOCK_REALTIME)
         t0 = now_ns()
@@ -136,6 +179,7 @@ class TimingSession:
         t1 = now_ns()
         raw = self.bus.transfer(encoded)
         t2 = now_ns()
+        self._last_transfer_end_ns = t2
 
         # The request is on the wire across the transfer; its start is the
         # reference point for any response that later correlates back to it.
@@ -148,7 +192,8 @@ class TimingSession:
             t3 = now_ns()
             self.counters.decode_failures += 1
             return self._record(sequence, message_type, t_realtime, t0, t1, t2, t3,
-                                ok=False, error=str(exc))
+                                ok=False, error=str(exc), data_ready_wait_ns=data_ready_wait_ns,
+                                data_ready_timed_out=data_ready_timed_out)
 
         t3 = now_ns()
         correlated = correlated_request_seq(response)
@@ -173,7 +218,9 @@ class TimingSession:
 
         return self._record(sequence, message_type, t_realtime, t0, t1, t2, t3, ok=True,
                             response=response, correlated=correlated, round_trip=round_trip,
-                            hub_delta=hub_delta, status_code=status_code, detail_code=detail_code)
+                            hub_delta=hub_delta, status_code=status_code, detail_code=detail_code,
+                            data_ready_wait_ns=data_ready_wait_ns,
+                            data_ready_timed_out=data_ready_timed_out)
 
     def _remember_pending(self, sequence: int, sent_ns: int) -> None:
         if len(self._pending) >= _MAX_PENDING:
@@ -182,7 +229,8 @@ class TimingSession:
 
     def _record(self, sequence, request_type, t_realtime, t0, t1, t2, t3, *, ok,
                 error='', response=None, correlated=None, round_trip=None, hub_delta=None,
-                status_code=None, detail_code=None) -> TransactionRecord:
+                status_code=None, detail_code=None, data_ready_wait_ns=None,
+                data_ready_timed_out=False) -> TransactionRecord:
         self._index += 1
         return TransactionRecord(
             index=self._index,
@@ -205,6 +253,8 @@ class TimingSession:
             round_trip_ns=round_trip,
             nack_status_code=status_code,
             nack_detail_code=detail_code,
+            data_ready_wait_ns=data_ready_wait_ns,
+            data_ready_timed_out=data_ready_timed_out,
         )
 
 

@@ -12,8 +12,15 @@ Outputs per run:
   <run_id>_blocks.csv        environment sampled around each block
   <run_id>_metadata.json     firmware identity, host state, configuration
 
-This measures the polled request/response path only. DATA_READY is not wired
-into the host yet (SD-17), so assert-to-service latency is out of scope here.
+By default this measures the polled request/response path with a fixed
+inter-transaction delay (--min-interval-ms): the host has no other pacing
+mechanism, and back-to-back transactions with no gap can outrun the
+firmware's bare-metal main-loop re-arm, returning stale/zeroed frames rather
+than real data (observed on the bench). Pass --data-ready to wait on the
+wired GPIO25/PA8 signal instead (SD-17); its assert-to-service latency is
+recorded as data_ready_wait_ns, but the electrical path itself remains
+unvalidated per SPI_SYSTEM_INTERFACE.md section 16 until a scope/logic
+analyzer confirms the waveform, so this is a bench aid, not that acceptance.
 """
 
 from __future__ import annotations
@@ -33,10 +40,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
+from spi.data_ready import DataReadyWatcher  # noqa: E402
 from spi.spi_bus import SpiBus, SpiBusConfig  # noqa: E402
 from spi.spi_device import SpiDevice  # noqa: E402
 from spi.spi_protocol import MessageType, SpiFrame  # noqa: E402
 from spi.timing import CSV_FIELDS, TimingSession, summarise  # noqa: E402
+
+DEFAULT_MIN_INTERVAL_MS = 10.0
 
 DEFAULT_CLOCKS = '1000000,2000000,5000000'
 DEFAULT_LOADS = '0,2,4'
@@ -226,7 +236,7 @@ class BlockResult:
 
 
 def run_block(args, clock_hz: int, workers: int, message_type: MessageType,
-              backend) -> BlockResult:
+              backend, data_ready) -> BlockResult:
     block_id = f'{clock_hz}hz_load{workers}_{message_type.name}'
     config = SpiBusConfig(device=args.device, max_speed_hz=clock_hz)
     bus = SpiBus(config, backend=backend) if backend is not None else SpiBus(config)
@@ -247,7 +257,11 @@ def run_block(args, clock_hz: int, workers: int, message_type: MessageType,
 
         bus.open()
         try:
-            session = TimingSession(bus=bus, block_id=block_id)
+            session = TimingSession(
+                bus=bus, block_id=block_id, data_ready=data_ready,
+                data_ready_timeout_s=args.data_ready_timeout_ms / 1000.0,
+                min_interval_s=0.0 if data_ready is not None else args.min_interval_ms / 1000.0,
+            )
             for _ in range(args.warmup):
                 session.transact(message_type, payload)
             session.reset_counters()
@@ -370,6 +384,9 @@ def write_outputs(outdir: Path, run_id: str, blocks: list[BlockResult], metadata
             'transfer_ns': summarise([r.transfer_ns for r in block.records]),
             'round_trip_ns': summarise([r.round_trip_ns for r in block.records
                                         if r.round_trip_ns is not None]),
+            'data_ready_wait_ns': summarise([r.data_ready_wait_ns for r in block.records
+                                             if r.data_ready_wait_ns is not None]),
+            'data_ready_timeouts': sum(1 for r in block.records if r.data_ready_timed_out),
             'errors': sum(1 for r in block.records if not r.ok),
             'nacks': sum(1 for r in block.records if r.response_type == 'NACK'),
         }
@@ -410,6 +427,19 @@ def main(argv=None) -> int:
                         help='keep synthetic load off the pinned harness CPU')
     parser.add_argument('--fake', action='store_true',
                         help='run against a simulated device; validates plumbing, not timing')
+    parser.add_argument('--data-ready', action='store_true',
+                        help='wait on the wired DATA_READY GPIO (GPIO25/pin 22, SD-17) before each '
+                             'transfer instead of a fixed delay; requires python3-libgpiod on the Pi')
+    parser.add_argument('--data-ready-line', type=int, default=25,
+                        help='BCM line offset for DATA_READY (default 25 = header pin 22)')
+    parser.add_argument('--data-ready-timeout-ms', type=float, default=100.0,
+                        help='max wait per transaction before falling back to clocking anyway '
+                             '(matches the 100ms host-stall timeout, SPI_SYSTEM_INTERFACE.md section 7)')
+    parser.add_argument('--min-interval-ms', type=float, default=DEFAULT_MIN_INTERVAL_MS,
+                        help='fixed delay between transactions when --data-ready is not used; '
+                             'the firmware\'s bare-metal main-loop needs time to re-arm between '
+                             'transfers, and unpaced back-to-back transactions return stale/zeroed '
+                             'frames (observed on the bench)')
     args = parser.parse_args(argv)
 
     if args.affinity is not None:
@@ -428,6 +458,16 @@ def main(argv=None) -> int:
     except KeyError as exc:
         parser.error(f'unknown message type {exc}')
 
+    if args.data_ready and args.fake:
+        parser.error('--data-ready requires real GPIO hardware; incompatible with --fake')
+
+    data_ready = None
+    if args.data_ready:
+        try:
+            data_ready = DataReadyWatcher(line_offset=args.data_ready_line)
+        except Exception as exc:  # noqa: BLE001 - report and fail; pacing silently disabled would be worse
+            parser.error(f'could not set up DATA_READY on line {args.data_ready_line}: {exc}')
+
     backend = PipelinedFakeBackend() if args.fake else None
     run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     metadata = collect_metadata(args, backend)
@@ -442,10 +482,13 @@ def main(argv=None) -> int:
                     print(f'running {clock_hz} Hz, load {workers}, {message_type.name} ...',
                           flush=True)
                     blocks.append(run_block(args, clock_hz, workers, message_type,
-                                            PipelinedFakeBackend() if args.fake else None))
+                                            PipelinedFakeBackend() if args.fake else None,
+                                            data_ready))
     except KeyboardInterrupt:
         print('\ninterrupted; writing partial results', file=sys.stderr)
     finally:
+        if data_ready is not None:
+            data_ready.close()
         metadata['finished_utc'] = datetime.now(timezone.utc).isoformat()
         if blocks:
             write_outputs(args.outdir, run_id, blocks, metadata)

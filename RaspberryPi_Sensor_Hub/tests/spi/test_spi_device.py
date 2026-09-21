@@ -19,6 +19,7 @@ def build_version_payload(response_to_seq: int = 7, build_flags: int = 0) -> byt
 class FakeBackend:
     def __init__(self, response: bytes | None = None) -> None:
         self.last_request = b''
+        self.requests: list[bytes] = []
         self._response = response or SpiFrame(message_type=MessageType.ACK, seq=99, payload=b'\x01\x11\x00\x00\x2A\x00\x00\x00\x00\x00\x00\x00').encode()
 
     def open(self, config: SpiBusConfig) -> None:
@@ -26,6 +27,7 @@ class FakeBackend:
 
     def transfer(self, tx_data: bytes) -> bytes:
         self.last_request = tx_data
+        self.requests.append(tx_data)
         return self._response
 
     def close(self) -> None:
@@ -84,11 +86,16 @@ class SpiDeviceTests(unittest.TestCase):
         bus = SpiBus(SpiBusConfig(), backend=backend)
         bus.open()
 
-        version = SpiDevice(bus).get_version(seq=7)
+        version = SpiDevice(bus).get_version(seq=7, retry_delay_s=0)
 
-        request = SpiFrame.decode(backend.last_request)
-        self.assertEqual(request.message_type, MessageType.GET_VERSION)
-        self.assertEqual(request.payload, b'\x01')
+        # Pipelining means the request's own transfer can never carry its
+        # answer; the GET_VERSION request must be on the wire, but the
+        # decoded VERSION always arrives on a later transaction.
+        sent_types = [SpiFrame.decode(raw).message_type for raw in backend.requests]
+        self.assertIn(MessageType.GET_VERSION, sent_types)
+        version_request = next(SpiFrame.decode(raw) for raw in backend.requests
+                               if SpiFrame.decode(raw).message_type is MessageType.GET_VERSION)
+        self.assertEqual(version_request.payload, b'\x01')
         self.assertEqual(version.firmware_version, '0.1.0')
         self.assertEqual(version.git_hash, '1a2b3c4d')
         self.assertEqual(version.response_to_seq, 7)
@@ -123,6 +130,34 @@ class SpiDeviceTests(unittest.TestCase):
         self.assertEqual(version.response_to_seq, 7)
         self.assertEqual(version.firmware_version, '0.1.0')
         self.assertGreater(backend.transfers, 1)
+
+    def test_get_version_tolerates_a_corrupted_transfer(self) -> None:
+        """A single garbled response mid-retry must not abort get_version.
+
+        On the bench, an unpaced transfer can come back with a shifted or
+        zeroed frame (invalid magic/CRC); the firmware still answers a
+        retried request, so this should be treated as "not yet", not fatal.
+        """
+        class FlakyBackend:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def open(self, config: SpiBusConfig) -> None:
+                return None
+
+            def transfer(self, tx_data: bytes) -> bytes:
+                self.calls += 1
+                if self.calls == 2:
+                    return b'\xff' * 512  # garbage: bad magic
+                return SpiFrame(message_type=MessageType.VERSION, seq=self.calls,
+                                payload=build_version_payload(response_to_seq=7)).encode()
+
+        bus = SpiBus(SpiBusConfig(), backend=FlakyBackend())
+        bus.open()
+
+        version = SpiDevice(bus).get_version(seq=7, retry_delay_s=0)
+
+        self.assertEqual(version.response_to_seq, 7)
 
     def test_get_version_ignores_version_frame_for_another_request(self) -> None:
         stale = SpiFrame(message_type=MessageType.VERSION, seq=1,
