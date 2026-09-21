@@ -1,32 +1,20 @@
 {
-  "folders": [
-    { "path": "." },
-    { "path": "Arm_Sensor_Hub" }
-  ],
-  "settings": {
-    "cmake.sourceDirectory": "${workspaceFolder:Arm_Sensor_Hub}",
-    "cmake.buildDirectory": "${workspaceFolder:Arm_Sensor_Hub}/build",
-    "cmake.configureOnOpen": false,
-    "cmake.defaultVariant": "Release",
-    "stm32-for-vscode.openOcdPath": "/usr/bin/openocd",
-    "stm32-for-vscode.cppToolsPath": "${command:cpptools.getActiveConfigName}",
-    "stm32-for-vscode.stm32CubeProgrammerPath": "${command:stm32CubeProgrammer.getPath}"
-  },
-  "launch": {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "STM32F405 Debug",
-        "type": "cortex-debug",
-        "request": "launch",
-        "servertype": "openocd",
-        "cwd": "${workspaceFolder:Arm_Sensor_Hub}",
-        "executable": "${workspaceFolder:Arm_Sensor_Hub}/build/Arm_Sensor_Hub.elf",
-        "openocdConfig": "openocd.cfg",
-        "searchDir": [
-          "${workspaceFolder:Arm_Sensor_Hub}"
-        ]
-      }
-    ]
-  }
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "Arm_Sensor_Hub"
+		}
+	],
+	"settings": {
+		"claudeCode.preferredLocation": "panel",
+		"claudeCode.useTerminal": true,
+		"stm32cube-ide-clangd.path": "cube",
+		"stm32cube-ide-clangd.arguments": [
+			"starm-clangd",
+			"--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc*",
+			"--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-g++*"
+		]
+	}
 }

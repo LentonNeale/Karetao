@@ -1,3 +1,9 @@
 {
-    "cmake.sourceDirectory": "/home/lenton/Git_repos/Karetao/Arm_Sensor_Hub"
+    "cmake.sourceDirectory": "/home/lenton/Git_repos/Karetao/Arm_Sensor_Hub",
+    "claudeCode.preferredLocation": "panel",
+    "claudeCode.useTerminal": true,
+    "cmake.cmakePath": "cube-cmake",
+    "cmake.configureArgs": [
+        "-DCMAKE_COMMAND=cube-cmake"
+    ]
 }
