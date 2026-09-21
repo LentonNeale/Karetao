@@ -21,6 +21,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
+from spi.data_ready import DataReadyWatcher, DEFAULT_DATA_READY_LINE  # noqa: E402
 from spi.spi_bus import SpiBus, SpiBusConfig  # noqa: E402
 from spi.spi_protocol import (  # noqa: E402
     MAGIC,
@@ -71,9 +72,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--speed-hz', type=int, default=1_000_000)
     parser.add_argument('--transactions', type=int, default=10)
-    parser.add_argument('--interval-ms', type=float, default=20.0)
+    parser.add_argument('--interval-ms', type=float, default=20.0,
+                        help='Fixed delay between transfers when --data-ready is not given. '
+                             'This is a fallback, not a fix: the firmware only rearms DMA for '
+                             'the next transfer when its bare-metal main loop next runs '
+                             '(spi_slave_service.c SpiSlaveService_Process), so any fixed delay '
+                             'is a guess at that timing rather than a guarantee of it.')
+    parser.add_argument('--data-ready', action='store_true',
+                        help='Wait for DATA_READY (SD-17) before each transfer instead of a '
+                             'fixed delay. This is what the transaction is actually gated on, '
+                             'so prefer it over --interval-ms when diagnosing corruption.')
+    parser.add_argument('--data-ready-line', type=int, default=DEFAULT_DATA_READY_LINE)
     args = parser.parse_args()
 
+    data_ready = DataReadyWatcher(line_offset=args.data_ready_line) if args.data_ready else None
     bus = SpiBus(SpiBusConfig(max_speed_hz=args.speed_hz))
     bus.open()
     sequence = initial_sequence()
@@ -89,6 +101,8 @@ def main() -> int:
             # since the device stages a response only after reading the request.
             kind = MessageType.GET_VERSION if index == 0 else MessageType.GET_STATUS
             request = SpiFrame(message_type=kind, seq=sequence + index, payload=b'\x01')
+            if data_ready is not None:
+                data_ready.wait_for_ready(0.2)
             raw = bus.transfer(request.encode())
 
             shape = classify(raw)
@@ -103,9 +117,12 @@ def main() -> int:
             if 'magic at offset 0' not in shape:
                 print(f'     {shape}')
                 print(f'     first 24 bytes: {raw[:24].hex(" ")}')
-            time.sleep(args.interval_ms / 1000.0)
+            if data_ready is None:
+                time.sleep(args.interval_ms / 1000.0)
     finally:
         bus.close()
+        if data_ready is not None:
+            data_ready.close()
 
     print('\nreply frames seen:', ', '.join(f'{k}x{v}' for k, v in replies.items()) or 'none')
     if seen_version:
@@ -114,8 +131,16 @@ def main() -> int:
         print('VERDICT: no well-framed response at all -- treat this as a wiring, power, '
               'or firmware-not-running fault before looking at the protocol.')
     elif 'NACK' in replies:
-        print('VERDICT: firmware is alive and framing correctly but refused the request; '
-              'the reason printed above is authoritative.')
+        if not args.data_ready:
+            print('VERDICT: firmware is alive and framing correctly but refused the request. '
+                  'This run used a fixed --interval-ms delay, not DATA_READY: if the rejected '
+                  'sequence numbers printed above climb by a fixed power-of-256 step instead of '
+                  'matching real host sequence numbers, that is a request corrupted in transit, '
+                  'not a real protocol rejection -- rerun with --data-ready before concluding '
+                  'anything about wiring or firmware logic.')
+        else:
+            print('VERDICT: firmware is alive and framing correctly but refused the request, '
+                  'even with DATA_READY pacing; the reason printed above is authoritative.')
     else:
         print('VERDICT: firmware is alive and framing correctly but never sent VERSION. '
               'The running build most likely predates GET_VERSION (0x14) support -- '
