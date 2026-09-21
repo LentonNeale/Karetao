@@ -102,11 +102,13 @@ def main() -> int:
             kind = MessageType.GET_VERSION if index == 0 else MessageType.GET_STATUS
             request = SpiFrame(message_type=kind, seq=sequence + index, payload=b'\x01')
             if data_ready is not None:
-                if not data_ready.wait_for_ready(0.2):
+                t0 = time.monotonic()
+                ready = data_ready.wait_for_ready(0.2)
+                elapsed_ms = (time.monotonic() - t0) * 1000
+                if not ready:
                     print(f'tx{index:02d} sent {kind.name:12s} -> [skipped: DATA_READY not asserted within 200ms]')
-                    if data_ready is None:
-                        time.sleep(args.interval_ms / 1000.0)
                     continue
+                print(f'     (DATA_READY was already/became asserted after {elapsed_ms:.1f} ms)')
             raw = bus.transfer(request.encode())
 
             shape = classify(raw)
