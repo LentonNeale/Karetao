@@ -162,6 +162,11 @@ uint64_t TimeService_NowUs(void)
     return s_time_now_us;
 }
 
+uint32_t TimeService_RawCounter(void)
+{
+    return 0u;  /* Stub: return zero in host tests. */
+}
+
 void TimeService_SyncInit(const TimeService_SyncConfig *config)
 {
     (void)config;
@@ -883,6 +888,20 @@ static void TestSpiSlaveServiceCore(void)
     assert(s_spi_dma_start_count == 1u);
     assert(s_last_gpio_state == GPIO_PIN_SET);
     assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_ACK);
+    /* Verify SPI transaction timing mirror fields are captured correctly.
+     * In this direct ProcessRequestFrame path:
+     * - dma_complete_raw: not captured (HAL_SPI_TxRxCpltCallback not called)
+     * - process_start_us: not captured (SpiSlaveService_Process() not called)
+     * - response_staged_us: captured during ProcessRequestFrame
+     * - data_ready_set_us: captured during Activate (when lifecycle becomes ACTIVE)
+     * - request_type, request_seq: captured during ProcessRequestFrame
+     */
+    assert(g_spi_timing_dbg.dma_complete_raw == 0u);  /* Not captured in this path. */
+    assert(g_spi_timing_dbg.process_start_us == 0u);  /* Not captured in this path. */
+    assert(g_spi_timing_dbg.response_staged_us == 500u);
+    assert(g_spi_timing_dbg.data_ready_set_us == 500u);
+    assert(g_spi_timing_dbg.request_type == SPI_MESSAGE_TIME_SYNC);
+    assert(g_spi_timing_dbg.request_seq == 2u);
 
     BuildRequest(request, SPI_MESSAGE_GET_STATUS, 0u, 7u);
     request[0] ^= 1u;

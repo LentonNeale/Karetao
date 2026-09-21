@@ -181,6 +181,14 @@ static bool TimeService_IsSequenceNewer(uint32_t candidate, uint32_t previous)
 }
 
 /**
+ * @brief Debug mirror for TIME_SYNC acceptance history (SWD readout).
+ *
+ * Updated on every TimeService_SyncStateAccept call to track input values,
+ * computed offset, and result codes without modifying the SPI protocol.
+ */
+volatile TimeService_SyncDebugMirror g_time_sync_dbg = {0};
+
+/**
  * @brief Executes service sync state init.
  */
 void TimeService_SyncStateInit(TimeService_SyncState *state, const TimeService_SyncConfig *config)
@@ -228,11 +236,23 @@ TimeService_SyncResult TimeService_SyncStateAccept(TimeService_SyncState *state,
 
     if ((state == NULL) || !TimeService_CalculateOffset(pi_time_us, local_time_us, &candidate_offset_us))
     {
+        g_time_sync_dbg.pi_time_us = pi_time_us;
+        g_time_sync_dbg.local_capture_us = local_time_us;
+        g_time_sync_dbg.candidate_offset_us = 0;
+        g_time_sync_dbg.result = TIME_SERVICE_SYNC_REJECTED_ARGUMENT;
+        g_time_sync_dbg.reject_count++;
         return TIME_SERVICE_SYNC_REJECTED_ARGUMENT;
     }
 
+    // Store inputs and calculation for debug inspection
+    g_time_sync_dbg.pi_time_us = pi_time_us;
+    g_time_sync_dbg.local_capture_us = local_time_us;
+    g_time_sync_dbg.candidate_offset_us = candidate_offset_us;
+
     if (state->has_accepted_sync && !TimeService_IsSequenceNewer(sync_sequence, state->last_sync_sequence))
     {
+        g_time_sync_dbg.result = TIME_SERVICE_SYNC_REJECTED_SEQUENCE;
+        g_time_sync_dbg.reject_count++;
         return TIME_SERVICE_SYNC_REJECTED_SEQUENCE;
     }
 
@@ -243,6 +263,8 @@ TimeService_SyncResult TimeService_SyncStateAccept(TimeService_SyncState *state,
                                             candidate_offset_us,
                                             state->config.runtime_offset_step_limit_us)))
     {
+        g_time_sync_dbg.result = TIME_SERVICE_SYNC_REJECTED_OFFSET;
+        g_time_sync_dbg.reject_count++;
         return TIME_SERVICE_SYNC_REJECTED_OFFSET;
     }
 
@@ -252,6 +274,8 @@ TimeService_SyncResult TimeService_SyncStateAccept(TimeService_SyncState *state,
     state->has_accepted_sync = true;
     state->valid = true;
     state->quality = TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED;
+    g_time_sync_dbg.result = TIME_SERVICE_SYNC_ACCEPTED;
+    g_time_sync_dbg.accept_count++;
     return TIME_SERVICE_SYNC_ACCEPTED;
 }
 
@@ -320,6 +344,14 @@ void TimeService_Init(void)
 uint64_t TimeService_NowUs(void)
 {
     return TimeService_StateNowUs(&s_tim2_state);
+}
+
+/**
+ * @brief Returns raw TIM2 counter for debug timing correlation.
+ */
+uint32_t TimeService_RawCounter(void)
+{
+    return __HAL_TIM_GET_COUNTER(&htim2);
 }
 
 /**

@@ -16,6 +16,33 @@ extern "C" {
 #endif
 
 /**
+ * @brief Debug mirror for SPI transaction timing.
+ *
+ * This structure records timestamps at four critical points in the SPI transaction
+ * lifecycle, allowing observation of pipeline delays between DMA completion,
+ * request processing, response staging, and DATA_READY assertion.
+ *
+ * Declare as: volatile SpiSlaveService_TimingMirror g_spi_timing_dbg
+ */
+typedef struct
+{
+    uint32_t dma_complete_raw;     // Raw TIM2 counter at ISR (DMA complete)
+    uint32_t process_start_us;     // TimeService_NowUs() at SpiSlaveService_Process() entry
+    uint32_t response_staged_us;   // TimeService_NowUs() when response is staged
+    uint32_t data_ready_set_us;    // TimeService_NowUs() when DATA_READY GPIO is asserted
+    uint8_t  request_type;         // Message type of last processed request
+    uint32_t request_seq;          // Sequence number of last processed request
+} SpiSlaveService_TimingMirror;
+
+/**
+ * @brief Global debug mirror for SPI transaction timing.
+ *
+ * This volatile global tracks the timing of the last SPI transaction at four key
+ * points, allowing hardware debuggers (SWD) to observe pipeline latencies.
+ */
+extern volatile SpiSlaveService_TimingMirror g_spi_timing_dbg;
+
+/**
  * @brief Initialize SPI service state, protocol state, frame buffers, and DATA_READY.
  *
  * After initialization the service is configured with a boot-status response

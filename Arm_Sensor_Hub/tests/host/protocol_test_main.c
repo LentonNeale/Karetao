@@ -197,17 +197,39 @@ static void TestInitialAcceptanceAndRuntimeRejection(void)
     TimeService_SyncState state;
     TimeService_SyncConfig config = TestSyncConfig();
     TimeService_SyncSnapshot snapshot;
+    uint32_t initial_accept_count;
+    uint32_t initial_reject_count;
 
     TimeService_SyncStateInit(&state, &config);
+
+    /* Test ACCEPTED path */
+    g_time_sync_dbg = (TimeService_SyncDebugMirror){0};
     assert(TimeService_SyncStateAccept(&state, UINT64_C(6000000), 10u, UINT64_C(1000000)) ==
            TIME_SERVICE_SYNC_ACCEPTED);
+    initial_accept_count = g_time_sync_dbg.accept_count;
+    assert(g_time_sync_dbg.pi_time_us == UINT64_C(6000000));
+    assert(g_time_sync_dbg.local_capture_us == UINT64_C(1000000));
+    assert(g_time_sync_dbg.candidate_offset_us == INT64_C(5000000));
+    assert(g_time_sync_dbg.result == TIME_SERVICE_SYNC_ACCEPTED);
+    assert(initial_accept_count == 1u);
+    assert(g_time_sync_dbg.reject_count == 0u);
+
     TimeService_SyncStateGetSnapshot(&state, UINT64_C(1000000), &snapshot);
     assert(snapshot.valid);
     assert(snapshot.quality == TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED);
     assert(snapshot.time_offset_us == INT64_C(5000000));
 
+    /* Test REJECTED_OFFSET path */
+    initial_reject_count = g_time_sync_dbg.reject_count;
     assert(TimeService_SyncStateAccept(&state, UINT64_C(8000001), 11u, UINT64_C(2000000)) ==
            TIME_SERVICE_SYNC_REJECTED_OFFSET);
+    assert(g_time_sync_dbg.pi_time_us == UINT64_C(8000001));
+    assert(g_time_sync_dbg.local_capture_us == UINT64_C(2000000));
+    assert(g_time_sync_dbg.candidate_offset_us == INT64_C(6000001));
+    assert(g_time_sync_dbg.result == TIME_SERVICE_SYNC_REJECTED_OFFSET);
+    assert(g_time_sync_dbg.accept_count == initial_accept_count);
+    assert(g_time_sync_dbg.reject_count == (initial_reject_count + 1u));
+
     TimeService_SyncStateGetSnapshot(&state, UINT64_C(2000000), &snapshot);
     assert(snapshot.valid);
     assert(snapshot.time_offset_us == INT64_C(5000000));
@@ -219,10 +241,17 @@ static void TestTimeoutResetAndRecovery(void)
     TimeService_SyncState state;
     TimeService_SyncConfig config = TestSyncConfig();
     TimeService_SyncSnapshot snapshot;
+    uint32_t accept_count;
 
     TimeService_SyncStateInit(&state, &config);
+    g_time_sync_dbg = (TimeService_SyncDebugMirror){0};
+
     assert(TimeService_SyncStateAccept(&state, UINT64_C(4000000), 1u, UINT64_C(1000000)) ==
            TIME_SERVICE_SYNC_ACCEPTED);
+    assert(g_time_sync_dbg.result == TIME_SERVICE_SYNC_ACCEPTED);
+    accept_count = g_time_sync_dbg.accept_count;
+    assert(accept_count == 1u);
+
     TimeService_SyncStateGetSnapshot(&state, UINT64_C(5999999), &snapshot);
     assert(snapshot.valid);
     assert(snapshot.age_us == UINT64_C(4999999));
@@ -240,9 +269,42 @@ static void TestTimeoutResetAndRecovery(void)
 
     assert(TimeService_SyncStateAccept(&state, UINT64_C(10000000), 2u, UINT64_C(7000000)) ==
            TIME_SERVICE_SYNC_ACCEPTED);
+    assert(g_time_sync_dbg.result == TIME_SERVICE_SYNC_ACCEPTED);
+    assert(g_time_sync_dbg.accept_count == (accept_count + 1u));
+
     TimeService_SyncStateGetSnapshot(&state, UINT64_C(7000000), &snapshot);
     assert(snapshot.valid);
     assert(snapshot.time_offset_us == INT64_C(3000000));
+}
+
+static void TestSyncDebugMirrorRejectionCodes(void)
+{
+    TimeService_SyncState state;
+    TimeService_SyncConfig config = TestSyncConfig();
+    uint32_t reject_count;
+
+    TimeService_SyncStateInit(&state, &config);
+    g_time_sync_dbg = (TimeService_SyncDebugMirror){0};
+
+    /* Test REJECTED_ARGUMENT path (NULL state) */
+    assert(TimeService_SyncStateAccept(NULL, UINT64_C(1000000), 1u, UINT64_C(500000)) ==
+           TIME_SERVICE_SYNC_REJECTED_ARGUMENT);
+    assert(g_time_sync_dbg.result == TIME_SERVICE_SYNC_REJECTED_ARGUMENT);
+    reject_count = g_time_sync_dbg.reject_count;
+    assert(reject_count == 1u);
+
+    /* Establish initial state for REJECTED_SEQUENCE test */
+    TimeService_SyncStateInit(&state, &config);
+    g_time_sync_dbg = (TimeService_SyncDebugMirror){0};
+    assert(TimeService_SyncStateAccept(&state, UINT64_C(1000000), 5u, UINT64_C(500000)) ==
+           TIME_SERVICE_SYNC_ACCEPTED);
+    reject_count = g_time_sync_dbg.reject_count;
+
+    /* Test REJECTED_SEQUENCE path (old sequence) */
+    assert(TimeService_SyncStateAccept(&state, UINT64_C(2000000), 3u, UINT64_C(600000)) ==
+           TIME_SERVICE_SYNC_REJECTED_SEQUENCE);
+    assert(g_time_sync_dbg.result == TIME_SERVICE_SYNC_REJECTED_SEQUENCE);
+    assert(g_time_sync_dbg.reject_count == (reject_count + 1u));
 }
 
 static Calibration_Record TestCalibrationRecord(uint8_t sensor_id, uint8_t joint_id, uint32_t generation)
@@ -736,6 +798,7 @@ int main(void)
     TestMonotonicAcrossMultipleWraps();
     TestInitialAcceptanceAndRuntimeRejection();
     TestTimeoutResetAndRecovery();
+    TestSyncDebugMirrorRejectionCodes();
     TestCalibrationRecordValidation();
     TestCalibrationDuplicateIdentity();
     TestCalibrationGenerationSelection();

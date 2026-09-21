@@ -624,6 +624,34 @@ Source: `Open_Items_List.md` — a source register containing 145 project questi
 - [ ] Validate the implemented Linux `spidev` backend on the target Raspberry Pi
 - [ ] Close the DATA_READY GPIO integration decision only once a GPIO is actually assigned and validated
 
+**`Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` and `SPI_SYSTEM_INTERFACE.md` § 11–12 — TIME_SYNC Implementation Gaps**
+
+*Source: `Documentation/05_VERIFICATION/TIME_SYNC_CHARACTERISATION_EVIDENCE.md` § Audit (audit date: 2026-09-21)*
+
+Five implementation gaps are recorded without proposed fixes — these are gaps in the current implementation, not design decisions:
+
+- [ ] **Gap 1:** `frame_time_us` in SPI frame header must carry hub time (local + offset), not raw TIM2 counter. Currently populated at `spi_protocol.c:33` with `TimeService_NowUs()` (raw time). Requires offset application before frame assembly completes.
+- [ ] **Gap 2:** `measurement_timestamp_us` in sensor records must carry synchronized hub time. Currently populated at `sensor_task.c:165–173` with raw `sample.timestamp_us` without offset application. TimeService_SyncSnapshot is available but not used to convert to hub time domain.
+- [ ] **Gap 3:** GET_DIAGNOSTIC request and DIAGNOSTIC response (message type 0x03) not implemented. SPI_PAYLOAD_SCHEMA.md defines DIAGNOSTIC payload with `time_sync_valid` field, but no implementation exists. GET_STATUS returns ACK with no synchronization metadata; no standard way for host to query time sync validity.
+- [ ] **Gap 4:** Accepted `time_offset_us` not carried in any v1 SPI payload. STM32 accepts and stores offset, but no outbound SPI field exposes it for host verification or confirmation.
+- [ ] **Gap 5:** Raspberry Pi has no TIME_SYNC encoder/sender. SpiDevice class (`RaspberryPi_Sensor_Hub/src/spi/spi_device.py`) lacks `time_sync()` method. spi_protocol.py defines MessageType.TIME_SYNC but no payload encoder. Pi cannot initiate synchronization.
+
+**Audit blockers** — all five gaps must be resolved before synchronization can be marked operational:
+
+1. Apply offset to frame_time_us before DMA handoff
+2. Apply offset to measurement_timestamp_us in sensor task
+3. Implement GET_DIAGNOSTIC request handler and DIAGNOSTIC response serialization
+4. Define payload extension or future schema version to export accepted offset
+5. Implement TIME_SYNC encoder in Pi spi_protocol.py and caller in SpiDevice
+
+**Related integration validation tasks** (after implementation gaps are closed):
+
+- [ ] Validate achieved ±1 ms timestamp accuracy target (SD-18) against live system timeline
+- [ ] Instrument per-axis timestamp evolution during operation; confirm no drift accumulation over 5-second sync intervals
+- [ ] Confirm motion is inhibited when time_sync_valid becomes false; audit motion-permission authority for consistency (see SD-20)
+- [ ] Measure timestamp discontinuities when offset is stepped; validate acceptable for EKF and motion control
+- [ ] Measure round-trip TIME_SYNC latency and compare to transport uncertainty budget
+
 ### 3.3 Contract Status — Next Actions
 
 *Source: `Arm_Sensor_Hub/Documentation/CONTRACT_STATUS.md`*

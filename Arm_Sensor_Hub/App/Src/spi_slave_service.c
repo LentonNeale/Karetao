@@ -23,12 +23,32 @@ static SpiDataReady_State s_data_ready;
 static uint32_t s_poll_period_ms;
 static uint32_t s_last_poll_tick;
 
+/**
+ * @brief Debug mirror for SPI transaction timing (SWD readout).
+ *
+ * Tracks timestamps at four critical points: DMA complete (ISR), process entry,
+ * response staged, and DATA_READY assertion.
+ */
+volatile SpiSlaveService_TimingMirror g_spi_timing_dbg = {0};
+
+/**
+ * @brief Capture of last request type and sequence for timing mirror.
+ */
+static uint8_t s_last_request_type;
+static uint32_t s_last_request_seq;
+
 #define SPI_SERVICE_DEFAULT_POLL_PERIOD_MS 1u
 #define SPI_SERVICE_HOST_STALL_MS 100u
 
 static void SpiSlaveService_SetDataReadyPin(bool high)
 {
     HAL_GPIO_WritePin(Data_Ready_GPIO_Port, Data_Ready_Pin, high ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    /* Capture DATA_READY assertion time and update mirror with request metadata. */
+    if (high) {
+        g_spi_timing_dbg.data_ready_set_us = TimeService_NowUs();
+        g_spi_timing_dbg.request_type = s_last_request_type;
+        g_spi_timing_dbg.request_seq = s_last_request_seq;
+    }
 }
 
 static void SpiSlaveService_WriteU16(uint8_t *data, uint16_t value)
@@ -217,6 +237,8 @@ static bool SpiSlaveService_RequestAllowed(uint8_t request_type)
 static void SpiSlaveService_StageResponseFrame(void)
 {
     if (SnapshotBuilder_Stage(&s_frame_pool, SpiSlaveService_SerializeResponse, NULL) == SNAPSHOT_BUILD_OK) {
+        /* Capture response staged time when frame is staged. */
+        g_spi_timing_dbg.response_staged_us = TimeService_NowUs();
         (void)SpiSlaveService_PublishStagedFrame();
     }
 }
@@ -253,6 +275,8 @@ void SpiSlaveService_Process(void)
     if (!Lifecycle_IsActive(&s_lifecycle)) return;
 
     if (s_request_pending) {
+        /* Capture process start time at entry when request is pending. */
+        g_spi_timing_dbg.process_start_us = TimeService_NowUs();
         memcpy(s_rx_frame, s_pending_request, SPI_FRAME_MAX_BYTES);
         s_request_pending = false;
         (void)SpiSlaveService_CompleteDmaTransfer();
@@ -328,20 +352,25 @@ SpiProtocol_Result SpiSlaveService_ProcessRequestFrame(const uint8_t request[SPI
     SpiProtocol_Result result;
     TimeService_SyncResult sync_result;
     uint8_t request_type;
+    uint32_t request_seq;
 
     if (request == NULL) return SPI_PROTOCOL_BAD_MESSAGE;
     result = SpiProtocol_ValidateRequest(&s_protocol, request);
     request_type = request[3];
+    request_seq = SpiSlaveService_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]);
+    /* Capture request type and sequence for timing mirror. */
+    s_last_request_type = request_type;
+    s_last_request_seq = request_seq;
     if (result != SPI_PROTOCOL_OK) {
         SpiProtocol_BuildCommandReply(&s_protocol, SPI_MESSAGE_NACK, request_type,
-                                      SpiSlaveService_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]),
+                                      request_seq,
                                       (uint16_t)result, 0u, s_response_frame);
         SpiSlaveService_StageResponseFrame();
         return result;
     }
     if (!SpiSlaveService_RequestAllowed(request_type)) {
         SpiProtocol_BuildCommandReply(&s_protocol, SPI_MESSAGE_NACK, request_type,
-                                      SpiSlaveService_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]),
+                                      request_seq,
                                       SPI_PROTOCOL_BAD_STATE, 0u, s_response_frame);
         SpiSlaveService_StageResponseFrame();
         return SPI_PROTOCOL_BAD_STATE;
@@ -369,6 +398,8 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
     if ((hspi != NULL) && (hspi->Instance == SPI3) && s_dma_active) {
         memcpy(s_pending_request, s_rx_frame, SPI_FRAME_MAX_BYTES);
         s_request_pending = true;
+        /* Capture raw TIM2 counter at DMA completion (ISR context). */
+        g_spi_timing_dbg.dma_complete_raw = TimeService_RawCounter();
     }
 }
 

@@ -216,5 +216,93 @@ class VersionInfo:
                 f'protocol {self.protocol_version} commit_epoch {self.commit_epoch_secs}')
 
 
+TIME_SYNC_PAYLOAD_BYTES = 16
+TIME_SYNC_SCHEMA_VERSION = 1
+COMMAND_REPLY_PAYLOAD_BYTES = 12
+COMMAND_REPLY_SCHEMA_VERSION = 1
+
+
+def encode_time_sync_payload(pi_time_us: int, sync_seq: int, flags: int = 0) -> bytes:
+    """Encode TIME_SYNC payload per SPI_PAYLOAD_SCHEMA.md.
+
+    Args:
+        pi_time_us: Pi time in microseconds (uint64)
+        sync_seq: Monotonic synchronization sequence (uint32)
+        flags: Control flags (uint16, default 0)
+
+    Returns:
+        16-byte little-endian payload
+
+    Raises:
+        ValueError: if values exceed type limits
+    """
+    if not 0 <= pi_time_us <= 0xFFFFFFFFFFFFFFFF:
+        raise ValueError(f'pi_time_us must be uint64, got {pi_time_us}')
+    if not 0 <= sync_seq <= 0xFFFFFFFF:
+        raise ValueError(f'sync_seq must be uint32, got {sync_seq}')
+    if not 0 <= flags <= 0xFFFF:
+        raise ValueError(f'flags must be uint16, got {flags}')
+
+    return struct.pack('<BBHQI',
+                       TIME_SYNC_SCHEMA_VERSION,  # schema_ver
+                       0,                          # reserved
+                       flags,                      # flags
+                       pi_time_us,                 # pi_time_us
+                       sync_seq)                   # sync_seq
+
+
+def decode_command_reply(payload: bytes) -> tuple:
+    """Decode ACK/NACK response payload.
+
+    Args:
+        payload: ACK/NACK payload (at least 12 bytes)
+
+    Returns:
+        (request_type, status_code, request_seq, detail_code)
+
+    Raises:
+        ValueError: if payload size < 12 or schema != 1
+    """
+    if len(payload) < COMMAND_REPLY_PAYLOAD_BYTES:
+        raise ValueError(f'ACK/NACK payload must be >={COMMAND_REPLY_PAYLOAD_BYTES} bytes, got {len(payload)}')
+
+    schema, req_type, status, req_seq, detail = struct.unpack_from('<BBHII', payload, 0)
+    if schema != COMMAND_REPLY_SCHEMA_VERSION:
+        raise ValueError(f'Expected schema {COMMAND_REPLY_SCHEMA_VERSION}, got {schema}')
+
+    return (req_type, status, req_seq, detail)
+
+
+def extract_time_sync_from_ack_nack(payload: bytes) -> tuple[int, int] | None:
+    """Extract TIME_SYNC pi_time_us and sync_seq from an ACK/NACK response.
+
+    When a TIME_SYNC request is acknowledged, the response echoes the
+    pi_time_us and sync_seq from the request payload for correlation.
+    This is used to compute the TIME_SYNC offset and track uncertainty bounds.
+
+    Args:
+        payload: ACK/NACK payload (minimum 12 bytes, typically 28+ for TIME_SYNC)
+
+    Returns:
+        (pi_time_us, sync_seq) if TIME_SYNC echo is present, else None
+        where pi_time_us is uint64 and sync_seq is uint32
+
+    Raises:
+        ValueError: if payload < 12 bytes
+    """
+    if len(payload) < 12 + TIME_SYNC_PAYLOAD_BYTES:
+        return None
+
+    try:
+        # TIME_SYNC echo starts at offset 12 (after command_reply header)
+        # pi_time_us is at offset 12+4=16 (after schema_version, reserved, flags)
+        pi_time_us = struct.unpack_from('<Q', payload, 12 + 4)[0]
+        # sync_seq is at offset 12+12=24
+        sync_seq = struct.unpack_from('<I', payload, 12 + 12)[0]
+        return (pi_time_us, sync_seq)
+    except struct.error:
+        return None
+
+
 def crc32_iso_hdlc(data: bytes) -> int:
     return zlib.crc32(data) & 0xFFFFFFFF

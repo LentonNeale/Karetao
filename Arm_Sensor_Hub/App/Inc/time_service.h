@@ -38,6 +38,25 @@ typedef enum
     TIME_SERVICE_SYNC_REJECTED_OFFSET
 } TimeService_SyncResult;
 
+/**
+ * @brief Debug mirror for TIME_SYNC acceptance history.
+ *
+ * This structure records every call to TimeService_SyncStateAccept,
+ * allowing hardware debuggers (SWD) to inspect the acceptance/rejection
+ * history without modifying the SPI protocol.
+ *
+ * Declare as: volatile TimeService_SyncDebugMirror g_time_sync_dbg
+ */
+typedef struct
+{
+    uint64_t pi_time_us;           // Input: pi_time_us from TIME_SYNC request
+    uint64_t local_capture_us;     // Input: local time captured by STM32
+    int64_t  candidate_offset_us;  // Computed: candidate offset before acceptance
+    uint32_t result;               // Output: TimeService_SyncResult code
+    uint32_t accept_count;         // Counter: total accepted syncs
+    uint32_t reject_count;         // Counter: total rejected syncs
+} TimeService_SyncDebugMirror;
+
 typedef struct
 {
     int64_t initial_offset_limit_us;
@@ -98,6 +117,14 @@ void TimeService_SyncStateGetSnapshot(TimeService_SyncState *state,
                                       TimeService_SyncSnapshot *snapshot);
 
 /**
+ * @brief Global debug mirror for TIME_SYNC acceptance history.
+ *
+ * This volatile global tracks every call to TimeService_SyncStateAccept,
+ * allowing hardware debuggers (SWD) to inspect synchronization events.
+ */
+extern volatile TimeService_SyncDebugMirror g_time_sync_dbg;
+
+/**
  * @brief Executes service init.
  */
 void TimeService_Init(void);
@@ -105,6 +132,10 @@ void TimeService_Init(void);
  * @brief Executes service now us.
  */
 uint64_t TimeService_NowUs(void);
+/**
+ * @brief Returns raw TIM2 counter value for debug timing correlation.
+ */
+uint32_t TimeService_RawCounter(void);
 /**
  * @brief Executes service sync init.
  */
