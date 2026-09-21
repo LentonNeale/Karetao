@@ -63,7 +63,13 @@ def nack_codes(frame: SpiFrame) -> tuple[Optional[int], Optional[int]]:
 
 @dataclass(frozen=True)
 class TransactionRecord:
-    """One clocked 512-byte transaction. Durations are nanoseconds."""
+    """One clocked 512-byte transaction. Durations are nanoseconds.
+
+    DATA_READY timing fields (microseconds):
+    - data_ready_to_nss_low_us: DATA_READY rise to NSS fall (transfer start latency)
+    - nss_high_to_data_ready_low_us: NSS rise to DATA_READY fall (pipelined latency)
+    - data_ready_interval_us: Time between consecutive DATA_READY rising edges
+    """
 
     index: int
     block_id: str
@@ -87,9 +93,23 @@ class TransactionRecord:
     nack_detail_code: Optional[int] = None
     data_ready_wait_ns: Optional[int] = None
     data_ready_timed_out: bool = False
+    time_sync_seq: Optional[int] = None
+    time_sync_status: Optional[int] = None
+    data_ready_to_nss_low_us: Optional[int] = None
+    nss_high_to_data_ready_low_us: Optional[int] = None
+    data_ready_interval_us: Optional[int] = None
 
     def as_row(self) -> dict:
         return asdict(self)
+
+    def data_ready_latency_ms(self) -> Optional[float]:
+        """Latency from DATA_READY to transfer start (ms).
+
+        Converts data_ready_to_nss_low_us from microseconds to milliseconds.
+        """
+        if self.data_ready_to_nss_low_us is None:
+            return None
+        return self.data_ready_to_nss_low_us / 1000.0
 
 
 CSV_FIELDS = list(TransactionRecord.__dataclass_fields__)
@@ -231,7 +251,7 @@ class TimingSession:
     def _record(self, sequence, request_type, t_realtime, t0, t1, t2, t3, *, ok,
                 error='', response=None, correlated=None, round_trip=None, hub_delta=None,
                 status_code=None, detail_code=None, data_ready_wait_ns=None,
-                data_ready_timed_out=False) -> TransactionRecord:
+                data_ready_timed_out=False, time_sync_seq=None, time_sync_status=None) -> TransactionRecord:
         self._index += 1
         return TransactionRecord(
             index=self._index,
@@ -256,6 +276,8 @@ class TimingSession:
             nack_detail_code=detail_code,
             data_ready_wait_ns=data_ready_wait_ns,
             data_ready_timed_out=data_ready_timed_out,
+            time_sync_seq=time_sync_seq,
+            time_sync_status=time_sync_status,
         )
 
 
