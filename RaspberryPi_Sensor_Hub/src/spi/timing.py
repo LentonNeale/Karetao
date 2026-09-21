@@ -19,7 +19,7 @@ from typing import Optional
 
 from .data_ready import DataReadyLike
 from .spi_bus import SpiBus
-from .spi_protocol import MessageType, SpiFrame
+from .spi_protocol import MessageType, SpiFrame, initial_sequence
 
 try:
     _INTERVAL_CLOCK = time.CLOCK_MONOTONIC_RAW
@@ -127,10 +127,11 @@ class TimingSession:
     data_ready: Optional[DataReadyLike] = None
     data_ready_timeout_s: float = 0.1
     min_interval_s: float = 0.0
+    start_sequence: Optional[int] = None
     counters: SessionCounters = field(default_factory=SessionCounters)
 
     def __post_init__(self) -> None:
-        self._seq = 1
+        self._seq = initial_sequence() if self.start_sequence is None else self.start_sequence
         self._index = 0
         self._pending: dict[int, int] = {}
         self._previous_hub_time_us: Optional[int] = None

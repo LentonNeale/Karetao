@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum
 import struct
+import time
 import zlib
 
 MAGIC = 0xA55A
@@ -28,6 +29,77 @@ class MessageType(IntEnum):
     GET_VERSION = 0x14
     ACK = 0x80
     NACK = 0x81
+
+
+class NackReason(IntEnum):
+    """Mirrors SpiProtocol_Result in Arm_Sensor_Hub/App/Inc/spi_protocol.h.
+
+    The NACK status field carries this code, so decoding it turns an opaque
+    rejection into a named cause.
+    """
+
+    OK = 0
+    BAD_MAGIC = 1
+    BAD_VERSION = 2
+    BAD_LENGTH = 3
+    BAD_CRC = 4
+    BAD_SEQUENCE = 5
+    BAD_MESSAGE = 6
+    BAD_TIME_SYNC = 7
+    BAD_STATE = 8
+
+    @classmethod
+    def describe(cls, code: int) -> str:
+        try:
+            return cls(code).name
+        except ValueError:
+            return f'UNKNOWN({code})'
+
+
+_last_seed = 0
+
+# Separation forced between two seeds issued by one process when the clock has
+# not advanced enough on its own. Chosen far above the transaction count any
+# single session consumes, so a later transmitter cannot land inside the span
+# an earlier one already used.
+_SEED_STRIDE = 1_000_000
+
+
+def initial_sequence() -> int:
+    """Seed for a host transmitter's sequence counter.
+
+    The interface contract (SPI_SYSTEM_INTERFACE.md section 6) requires `seq`
+    to increment monotonically *per transmitter*, and the firmware enforces
+    this by rejecting any request that is not strictly newer than the last it
+    accepted (SPI_PROTOCOL_BAD_SEQUENCE). The firmware's high-water mark lives
+    in RAM and survives until the STM32 is power-cycled, but a host process
+    starting from a fixed value resets on every run -- so the second and all
+    later runs against a still-powered STM32 would be NACKed for the whole
+    span the previous run already consumed.
+
+    Wall-clock milliseconds keep the seed ahead of that high-water mark across
+    restarts without persisting any state: each new process starts roughly
+    `elapsed_ms` beyond the last one, which outpaces the transaction rate the
+    bench sustains (pacing holds it near 100/s; see DEFAULT_RETRY_DELAY_S).
+    Truncation to 32 bits wraps about every 50 days, which the firmware's
+    wrap-tolerant half-space comparison handles.
+
+    Within a single process the clock alone is not enough -- two transmitters
+    built moments apart can be separated by fewer milliseconds than the first
+    consumed sequences -- so seeds are additionally forced apart by
+    `_SEED_STRIDE`.
+    """
+    global _last_seed
+    seed = (time.time_ns() // 1_000_000) & 0xFFFFFFFF
+    if _last_seed and not _is_newer(seed, _last_seed + _SEED_STRIDE):
+        seed = (_last_seed + _SEED_STRIDE) & 0xFFFFFFFF
+    _last_seed = seed
+    return seed or 1
+
+
+def _is_newer(candidate: int, previous: int) -> bool:
+    """Wrap-tolerant ordering matching SpiProtocol_IsNewer in the firmware."""
+    return candidate != previous and ((candidate - previous) & 0xFFFFFFFF) < 0x80000000
 
 
 @dataclass(frozen=True)

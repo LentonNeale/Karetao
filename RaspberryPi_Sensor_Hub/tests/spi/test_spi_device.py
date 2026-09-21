@@ -8,7 +8,7 @@ import struct
 
 from spi.spi_bus import SpiBus, SpiBusConfig
 from spi.spi_device import SpiDevice
-from spi.spi_protocol import MessageType, SpiFrame
+from spi.spi_protocol import MessageType, SpiFrame, initial_sequence
 
 
 def build_version_payload(response_to_seq: int = 7, build_flags: int = 0) -> bytes:
@@ -183,6 +183,45 @@ class SpiDeviceTests(unittest.TestCase):
         version = SpiDevice(bus).get_version(seq=7, retry_delay_s=0)
 
         self.assertEqual(version.response_to_seq, 7)
+
+    def test_restarted_host_does_not_reuse_earlier_sequences(self) -> None:
+        """The firmware keeps its accepted-sequence high-water mark until it is
+        power-cycled and refuses anything not strictly newer, so a fresh host
+        process must not restart its counter where an earlier one began."""
+        bus = SpiBus(SpiBusConfig(), backend=FakeBackend())
+        bus.open()
+
+        first_run = [SpiDevice(bus).next_sequence() for _ in range(5)]
+        second_run_start = SpiDevice(bus).next_sequence()
+
+        self.assertGreater(second_run_start, max(first_run))
+
+    def test_sequence_seed_fits_the_wire_field(self) -> None:
+        seed = initial_sequence()
+        self.assertGreater(seed, 0)  # zero means "no correlation", so it is skipped
+        self.assertLess(seed, 1 << 32)
+
+    def test_get_version_reports_bad_sequence_rejection(self) -> None:
+        """A NACK naming our own request must surface its cause; returning a
+        bare timeout hides the one fact that explains the failure."""
+        nack = SpiFrame(message_type=MessageType.NACK, seq=3,
+                        payload=struct.pack('<BBHII', 1, 0x14, 5, 7, 0)).encode()
+        bus = SpiBus(SpiBusConfig(), backend=FakeBackend(nack))
+        bus.open()
+
+        with self.assertRaises(RuntimeError) as caught:
+            SpiDevice(bus).get_version(seq=7, max_transactions=3, retry_delay_s=0)
+
+        self.assertIn('BAD_SEQUENCE', str(caught.exception))
+
+    def test_get_version_ignores_nack_for_a_different_request(self) -> None:
+        nack = SpiFrame(message_type=MessageType.NACK, seq=3,
+                        payload=struct.pack('<BBHII', 1, 0x14, 5, 999, 0)).encode()
+        bus = SpiBus(SpiBusConfig(), backend=FakeBackend(nack))
+        bus.open()
+
+        with self.assertRaises(TimeoutError):
+            SpiDevice(bus).get_version(seq=7, max_transactions=3, retry_delay_s=0)
 
     def test_get_version_ignores_version_frame_for_another_request(self) -> None:
         stale = SpiFrame(message_type=MessageType.VERSION, seq=1,

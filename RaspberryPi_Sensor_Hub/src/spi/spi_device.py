@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import struct
 import time
 
 from .spi_bus import SpiBus
-from .spi_protocol import MessageType, SpiFrame, VersionInfo
+from .spi_protocol import MessageType, NackReason, SpiFrame, VersionInfo, initial_sequence
 
 # Without DATA_READY wired into the caller, transactions clocked back-to-back
 # can outrun the firmware's bare-metal main-loop re-arm and come back
@@ -14,11 +15,17 @@ from .spi_protocol import MessageType, SpiFrame, VersionInfo
 # This default gives the main-loop time to service each request.
 DEFAULT_RETRY_DELAY_S = 0.01
 
+_NACK_HINTS = {
+    'BAD_SEQUENCE': 'The firmware only accepts strictly increasing sequence numbers and keeps '
+                    'its high-water mark until power-cycled, so a host that restarts its '
+                    'counter below that mark is refused; see initial_sequence().',
+}
+
 
 class SpiDevice:
-    def __init__(self, bus: SpiBus) -> None:
+    def __init__(self, bus: SpiBus, start_sequence: int | None = None) -> None:
         self.bus = bus
-        self._next_sequence = 1
+        self._next_sequence = initial_sequence() if start_sequence is None else start_sequence
 
     def transact(self, request: SpiFrame) -> SpiFrame:
         """Clock one fixed-size transaction and decode the staged response."""
@@ -53,6 +60,7 @@ class SpiDevice:
         firmware will still answer a retried request.
         """
         request_seq = self.next_sequence() if seq is None else seq
+        rejection: str | None = None
         try:
             self.transact(SpiFrame(
                 message_type=MessageType.GET_VERSION, seq=request_seq, payload=bytes([1])))
@@ -74,6 +82,16 @@ class SpiDevice:
                     continue
                 if info.response_to_seq == request_seq:
                     return info
+            elif response.message_type is MessageType.NACK and len(response.payload) >= 8:
+                # ACK/NACK payload: schema, echoed type, status u16 @2, request_seq u32 @4
+                # (SPI_PAYLOAD_SCHEMA.md). Remember why our own request was refused.
+                status, nacked_seq = struct.unpack_from('<HI', response.payload, 2)
+                if nacked_seq == request_seq:
+                    rejection = NackReason.describe(status)
 
+        if rejection is not None:
+            raise RuntimeError(
+                f'firmware rejected GET_VERSION seq {request_seq} with {rejection}. '
+                f'{_NACK_HINTS.get(rejection, "")}'.strip())
         raise TimeoutError(
             f'no VERSION response correlated to seq {request_seq} within {max_transactions} transactions')
