@@ -125,6 +125,34 @@ The diagnostic payload may be extended only by schema versioning or an explicitl
 
 ---
 
+### VERSION (`0x04`)
+
+Solicited response to `GET_VERSION` (`0x14`). Identifies the firmware build that produced a frame, so that bench and integration evidence can be attributed to an exact firmware revision.
+
+| Field | Size |
+| --- | ---: |
+| `schema_version` | 1 |
+| `protocol_version` | 1 |
+| `fw_version_major` | 1 |
+| `fw_version_minor` | 1 |
+| `fw_version_patch` | 1 |
+| `build_flags` | 1 |
+| `reserved` | 2 |
+| `response_to_seq` | 4 |
+| `git_hash_abbrev` | 4 |
+| `commit_epoch_secs` | 4 |
+
+Total payload: 20 bytes.
+
+- `protocol_version` repeats the outer frame's transport version so a decoded payload is self-describing in a log.
+- `build_flags` bit 0 is set when the firmware subtree had uncommitted changes at build time; the accompanying `git_hash_abbrev` then does not fully identify the source. Bits 1-7 are reserved and must be zero. **Timing and acceptance evidence recorded against a firmware reporting bit 0 set does not satisfy an integration gate.**
+- `git_hash_abbrev` is the first eight hex digits of the commit hash read as a hexadecimal number, so commit `1a2b3c4d…` reports `0x1A2B3C4D` and a host formatting the field as eight lowercase hex digits reproduces `git rev-parse --short=8`. Zero when the build system could not determine it.
+- `commit_epoch_secs` is the commit timestamp in seconds since the Unix epoch, not the build time, so the field stays reproducible across rebuilds of the same source. Zero when unavailable.
+
+Adding this message type does not increment `protocol_version`: `0x04` was previously reserved, `VERSION` is emitted only in response to `GET_VERSION`, and no existing field meaning, ordering, or framing changes. A host that never sends `GET_VERSION` cannot observe any difference.
+
+---
+
 ### TIME_SYNC (`0x12`)
 
 | Field | Size |
@@ -155,7 +183,7 @@ NACK status codes must include invalid message, invalid length, CRC failure, inv
 
 ### GET and Command Requests
 
-`GET_SNAPSHOT`, `GET_STATUS`, and `GET_VERSION` contain a one-byte `schema_version` and reserved bytes set to zero. `SET_MOTOR_COMMAND` is not frozen until the Motor Service contract exists; it must not be implemented from this draft alone.
+`GET_SNAPSHOT`, `GET_STATUS`, and `GET_VERSION` contain a one-byte `schema_version` and reserved bytes set to zero. `GET_VERSION` is answered with a `VERSION` (`0x04`) frame; `GET_SNAPSHOT` is answered with `SNAPSHOT` when one is staged, and the remaining requests are answered with `ACK`/`NACK`. `SET_MOTOR_COMMAND` is not frozen until the Motor Service contract exists; it must not be implemented from this draft alone.
 
 ---
 

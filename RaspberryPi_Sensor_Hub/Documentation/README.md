@@ -90,6 +90,22 @@ STM32 SPI3 side, for reference (`Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTE
 | MOSI | PC12 | Input |
 | DATA_READY | PA8 | Output |
 
+## SPI Timing Harness
+
+`tools/spi_timing_harness.py` sweeps clock rate x CPU load x message type and writes one row per transaction for offline analysis. It measures the polled request/response path only; DATA_READY assert-to-service latency is out of scope until the GPIO watcher exists (SD-17).
+
+```bash
+python3 tools/spi_timing_harness.py --clocks 1000000,2000000,5000000 --loads 0,2,4 \
+    --iterations 5000 --affinity 3 --rt-priority 50 --outdir evidence/
+python3 tools/spi_timing_harness.py --fake      # exercise the harness with no STM32 attached
+```
+
+Each run writes `<run_id>_transactions.csv` (per transaction), `<run_id>_blocks.csv` (environment sampled around each block) and `<run_id>_metadata.json` (firmware identity, host state, configuration).
+
+**`transfer_ns` and `round_trip_ns` are not the same measurement and must not be compared as if they were.** `transfer_ns` is wire time for one 512-byte transfer. Because the transaction model is pipelined (`SPI_SYSTEM_INTERFACE.md` §4), the reply to a request is staged only after that request has been clocked in, so it arrives during a later transfer; `round_trip_ns` is reconstructed from the correlation field each response carries (`response_to_seq`, or `request_seq` on ACK/NACK) and therefore spans at least two transfers. A row whose `correlated_seq` is empty had no matching outstanding request, and its `round_trip_ns` is blank rather than zero.
+
+Runs are only admissible as integration-gate evidence when `metadata.json` reports `dirty_build: false`; a dirty firmware build means the reported git hash does not identify the source that produced the numbers. Check `throttled` and `cpu_temp_c` in the block records before trusting tail latencies, since a throttled Pi produces misleading p99s.
+
 ## Documentation Structure
 
 This documentation directory follows the Karetao component documentation model:

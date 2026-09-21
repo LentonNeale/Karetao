@@ -5,6 +5,7 @@
 #include "calibration_record.h"
 #include "can_tx_policy.h"
 #include "crc32_iso_hdlc.h"
+#include "firmware_version.h"
 #include "health_monitor.h"
 #include "joint_mapping.h"
 #include "lifecycle.h"
@@ -596,6 +597,51 @@ static void TestSpiProtocolState(void)
     assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_TIME_SYNC);
 }
 
+static uint32_t TestReadU32(const uint8_t *data)
+{
+    return (uint32_t)data[0] | ((uint32_t)data[1] << 8u) | ((uint32_t)data[2] << 16u) | ((uint32_t)data[3] << 24u);
+}
+
+static void TestSpiVersionReply(void)
+{
+    SpiProtocol_State state;
+    uint8_t request[SPI_FRAME_MAX_BYTES];
+    uint8_t response[SPI_FRAME_MAX_BYTES];
+    const uint8_t *payload = &response[SPI_FRAME_OFFSET_PAYLOAD];
+
+    SpiProtocol_Init(&state);
+
+    BuildRequest(request, SPI_MESSAGE_GET_VERSION, 1u, 20u);
+    request[SPI_FRAME_OFFSET_PAYLOAD] = SPI_REQUEST_SCHEMA_VERSION;
+    Crc32IsoHdlc_WriteLittleEndian(Crc32IsoHdlc_Compute(request, SPI_FRAME_HEADER_BYTES + 1u),
+                                   &request[SPI_FRAME_CRC_OFFSET(1u)]);
+
+    assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_OK);
+    assert(response[SPI_FRAME_OFFSET_MESSAGE_TYPE] == SPI_MESSAGE_VERSION);
+    assert(response[SPI_FRAME_OFFSET_PAYLOAD_LENGTH] == (uint8_t)SPI_VERSION_PAYLOAD_BYTES);
+    assert(response[SPI_FRAME_OFFSET_PAYLOAD_LENGTH + 1u] == 0u);
+
+    assert(payload[SPI_VERSION_OFFSET_SCHEMA_VERSION] == SPI_VERSION_SCHEMA_VERSION);
+    assert(payload[SPI_VERSION_OFFSET_PROTOCOL_VERSION] == SPI_PROTOCOL_VERSION);
+    assert(payload[SPI_VERSION_OFFSET_FW_MAJOR] == FIRMWARE_VERSION_MAJOR);
+    assert(payload[SPI_VERSION_OFFSET_FW_MINOR] == FIRMWARE_VERSION_MINOR);
+    assert(payload[SPI_VERSION_OFFSET_FW_PATCH] == FIRMWARE_VERSION_PATCH);
+    assert(payload[SPI_VERSION_OFFSET_BUILD_FLAGS] == FIRMWARE_BUILD_FLAGS);
+    assert(payload[SPI_VERSION_OFFSET_RESERVED] == 0u);
+    assert(payload[SPI_VERSION_OFFSET_RESERVED + 1u] == 0u);
+    assert(TestReadU32(&payload[SPI_VERSION_OFFSET_RESPONSE_TO_SEQUENCE]) == 20u);
+    assert(TestReadU32(&payload[SPI_VERSION_OFFSET_GIT_HASH_ABBREV]) == FIRMWARE_GIT_HASH_ABBREV);
+    assert(TestReadU32(&payload[SPI_VERSION_OFFSET_COMMIT_EPOCH_SECS]) == FIRMWARE_COMMIT_EPOCH_SECS);
+
+    assert(Crc32IsoHdlc_Verify(response, SPI_FRAME_HEADER_BYTES + SPI_VERSION_PAYLOAD_BYTES,
+                               &response[SPI_FRAME_CRC_OFFSET(SPI_VERSION_PAYLOAD_BYTES)]));
+
+    /* An unassigned request type must still be rejected. */
+    BuildRequest(request, UINT8_C(0x15), 0u, 21u);
+    assert(SpiProtocol_ProcessRequest(&state, request, response) == SPI_PROTOCOL_BAD_MESSAGE);
+    assert(response[SPI_FRAME_OFFSET_MESSAGE_TYPE] == SPI_MESSAGE_NACK);
+}
+
 static void TestDataReadyState(void)
 {
     SpiDataReady_State state;
@@ -701,6 +747,7 @@ int main(void)
     TestSnapshotFrameOwnership();
     TestCrc32IsoHdlc();
     TestSpiProtocolState();
+    TestSpiVersionReply();
     TestDataReadyState();
     TestCanTxAndRecoveryPolicy();
     TestLifecycleTransitions();

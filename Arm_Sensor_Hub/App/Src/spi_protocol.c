@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "crc32_iso_hdlc.h"
+#include "firmware_version.h"
 #include "time_service.h"
 
 static uint16_t SpiProtocol_ReadU16(const uint8_t *data) { return (uint16_t)data[0] | ((uint16_t)data[1] << 8u); }
@@ -52,6 +53,22 @@ void SpiProtocol_BuildCommandReply(SpiProtocol_State *state, uint8_t type, uint8
     SpiProtocol_WriteU32(&payload[4], request_sequence);
     SpiProtocol_WriteU32(&payload[8], detail_code);
     SpiProtocol_BuildFrame(state, type, payload, sizeof(payload), response);
+}
+
+static void SpiProtocol_BuildVersionReply(SpiProtocol_State *state, uint32_t request_sequence, uint8_t *response)
+{
+    uint8_t payload[SPI_VERSION_PAYLOAD_BYTES] = {0};
+
+    payload[SPI_VERSION_OFFSET_SCHEMA_VERSION] = SPI_VERSION_SCHEMA_VERSION;
+    payload[SPI_VERSION_OFFSET_PROTOCOL_VERSION] = SPI_PROTOCOL_VERSION;
+    payload[SPI_VERSION_OFFSET_FW_MAJOR] = FIRMWARE_VERSION_MAJOR;
+    payload[SPI_VERSION_OFFSET_FW_MINOR] = FIRMWARE_VERSION_MINOR;
+    payload[SPI_VERSION_OFFSET_FW_PATCH] = FIRMWARE_VERSION_PATCH;
+    payload[SPI_VERSION_OFFSET_BUILD_FLAGS] = FIRMWARE_BUILD_FLAGS;
+    SpiProtocol_WriteU32(&payload[SPI_VERSION_OFFSET_RESPONSE_TO_SEQUENCE], request_sequence);
+    SpiProtocol_WriteU32(&payload[SPI_VERSION_OFFSET_GIT_HASH_ABBREV], FIRMWARE_GIT_HASH_ABBREV);
+    SpiProtocol_WriteU32(&payload[SPI_VERSION_OFFSET_COMMIT_EPOCH_SECS], FIRMWARE_COMMIT_EPOCH_SECS);
+    SpiProtocol_BuildFrame(state, SPI_MESSAGE_VERSION, payload, sizeof(payload), response);
 }
 
 void SpiProtocol_Init(SpiProtocol_State *state) { if (state != NULL) { memset(state, 0, sizeof(*state)); } }
@@ -128,7 +145,8 @@ SpiProtocol_Result SpiProtocol_ValidateRequest(const SpiProtocol_State *state,
     if (state->has_request_sequence && !SpiProtocol_IsNewer(sequence, state->last_request_sequence)) {
         return SPI_PROTOCOL_BAD_SEQUENCE;
     }
-    if ((type != SPI_MESSAGE_GET_SNAPSHOT) && (type != SPI_MESSAGE_GET_STATUS) && (type != SPI_MESSAGE_TIME_SYNC)) {
+    if ((type != SPI_MESSAGE_GET_SNAPSHOT) && (type != SPI_MESSAGE_GET_STATUS) &&
+        (type != SPI_MESSAGE_TIME_SYNC) && (type != SPI_MESSAGE_GET_VERSION)) {
         return SPI_PROTOCOL_BAD_MESSAGE;
     }
     if ((type == SPI_MESSAGE_TIME_SYNC) && !SpiProtocol_ValidateTimeSyncPayload(request)) {
@@ -155,6 +173,8 @@ SpiProtocol_Result SpiProtocol_ProcessRequest(SpiProtocol_State *state, const ui
         SpiProtocol_WriteU32(&state->unsolicited_payload[SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE], sequence);
         SpiProtocol_BuildFrame(state, SPI_MESSAGE_SNAPSHOT, state->unsolicited_payload, state->unsolicited_payload_length, response);
         state->unsolicited_pending = false;
+    } else if (type == SPI_MESSAGE_GET_VERSION) {
+        SpiProtocol_BuildVersionReply(state, sequence, response);
     } else { SpiProtocol_BuildCommandReply(state, SPI_MESSAGE_ACK, type, sequence, 0u, 0u, response); }
     return SPI_PROTOCOL_OK;
 }

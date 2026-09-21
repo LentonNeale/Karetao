@@ -34,6 +34,19 @@
 /** Start offset of the CRC for a payload of the supplied length. */
 #define SPI_FRAME_CRC_OFFSET(payload_length) (SPI_FRAME_HEADER_BYTES + (payload_length))
 
+/** Serialized size of the VERSION (0x04) payload. */
+#define SPI_VERSION_PAYLOAD_BYTES UINT16_C(20)
+#define SPI_VERSION_OFFSET_SCHEMA_VERSION UINT16_C(0)
+#define SPI_VERSION_OFFSET_PROTOCOL_VERSION UINT16_C(1)
+#define SPI_VERSION_OFFSET_FW_MAJOR UINT16_C(2)
+#define SPI_VERSION_OFFSET_FW_MINOR UINT16_C(3)
+#define SPI_VERSION_OFFSET_FW_PATCH UINT16_C(4)
+#define SPI_VERSION_OFFSET_BUILD_FLAGS UINT16_C(5)
+#define SPI_VERSION_OFFSET_RESERVED UINT16_C(6)
+#define SPI_VERSION_OFFSET_RESPONSE_TO_SEQUENCE UINT16_C(8)
+#define SPI_VERSION_OFFSET_GIT_HASH_ABBREV UINT16_C(12)
+#define SPI_VERSION_OFFSET_COMMIT_EPOCH_SECS UINT16_C(16)
+
 /** Snapshot prefix shared by all snapshot payload instances. */
 #define SPI_SNAPSHOT_PREFIX_BYTES UINT16_C(12)
 #define SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION UINT16_C(0)
@@ -84,6 +97,8 @@
 
 _Static_assert(SPI_PAYLOAD_MAX_BYTES == (SPI_FRAME_MAX_BYTES - SPI_FRAME_HEADER_BYTES - SPI_FRAME_CRC_BYTES),
                "SPI payload maximum must match fixed frame overhead");
+_Static_assert(SPI_VERSION_PAYLOAD_BYTES == (SPI_VERSION_OFFSET_COMMIT_EPOCH_SECS + 4u),
+               "Version payload offsets must consume its fixed size");
 _Static_assert(SPI_SENSOR_RECORD_BYTES == (SPI_SENSOR_RECORD_OFFSET_RESERVED_2 + 2u),
                "Sensor record offsets must consume its fixed size");
 _Static_assert(SPI_MOTOR_RECORD_BYTES == (SPI_MOTOR_RECORD_OFFSET_PAYLOAD + 8u),

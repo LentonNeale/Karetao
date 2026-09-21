@@ -32,6 +32,8 @@ Karetao system documents this procedure depends on:
 
 The legacy names `SPI_CONTRACT.md`, `LIFECYCLE_CONTRACT.md` and `SAFETY_RELEASE_CHECKLIST.md` are no longer current. The checklist survives only as a non-normative archive copy under `Documentation/99_ARCHIVE/DECISIONS/`.
 
+**Repository structure:** This document is part of the Karetao repository. The **RaspberryPi_Sensor_Hub** directory contains the component implementation (software source, tests, provisioning), and it references (but does not duplicate) the system contracts in **Documentation/**. When following this guide, clone the entire Karetao repository (Part D.1) so you have access to both the component code and the system authority documents.
+
 System values used in this guide, with their owners:
 
 | Value | Owner | Status per owner |
@@ -84,11 +86,16 @@ Raspberry Pi Imager ──► Ubuntu Server 24.04 LTS arm64 on SD/SSD
                               ▼
         First boot ──► cloud-init provisions the machine
                               │
+                    (optionally: clone Karetao repo from GitHub or offline source)
+                              │
+                              ▼
+        Part D ──► Create ROS 2 workspace, link packages, build
+                              │
                               ▼
         Manual qualification (Parts B to F) ──► component evidence
 ```
 
-cloud-init owns everything that is repeatable machine configuration. The remainder of this guide qualifies the machine; it does not configure it by hand except where noted.
+cloud-init owns everything that is repeatable machine configuration: OS packages, ROS, networking, systemd units, SSH keys. It does **not** own the application software (Karetao repository) — that is cloned separately in Part D and built into the workspace. The remainder of this guide qualifies the machine; it does not configure it by hand except where noted.
 
 ## A2. Hardware
 
@@ -616,17 +623,62 @@ Do not begin STM32 TIME_SYNC validation until `chronyc tracking` shows a synchro
 
 ROS 2 Jazzy (`ros-base`, `ros2_control`, `controller_manager`, `joint_state_broadcaster`) is installed by cloud-init. Do not re-add the apt source by hand; if the install failed, fix the seed and re-provision.
 
-Create the workspace as `robot`:
+## D1. Clone the Karetao repository
+
+The Karetao repository contains the system contracts (`Documentation/`), the STM32 firmware (`Arm_Sensor_Hub/`), and the Raspberry Pi host packages (`RaspberryPi_Sensor_Hub/`). Clone it to a working directory as `robot`:
+
+```bash
+cd ~
+git clone https://github.com/karetao/karetao.git          # or your fork URL
+cd karetao
+git log -1 --oneline                                       # confirm the commit you're running
+```
+
+Alternatively, if the repository is deployed offline (e.g., copied onto the card before first boot), ensure it is owned by `robot`:
+
+```bash
+sudo chown -R robot:robot ~/karetao
+```
+
+**Keep the full Karetao repository under version control.** Do not modify files under `Documentation/` or `Arm_Sensor_Hub/` on the Pi; those are read-only reference and firmware source. Local changes belong in the ROS workspace and in deployment/commissioning records kept outside the repo (G3).
+
+## D2. Create and build the ROS 2 workspace
+
+Create the workspace and link the Raspberry Sensor Hub packages:
 
 ```bash
 mkdir -p ~/karetao_ws/src
 cd ~/karetao_ws
-# clone the Raspberry Sensor Hub packages into src/ from version control
+
+# Link the Raspberry Sensor Hub component into the workspace
+ln -s ~/karetao/RaspberryPi_Sensor_Hub ~/karetao_ws/src/
+
+# (Optional) If you have other ROS packages (e.g. control, perception), link them here too
+# ln -s ~/karetao/path/to/other_package ~/karetao_ws/src/
+
+# Build with symlink-install so edits take effect without rebuild
 colcon build --symlink-install
+
+# Add the workspace setup to the login shell
 echo 'source ~/karetao_ws/install/setup.bash' >> ~/.bashrc
 ```
 
-Keep all project software under version control. Do not modify anything under `/opt/ros`.
+If the build fails, check that:
+- `apt install python3-colcon-common-extensions` (should be in the cloud-init seed)
+- ROS 2 Jazzy is installed and sourced: `source /opt/ros/jazzy/setup.bash`
+- All `rosdep` dependencies are satisfied: `rosdep install --from-paths src --ignore-src -y`
+
+## D3. Verify the workspace
+
+Confirm that the workspace installed correctly:
+
+```bash
+source ~/karetao_ws/install/setup.bash
+ros2 pkg list | grep karetao                              # should list the installed packages
+ros2 launch karetao_bringup --show-args hardware_inactive.launch.py 2>/dev/null | head -5  # check launch file exists
+```
+
+Keep all project software under version control. Do not modify anything under `/opt/ros`. Workspace builds are local (`build/` and `install/` directories); do not commit them.
 
 ---
 
@@ -797,31 +849,46 @@ Open item affecting F4.8: the SPI message set (SPI_SYSTEM_INTERFACE §5) does no
 
 ## G1. Provisioning layout
 
-Provisioning lives in the component repository, separate from the ROS software. Contracts are **not** duplicated here; they stay in Karetao `Documentation/02_INTERFACES/`.
+Provisioning and versioning are split across the repository and the ROS workspace. Contracts are **not** duplicated; they stay in Karetao `Documentation/02_INTERFACES/`.
+
+**On the Pi at runtime:**
 
 ```text
-RaspberryPi_Sensor_Hub/
-├── provisioning/
-│   ├── cloud-init/
-│   │   ├── meta-data
-│   │   ├── network-config
-│   │   ├── user-data
-│   │   └── reference/            # unmodified seed from each image version used
-│   ├── systemd/
-│   │   └── karetao-host.service
-│   └── README.md                 # image version, config.txt deltas, harness pin table
-├── src/                          # host software (Python SPI stack, ROS packages)
-├── tests/
-└── Documentation/
-    └── RASPBERRY_PI_BRINGUP_V0.1.md   # this file
+/home/robot/
+├── karetao/                      # full Karetao repository (git clone)
+│   ├── Documentation/            # system contracts, read-only reference
+│   ├── Arm_Sensor_Hub/           # STM32 firmware, read-only reference
+│   └── RaspberryPi_Sensor_Hub/   # component authority, read-only reference
+│       ├── provisioning/
+│       │   ├── cloud-init/
+│       │   │   ├── meta-data
+│       │   │   ├── network-config
+│       │   │   └── user-data
+│       │   ├── systemd/
+│       │   │   └── karetao-host.service
+│       │   └── README.md         # image version, config.txt deltas, harness pin table
+│       ├── src/                  # host software (Python SPI stack, ROS packages)
+│       ├── tests/
+│       └── Documentation/
+│           └── RASPBERRY_PI_BRINGUP_V1.md   # this file
+│
+└── karetao_ws/                   # ROS 2 workspace (local build)
+    ├── src/
+    │   └── RaspberryPi_Sensor_Hub -> ../../karetao/RaspberryPi_Sensor_Hub (symlink)
+    ├── build/                    # local, not version-controlled
+    ├── install/                  # local, not version-controlled
+    └── ...
 ```
 
 Source-of-truth split:
 
-* Machine provisioning: `provisioning/cloud-init/`
-* Host software: the ROS workspace and `src/`
-* System interfaces and requirements: Karetao `Documentation/**`
-* Motion release: Karetao `04_SAFETY/` and the register's release conditions
+* **System contracts and requirements:** Karetao `Documentation/` (read-only reference)
+* **Firmware source:** Karetao `Arm_Sensor_Hub/` (read-only reference)
+* **Machine provisioning:** `provisioning/cloud-init/` (version-controlled seed)
+* **Host software:** Karetao `RaspberryPi_Sensor_Hub/src/` (version-controlled source)
+* **ROS workspace:** `~/karetao_ws/` (local build, not version-controlled)
+* **Motion release:** Karetao `04_SAFETY/` and the register's release conditions
+* **Deployment records:** separate from version control (commissioning, calibration, evidence)
 
 ## G2. Controlled changes
 

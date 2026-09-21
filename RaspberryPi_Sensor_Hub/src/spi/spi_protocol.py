@@ -20,6 +20,7 @@ class MessageType(IntEnum):
     SNAPSHOT = 0x01
     EVENT = 0x02
     DIAGNOSTIC = 0x03
+    VERSION = 0x04
     GET_SNAPSHOT = 0x10
     GET_STATUS = 0x11
     TIME_SYNC = 0x12
@@ -83,6 +84,64 @@ class SpiFrame:
 
         return cls(message_type=decoded_type, seq=seq, frame_time_us=frame_time_us,
                    payload=raw[HEADER_SIZE:expected_length - CRC_SIZE], protocol_version=protocol_version)
+
+
+VERSION_PAYLOAD_BYTES = 20
+VERSION_SCHEMA_VERSION = 1
+BUILD_FLAG_DIRTY = 0x01
+_VERSION_STRUCT = struct.Struct('<BBBBBBHIII')
+
+
+@dataclass(frozen=True)
+class VersionInfo:
+    """Decoded VERSION (0x04) payload identifying the firmware build."""
+
+    schema_version: int
+    protocol_version: int
+    firmware_major: int
+    firmware_minor: int
+    firmware_patch: int
+    build_flags: int
+    response_to_seq: int
+    git_hash_abbrev: int
+    commit_epoch_secs: int
+
+    @classmethod
+    def decode(cls, payload: bytes) -> 'VersionInfo':
+        if len(payload) != VERSION_PAYLOAD_BYTES:
+            raise ValueError('unexpected VERSION payload size')
+        (schema_version, protocol_version, major, minor, patch, build_flags,
+         reserved, response_to_seq, git_hash, commit_epoch) = _VERSION_STRUCT.unpack(payload)
+        if schema_version != VERSION_SCHEMA_VERSION:
+            raise ValueError('unsupported VERSION schema version')
+        if reserved:
+            raise ValueError('non-zero reserved bytes in VERSION payload')
+        return cls(schema_version=schema_version, protocol_version=protocol_version,
+                   firmware_major=major, firmware_minor=minor, firmware_patch=patch,
+                   build_flags=build_flags, response_to_seq=response_to_seq,
+                   git_hash_abbrev=git_hash, commit_epoch_secs=commit_epoch)
+
+    @property
+    def firmware_version(self) -> str:
+        return f'{self.firmware_major}.{self.firmware_minor}.{self.firmware_patch}'
+
+    @property
+    def git_hash(self) -> str:
+        return f'{self.git_hash_abbrev:08x}'
+
+    @property
+    def is_dirty_build(self) -> bool:
+        """True when the firmware was built from uncommitted changes.
+
+        Evidence recorded against a dirty build cannot close an integration
+        gate (SPI_PAYLOAD_SCHEMA.md, VERSION payload).
+        """
+        return bool(self.build_flags & BUILD_FLAG_DIRTY)
+
+    def summary(self) -> str:
+        suffix = '-dirty' if self.is_dirty_build else ''
+        return (f'fw {self.firmware_version} ({self.git_hash}{suffix}) '
+                f'protocol {self.protocol_version} commit_epoch {self.commit_epoch_secs}')
 
 
 def crc32_iso_hdlc(data: bytes) -> int:

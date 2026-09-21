@@ -1,10 +1,17 @@
+import struct
 import sys
 from pathlib import Path
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'src'))
 
-from spi.spi_protocol import MessageType, SpiFrame, crc32_iso_hdlc
+from spi.spi_protocol import (
+    VERSION_PAYLOAD_BYTES,
+    MessageType,
+    SpiFrame,
+    VersionInfo,
+    crc32_iso_hdlc,
+)
 
 
 class SpiProtocolTests(unittest.TestCase):
@@ -49,6 +56,36 @@ class SpiProtocolTests(unittest.TestCase):
     def test_oversized_payload_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
             SpiFrame(message_type=MessageType.DIAGNOSTIC, seq=1, payload=b'x' * 491).encode()
+
+
+class VersionPayloadTests(unittest.TestCase):
+    @staticmethod
+    def payload(schema_version: int = 1, reserved: int = 0) -> bytes:
+        return struct.pack('<BBBBBBHIII', schema_version, 1, 0, 1, 0, 0, reserved,
+                           7, 0x1A2B3C4D, 1_700_000_000)
+
+    def test_version_payload_matches_contract_size(self) -> None:
+        self.assertEqual(len(self.payload()), VERSION_PAYLOAD_BYTES)
+
+    def test_version_payload_decodes(self) -> None:
+        info = VersionInfo.decode(self.payload())
+        self.assertEqual(info.protocol_version, 1)
+        self.assertEqual(info.firmware_version, '0.1.0')
+        self.assertEqual(info.git_hash, '1a2b3c4d')
+        self.assertEqual(info.commit_epoch_secs, 1_700_000_000)
+        self.assertFalse(info.is_dirty_build)
+
+    def test_unsupported_schema_version_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            VersionInfo.decode(self.payload(schema_version=2))
+
+    def test_nonzero_reserved_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            VersionInfo.decode(self.payload(reserved=1))
+
+    def test_wrong_payload_size_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            VersionInfo.decode(self.payload()[:-1])
 
 
 if __name__ == '__main__':

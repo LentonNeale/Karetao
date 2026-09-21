@@ -95,6 +95,7 @@ The STM32 never initiates SPI clocking. The first response after boot is a defin
 | `0x01` | `SNAPSHOT` | STM32 → Pi | Current coherent sensor and motor state. |
 | `0x02` | `EVENT` | STM32 → Pi | Asynchronous event. |
 | `0x03` | `DIAGNOSTIC` | STM32 → Pi | Diagnostic and lifecycle status. |
+| `0x04` | `VERSION` | STM32 → Pi | Firmware and protocol version report, solicited by `GET_VERSION`. |
 | `0x10` | `GET_SNAPSHOT` | Pi → STM32 | Request current snapshot. |
 | `0x11` | `GET_STATUS` | Pi → STM32 | Request status. |
 | `0x12` | `TIME_SYNC` | Pi → STM32 | Update STM32-to-Pi time relationship. |
