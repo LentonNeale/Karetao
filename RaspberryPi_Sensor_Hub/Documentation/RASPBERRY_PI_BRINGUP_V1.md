@@ -6,6 +6,8 @@
 **Document class:** Component implementation / provisioning procedure
 **Revision:** 0.1, rewritten 2026-09-20 (see Appendix A for the conflict review that drove the rewrite)
 
+M
+
 ---
 
 ## Authority and references
@@ -36,7 +38,7 @@ System values used in this guide, with their owners:
 | --- | --- | --- |
 | SPI Mode 0, 512-byte frame, 490-byte max payload, little-endian, CRC-32/ISO-HDLC | SYS-SPI-001 (SD-15) | Approved |
 | SPI clock initial maximum 5 MHz | SYS-TIM-003 (SD-01, SD-15) | Provisional integration ceiling, not hardware approval |
-| DATA_READY optional, 1 ms polling fallback, Pi is SPI clock master | SYS-SPI-003 (SD-17) | Approved; **physical Pi GPIO assignment remains unresolved at system level.** Harness candidate GPIO25 recorded in E1, pending electrical validation |
+| DATA_READY optional, 1 ms polling fallback, Pi is SPI clock master | SYS-SPI-003 (SD-17) | Approved; **physical Pi GPIO assignment is a harness decision, not a system-level one.** GPIO25 assigned and wired in E1, pending electrical validation |
 | SPI cable length 20 to 30 cm | SYS-SPI-004 | Proposed; measurement required |
 | Pi is system time authority; TIME_SYNC 1 Hz nominal, up to 10 Hz; invalid after 5 s | SYS-SYNC-001/002 (SD-18, SD-19) | Approved |
 | Pi heartbeat timeout 500 ms rejects motion | SYS-FAIL-001 (SD-03) | Approved |
@@ -472,6 +474,76 @@ ros2 doctor --report > /tmp/ros2-doctor-report.txt        # full dump for the re
 
 Only create a separate maintenance account if required, and if it is required on every Pi, move it into `user-data` under version control.
 
+## A10. Optional Wi-Fi fallback for commissioning
+
+Ethernet remains the required commissioning network (A2) and the only network cloud-init configures (A6.3). This step exists only for sites where a wired drop genuinely is not available during commissioning. It is a manual, on-box fallback, not a repeatable provisioning input, and it is deliberately **not** added to the cloud-init seed:
+
+* It carries a Wi-Fi passphrase, and G3 forbids putting secrets in version control, where the seed lives.
+* A2's Ethernet requirement and A4's instruction to decline Wi-Fi in the Imager are both about what gets *provisioned*; this step runs after provisioning is already done and verified, so it does not contradict them.
+* Do not attempt this step until A9 has passed cleanly over Ethernet. Configuring Wi-Fi is the first thing done *through* a confirmed-working headless SSH session, never a substitute for reaching that point.
+
+**Every step below runs on the Pi itself, inside the SSH session from A9.** Unlike A5–A8, there is no SD card to remount and no file to edit on the workstation (laptop) — the card is already sealed inside a running Pi. The workstation's only role in A10 is the terminal you're typing into; the `ssh` connection carries every command through to the Pi, and every file this step creates lives on the Pi's own root filesystem (`/etc/netplan/`), not on `system-boot`.
+
+**1. On the Pi — confirm the wireless interface and tooling.** Still connected over Ethernet from A9:
+
+```bash
+ip link show                                  # confirm the onboard wireless interface name, typically wlan0
+sudo apt list --installed 2>/dev/null | grep -E 'netplan|wpasupplicant'   # both ship on the base image
+```
+
+**2. On the Pi — turn the Wi-Fi passphrase into a PSK hash.** Ubuntu Server's Raspberry Pi image uses netplan with the `networkd` renderer, not NetworkManager, so Wi-Fi is configured as a second netplan file placed directly on the Pi's running system, alongside the one cloud-init already wrote there during A6/A8. `wpa_passphrase` derives the hash so the plaintext password never lands in a file:
+
+```bash
+wpa_passphrase 'YOUR_SSID' 'YOUR_PASSPHRASE'   # prints a psk=<hex> line; copy that hash, not the plaintext, for step 3
+```
+
+**3. On the Pi — write and apply the netplan file.** Paste the `psk=` hash from step 2 into the placeholder below:
+
+```bash
+sudo tee /etc/netplan/60-wifi-fallback.yaml > /dev/null <<'EOF'
+network:
+  version: 2
+  wifis:
+    wlan0:
+      regulatory-domain: "NZ"
+      optional: true
+      access-points:
+        "YOUR_SSID":
+          password: "PASTE_THE_psk_HEX_HERE"
+      dhcp4: true
+      dhcp4-overrides:
+        route-metric: 200        # keep Ethernet preferred while both links are up
+EOF
+sudo chmod 600 /etc/netplan/60-wifi-fallback.yaml
+sudo chown root:root /etc/netplan/60-wifi-fallback.yaml
+sudo netplan generate
+sudo netplan apply
+```
+
+`route-metric: 200` keeps `eth0` (cloud-init's default metric) preferred whenever both links are up, so this file adds a fallback rather than silently switching the Pi's traffic path.
+
+**4. On the Pi — verify Wi-Fi associated and Ethernet is still preferred.** Do this before touching the Ethernet cable:
+
+```bash
+ip -brief address show wlan0                  # expect an IPv4 address once associated
+ip route                                       # expect the eth0 default route to sort first (lower metric)
+iw dev wlan0 link                              # signal and associated AP, for the record
+```
+
+**5. On the Pi (physically) and from the workstation — cut over and confirm.** Only after step 4 shows both interfaces with addresses and the SSH session still reachable should the Ethernet cable be pulled. Pulling the cable is the one physical action in this step and happens at the Pi; reconnecting is a normal `ssh` from wherever you're working, exactly as in A9, and confirms the session survives the switch:
+
+```bash
+ssh robot@karetao-pi-01.local
+```
+
+**6. Record and, later, clean up.** Note in commissioning records (not in `user-data`, and not on the Pi at all) that this Pi ran part of commissioning over Wi-Fi, and re-confirm Ethernet on a wired drop before signing off F4 acceptance; Part F's timing and latency evidence should not be collected over Wi-Fi. Once commissioning is complete, on the Pi either remove the fallback file or leave it in place:
+
+```bash
+sudo rm /etc/netplan/60-wifi-fallback.yaml && sudo netplan apply   # remove, or skip this to keep it as a standing fallback
+```
+
+Leaving it in place does not affect the deployed robot's network path as long as Ethernet keeps the lower route metric.
+
 ---
 
 # Part B — Real-time kernel and governor
@@ -578,8 +650,8 @@ These are Karetao decisions and are **not** re-decided in harness documentation:
 What the harness documentation **does** need to freeze, because it is not yet fixed anywhere:
 
 * Pi SPI controller and chip select actually used (implementation default SPI0 CE0, `/dev/spidev0.0`; header pins 19 MOSI, 21 MISO, 23 SCLK, 24 CE0).
-* Pi GPIO for DATA_READY. **Harness candidate: GPIO25** (BCM numbering), `gpiochip4` line 25 on the Ubuntu 24.04 kernel, physical header pin 22, currently unclaimed by any other function (confirmed against a live `gpioinfo gpiochip4` dump on this board). Request it via libgpiod as an input, rising-edge, Schmitt trigger enabled, no internal pull, since the STM32 drives the line push-pull (`ARM_SENSOR_HUB.md`, RP1 peripherals datasheet §3.1.3). **This is a harness assignment, not a validated one.** SD-17 (register §3.2) is satisfied by picking an available pin; it is not closed until the electrical and timing acceptance in `SPI_SYSTEM_INTERFACE.md` §16 has been performed on the actual wiring. Until that acceptance is recorded, the host continues to run polling-only at 1 ms and the achieved latency and jitter must still be measured, not assumed.
-* Pin-to-pin mapping against the STM32 side: NSS PA15, SCK PC10, MISO PC11, MOSI PC12, DATA_READY PA8 ↔ Pi GPIO25 (candidate) (`ARM_SENSOR_HUB.md`).
+* Pi GPIO for DATA_READY. **Harness assignment: GPIO25** (BCM numbering), `gpiochip4` line 25 on the Ubuntu 24.04 kernel, physical header pin 22, wired on the current test rig (confirmed against a live `gpioinfo gpiochip4` dump on this board). Request it via libgpiod as an input, rising-edge, Schmitt trigger enabled, no internal pull, since the STM32 drives the line push-pull (`ARM_SENSOR_HUB.md`, RP1 peripherals datasheet §3.1.3). **This is a harness assignment, not a validated one.** SD-17 (register §3.2) is satisfied by picking and wiring an available pin; it is not closed until the electrical and timing acceptance in `SPI_SYSTEM_INTERFACE.md` §16 has been performed on the actual wiring. Until that acceptance is recorded, the host continues to run polling-only at 1 ms and the achieved latency and jitter must still be measured, not assumed.
+* Pin-to-pin mapping against the STM32 side: NSS PA15, SCK PC10, MISO PC11, MOSI PC12, DATA_READY PA8 ↔ Pi GPIO25 (assigned, pending electrical validation) (`ARM_SENSOR_HUB.md`).
 
 ## E2. Inspect the Pi side
 
@@ -604,11 +676,11 @@ GPIO chip numbering on the Pi 5 depends on the kernel:
 
 Because of this, the host software must **not** hard-code a chip number. Select the chip by its label or driver (`pinctrl-rp1`) via libgpiod, or hold the chip path in configuration and re-verify with `sudo gpiodetect` after every kernel change (a controlled change, G2). If GPIO requests fail after an upgrade with `gpiochip4`, the chip has most likely become `gpiochip0`.
 
-Use libgpiod for GPIO. Do not use the deprecated sysfs GPIO interface or its global line numbers. The harness candidate for DATA_READY is GPIO25 (E1); request it as an input with rising-edge events, Schmitt trigger enabled, and no internal pull.
+Use libgpiod for GPIO. Do not use the deprecated sysfs GPIO interface or its global line numbers. The DATA_READY GPIO assignment is GPIO25 (E1); request it as an input with rising-edge events, Schmitt trigger enabled, and no internal pull.
 
 ## E3. Connect the STM32
 
-Power off both boards. Connect the SPI harness and verify: common ground, 3.3 V-only signalling, SCK/MOSI/MISO/NSS directions, DATA_READY (candidate GPIO25, if wired), 20 to 30 cm cable, no back-powering, STM32 reset and power state. **Motor power stays removed.**
+Power off both boards. Connect the SPI harness and verify: common ground, 3.3 V-only signalling, SCK/MOSI/MISO/NSS directions, DATA_READY (GPIO25, assigned and wired), 20 to 30 cm cable, no back-powering, STM32 reset and power state. **Motor power stays removed.**
 
 ## E4. Initial transport validation
 
