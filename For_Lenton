@@ -10,8 +10,8 @@ This is a review/sign-off list, not a proposed resolution. Items retain the term
 
 - Repository: `LentonNeale/Karetao`
 - Branch reviewed: `main`
-- Current main HEAD: `89d4eaf621c75fd05ae2bf44af3d58fddc898d3f`
-- HEAD commit: `docs: clarify AS5600 angle representation policy` (2026-09-22)
+- Current main HEAD: `57f103159ed61dec5df8caf2496851816120b039`
+- HEAD commit: `docs: update For_Lenton to current Karetao state` (2026-09-22)
 - Karetao system-documentation authority: `Documentation/**`
 - `Documentation/00_INDEX.md` states the framework status is **Complete** and that `Documentation/**` is authoritative.
 - Component implementation authority remains in `Arm_Sensor_Hub/Documentation/` and `RaspberryPi_Sensor_Hub/Documentation/`.
@@ -125,11 +125,11 @@ Sources: SD-01, SD-15; `SPI_SYSTEM_INTERFACE.md`; `TIME_SYNC_VALIDATION.md`.
 ## 3.2 DATA_READY semantics and physical assignment
 
 **Decision / validation required:**
-- System semantics are now explicit: **armed-then-assert**.
+- System semantics are explicit: **armed-then-assert**.
 - HIGH means a complete response frame has been handed to DMA ownership and the DMA transfer is armed.
 - A merely staged software buffer is not enough.
 - Polling fallback is initially 1 ms.
-- A 100 ms host-stall timeout exists in the software contract.
+- A 100 ms host-stall timeout aborts the active DMA transfer and returns the service to a re-armable state.
 - Physical Pi-side GPIO assignment and electrical validation remain open.
 
 Source: `SPI_SYSTEM_INTERFACE.md`, §§1, 7, 16.
@@ -138,9 +138,9 @@ Source: `SPI_SYSTEM_INTERFACE.md`, §§1, 7, 16.
 
 **Validation required:** Confirm that snapshot replacement/drop behaviour, timestamp age and transport latency are acceptable for the current 500 Hz EKF setting.
 
-The current system record explicitly distinguishes the 100 Hz baseline system loop from a 500 Hz EKF setting. The full six-axis sweep remains approximately 46 ms in the current evidence, so the EKF's asynchronous/multi-rate treatment and per-axis staleness policy remain unresolved.
+The current system requirement sets the baseline sensor/state publication and initial control-loop rate at 100 Hz, while the EKF setting is 500 Hz unless downstream constraints require adjustment. The verification matrix explicitly leaves EKF adequacy open.
 
-Sources: SD-01, SD-08, SD-09; `SYSTEM_VERIFICATION_MATRIX.md`.
+Sources: SYS-TIM-001/002; SD-01, SD-08, SD-09; `SYSTEM_VERIFICATION_MATRIX.md`.
 
 ## 3.4 SPI physical-link acceptance
 
@@ -197,14 +197,14 @@ Source: `TIME_SYNC_VALIDATION.md`.
 
 **Implementation gap — not a new decision.**
 
-The current validation document records these blockers:
+The current validation/audit documents record these blockers:
 1. Raspberry Pi TIME_SYNC sender path still needs closure.
 2. Accepted offset is not yet exposed in an outbound payload for independent verification.
-3. Exported `frame_time_us` / `measurement_timestamp_us` still have timestamp-domain implementation gaps identified by the audit.
+3. Exported `measurement_timestamp_us` still has a timestamp-domain implementation gap identified by the audit; the SPI contract requires exported sensor and motor timestamps to use synchronized hub time.
 4. DIAGNOSTIC online synchronization reporting remains unimplemented in the cited audit.
 5. The documented blocking order must be completed before synchronization can be treated as operational.
 
-Source: `TIME_SYNC_VALIDATION.md` and the decision register's §3.2.
+Source: `TIME_SYNC_VALIDATION.md`, `TIME_SYNC_CHARACTERISATION_EVIDENCE.md`, and the decision register's §3.2.
 
 ## 4.5 Reset synchronization behaviour
 
@@ -277,7 +277,7 @@ Open:
 - ros2_control / MoveIt 2 representation;
 - hardware verification.
 
-SD-26 remains **PROPOSED — not CTO-approved**.
+SD-26 remains **PROPOSED — not part of the 2026-09-07 CTO sign-off**.
 
 Source: SD-26 / SYS-MECH-001.
 
@@ -399,7 +399,7 @@ Source: `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`.
 
 **Evidence required:** Produce and accept integrated evidence for each system verification group before assigning `SYSTEM_VERIFIED`.
 
-The current `SYSTEM_VERIFICATION_MATRIX.md` still reports all listed requirement groups as OPEN.
+The current `SYSTEM_VERIFICATION_MATRIX.md` reports all listed requirement groups as OPEN.
 
 ---
 
@@ -433,7 +433,7 @@ Source: SD-11 / SYS-CAL-002.
 
 ## 12.1 Documentation authority
 
-**Current state:** The framework itself is now marked complete in `Documentation/00_INDEX.md`.
+**Current state:** The framework itself is marked complete in `Documentation/00_INDEX.md`.
 
 Karetao `Documentation/**` is authoritative for system-level documentation; component repositories remain implementation authorities.
 
