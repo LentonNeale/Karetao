@@ -500,7 +500,9 @@ Source: `Open_Items_List.md`. These 145 questions are preserved as **source-coll
 
 ---
 
-## 3. Open Issues & TODOs
+## 3. Historical / Source-Collected Issues & TODOs
+
+> **Provenance only:** this section preserves source-collected checklists and TODOs. It is not a second live-work index. Current live status is determined from Section 0 and the cited authoritative evidence.
 
 ### 3.1 CAN Module — Bring-Up & Testing (STM32 + TJA1050 + CANable V2)
 
