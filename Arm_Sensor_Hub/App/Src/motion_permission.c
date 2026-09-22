@@ -108,14 +108,20 @@ MotionPermission_State MotionPermission_GetState(void)
 
 bool MotionPermission_IsPermitted(MotionPermission_Reason *reason, bool *latched)
 {
-    MotionPermission_Reason derived_latched = false ? MOTION_PERMISSION_ALLOWED : MotionPermission_DeriveReason(&derived_latched);
+    bool derived_latched = false;
+    MotionPermission_Reason derived_reason = MotionPermission_DeriveReason(&derived_latched);
+
+    s_state.reason = derived_reason;
+    if (derived_reason != MOTION_PERMISSION_PREREQUISITE_LATCHED) {
+        s_state.latched = false;
+    } else {
+        s_state.latched = derived_latched;
+    }
     if (reason != NULL) {
-        *reason = derived_latched;
+        *reason = derived_reason;
     }
     if (latched != NULL) {
         *latched = derived_latched;
     }
-    s_state.reason = derived_latched ? MOTION_PERMISSION_PREREQUISITE_LATCHED : s_state.reason;
-    s_state.latched = derived_latched;
-    return derived_latched == MOTION_PERMISSION_ALLOWED;
+    return derived_reason == MOTION_PERMISSION_ALLOWED;
 }
