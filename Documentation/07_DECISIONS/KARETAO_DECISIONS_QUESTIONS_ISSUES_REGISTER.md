@@ -31,7 +31,7 @@
 2. Open Questions Register (145 questions, 13 topic groups)
 3. Open Issues & TODOs (by subsystem/document)
 4. Release Conditions / Safety Gates
-5. System-Level Issues Still Requiring Closure
+5. Source-Collected System Issues — Reconciled Against Section 0
 6. Source Document Status
 
 ---
@@ -742,7 +742,7 @@ Five implementation gaps are recorded without proposed fixes — these are gaps 
 
 ### 3.4 Safety Release Checklist — Source Records All Items as BLOCKED
 
-*Source: `Arm_Sensor_Hub/Documentation/SAFETY_RELEASE_CHECKLIST.md`. The source checklist records all 14 items as "BLOCKED: no artifact recorded". This is a source-reported status; its currency has not been independently revalidated against the current repository state in this working register. No item below is marked complete, and no missing safety evidence has been created or inferred here. Cross-referenced to the numbered release conditions in Part 4.*
+*Historical source material only; current live safety work is indexed by LIVE-05 and related Section 0 items. Source: `Arm_Sensor_Hub/Documentation/SAFETY_RELEASE_CHECKLIST.md`. The source checklist records all 14 items as "BLOCKED: no artifact recorded". This is a source-reported status; its currency has not been independently revalidated against the current repository state in this working register. No item below is marked complete, and no missing safety evidence has been created or inferred here. Cross-referenced to the numbered release conditions in Part 4.*
 
 | # | Checklist item | Maps to release condition |
 |---|---|---|
