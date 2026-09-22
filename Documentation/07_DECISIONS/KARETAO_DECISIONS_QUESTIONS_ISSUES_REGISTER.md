@@ -26,19 +26,19 @@
 **Status rule:** A checkbox or "open" wording inherited from an older source does **not** by itself make an item live. Current status must be established from the applicable authoritative source or current evidence.
 
 **Contents**
-- Status Vocabulary (definitions used throughout this register)
+- Live Status Vocabulary (definitions used for Section 0)
 1. System Decisions (SD-01 to SD-26)
-2. Open Questions Register (145 questions, 13 topic groups)
-3. Open Issues & TODOs (by subsystem/document)
+2. Historical / Source-Collected Questions (145 entries)
+3. Historical / Source-Collected Issues & TODOs (by subsystem/document)
 4. Release Conditions / Safety Gates
 5. Source-Collected System Issues — Reconciled Against Section 0
 6. Source Document Status
 
 ---
 
-## Status Vocabulary
+## Source Status Vocabulary
 
-The statuses used throughout this register carry the following meanings. This vocabulary is a reading aid for navigating this working register; it does not itself grant authority to any status label used by a source document, and it does not introduce any new substantive status beyond what the sources already record.
+The statuses in this section are **source-status terms preserved for provenance**. They are distinct from the normalized **live reconciliation status** used in Section 0. Source wording is retained rather than silently reclassified.
 
 | Status | Meaning |
 |---|---|
@@ -53,6 +53,55 @@ The statuses used throughout this register carry the following meanings. This vo
 
 Where a source uses a status term slightly differently from the table above (for example, the safety checklist's own wording "BLOCKED: no artifact recorded" — see Section 3.4), this register preserves that source wording verbatim and adds a clarifying note, rather than silently reclassifying it into the vocabulary above.
 
+
+### 0. Live Reconciliation — Current Project Work
+
+This section is the **current work index**. Detailed historical source collation remains below for provenance, but an item should appear here only when current repository evidence supports it as live work.
+
+### 0.1 Current live items
+
+| ID | Current status | Live item | Primary source(s) | GitHub tracking |
+|---|---|---|---|---|
+| LIVE-01 | OPEN — DESIGN | **System motion-permission authority** — approve the owner/API, prerequisite set, freshness thresholds, inhibit semantics, and recovery/reactivation behaviour for the proposed aggregate motion gate. | `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; `Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-02 | OPEN — VERIFICATION / RELEASE BLOCKER | **CAN integration** — reconcile the current 875 kbps implementation with the 1 Mbps system target or formally revise the requirement; validate exact MKS controller behaviour, physical topology, timing, load, and recovery. | `Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-03 | OPEN — VERIFICATION / RELEASE BLOCKER | **SPI physical and host integration** — validate 5 MHz acceptance, DMA/NSS behaviour, DATA_READY GPIO path, signal integrity, sustained 512-byte transfers, and host-stall recovery on target hardware. | `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-04 | OPEN — IMPLEMENTATION / RELEASE BLOCKER | **TIME_SYNC implementation gaps** — close the five gaps identified by the 2026-09-21 audit before synchronization is treated as operational. | `Documentation/05_VERIFICATION/TIME_SYNC_CHARACTERISATION_EVIDENCE.md`; `Documentation/05_VERIFICATION/TIME_SYNC_VALIDATION.md`; `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md`; `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-05 | OPEN — RELEASE BLOCKER | **Independent safety release gates** — complete the machine risk assessment and required safety architecture/evidence, including E-stop, motor-disable, watchdog, brake/stop behaviour, stopping time, fault indication, reset, and applicable safety-rated architecture. | `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-06 | PROPOSED / OPEN — DESIGN & VERIFICATION | **Differential end-effector mapping** — define and verify the two-motor/two-DOF transformation, limits, singular/invalid configurations, and its MoveIt 2 / ros2_control representation. SD-26 remains proposed and is not CTO-approved. | `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` (SYS-MECH-001); `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-07 | OPEN — DESIGN / VERIFICATION | **EKF and sensor-timing architecture** — define the asynchronous/multi-rate EKF handling policy, acceptable per-signal data age/staleness, and verify end-to-end timing against the measured ~46 ms six-axis sweep. | `Documentation/01_SYSTEM/SYSTEM_TIMING.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; SD-01/SD-08/SD-09 in this register | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-08 | OPEN — VERIFICATION | **Calibration/configuration release evidence** — complete the remaining calibration/configuration schema, integrity, power-loss/endurance, controlled-transfer, and commissioning evidence required by the release conditions. | `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; release conditions below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-09 | OPEN — VERIFICATION | **System verification** — all system verification groups remain OPEN; integrated evidence must be accepted before `SYSTEM_VERIFIED` can be assigned. | `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-10 | OPEN — DESIGN / VERIFICATION | **Sensor failure response** — define explicit handling for invalid, missing, stale, and failed sensor data, including motion-inhibit behaviour, owner, recovery, and evidence. | `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; SD-09; source-collected issue #2 below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-11 | OPEN — DESIGN / VERIFICATION | **Motor command acknowledgement** — define command-acceptance semantics separately from feedback freshness and heartbeat, including timeout, failure response, and target-controller capability. | SD-04/SD-05; CAN interface/evidence; source-collected issue #3 below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-12 | OPEN — DESIGN / VERIFICATION / RELEASE BLOCKER | **Fault-to-safe-state timing** — derive measurable stopping/fault-response limits from the machine risk assessment and verify worst-case stop behaviour at commissioned operating conditions. | SD-03; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; release condition #2; source-collected issue #4 below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-13 | OPEN — DESIGN / VERIFICATION | **Motor-controller semantics** — establish the exact MKS controller model/firmware, command/feedback semantics, acknowledgement behaviour, brake/stop behaviour, and recovery contract before freezing integration assumptions. | SD-05; CAN interface/evidence; safety checklist item 9 | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-14 | OPEN — DESIGN | **Safety boundary** — define the interface between application-level safety controls and the independent safety function, including ownership, inhibit path, reset, and non-automatic reactivation. | SD-25/SD-14; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; source-collected issue #8 below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-15 | OPEN — DESIGN / VERIFICATION | **MoveIt 2 / ros2_control mechanical model** — reconcile the authoritative joint model, differential end-effector mapping, limits, and control interfaces with the proposed SD-26 architecture. | SD-26/SD-07; `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; source-collected issue #9 below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-16 | OPEN — DESIGN / VERIFICATION | **Sensor update architecture** — define how the 500 Hz EKF consumes asynchronously updated sensor records and the maximum acceptable data age, including late/out-of-sequence data handling where applicable. | SD-01/SD-09; `Documentation/01_SYSTEM/SYSTEM_TIMING.md`; source-collected issue #10 below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+
+### 0.2 Current release gate summary
+
+The following remain release-relevant even when the detailed evidence work is owned elsewhere:
+
+1. Machine risk assessment / safety architecture.
+2. Independent safety-path validation.
+3. CAN target-hardware and physical-layer verification.
+4. SPI target-hardware and physical-layer verification.
+5. Angle-representation schema migration before changing wire-field meaning.
+6. Calibration storage and integrity testing.
+7. Acceptance of integrated system verification evidence.
+
+### 0.3 Reconciliation rules
+
+- A **design question** is not closed merely because an implementation exists.
+- A **component verification result** does not establish system verification.
+- A **proposed** requirement or architecture decision must remain explicitly proposed until approved by the applicable decision authority.
+- Historical TODOs and archived sprint checklists remain below only as provenance; they are not automatically promoted into live work.
+- A current GitHub Issue is a tracking mechanism, not a source of technical authority.
+- When a live item is closed, update the relevant authoritative source/evidence first where necessary, then update this register and close the corresponding GitHub Issue.
+- When current evidence contradicts an inherited checklist entry, the current authoritative source takes precedence and the discrepancy should be recorded rather than silently discarded.
+
+
 ---
 
 ## 1. System Decisions (SD-01 to SD-26)
@@ -63,7 +112,7 @@ Where a source uses a status term slightly differently from the table above (for
 |---|---|
 | `CTO_DECISION_BRIEF.md` | Historical proposal / decision-background evidence. As an approval record it is superseded by `CTO_DECISION_FINAL.md` (see Section 6 and the conflict noted in Section 3.5). |
 | `CTO_DECISION_FINAL.md` | Evidence of CTO approval for SD-01–SD-25, dated 2026-09-07, subject to the release conditions in Part 4. |
-| `SYSTEM_DECISIONS.md` | **Archived / non-normative historical representation.** Superseded by this reconciliation register for current indexing; current system requirement wording is maintained in `SYSTEM_REQUIREMENTS.md`, and architecture-level proposals remain in `ARCHITECTURE_DECISIONS.md`. |
+| `SYSTEM_DECISIONS.md` | **Non-authoritative decision index.** Use current approval evidence and current system requirements/architecture sources for authority; current system requirement wording is maintained in `SYSTEM_REQUIREMENTS.md`, and architecture-level proposals remain in `ARCHITECTURE_DECISIONS.md`. |
 | This register | Reconciliation *working* artifact assembled for readability. It is not itself a source of Karetao authority and does not resolve conflicts between the documents above. |
 
 SD-26 was added to `SYSTEM_DECISIONS.md` **after** the 2026-09-07 CTO approval and remains **PROPOSED — not CTO-approved** (see the SD-26 entry below). It is not part of the SD-01–SD-25 approval.
@@ -103,47 +152,6 @@ SD-26 was added to `SYSTEM_DECISIONS.md` **after** the 2026-09-07 CTO approval a
 | SD-25 | Independent safety mechanisms | MODIFIED |
 | SD-26 | Differential end-effector motor/DOF mapping | **PROPOSED (not yet CTO-approved)** |
 
-### 0. Live Reconciliation — Current Project Work
-
-This section is the **current work index**. Detailed historical source collation remains below for provenance, but an item should appear here only when current repository evidence supports it as live work.
-
-### 0.1 Current live items
-
-| ID | Current status | Live item | Primary source(s) | GitHub tracking |
-|---|---|---|---|---|
-| LIVE-01 | OPEN — DESIGN | **System motion-permission authority** — approve the owner/API, prerequisite set, freshness thresholds, inhibit semantics, and recovery/reactivation behaviour for the proposed aggregate motion gate. | `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; `Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-| LIVE-02 | OPEN — VERIFICATION / RELEASE BLOCKER | **CAN integration** — reconcile the current 875 kbps implementation with the 1 Mbps system target or formally revise the requirement; validate exact MKS controller behaviour, physical topology, timing, load, and recovery. | `Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-| LIVE-03 | OPEN — VERIFICATION / RELEASE BLOCKER | **SPI physical and host integration** — validate 5 MHz acceptance, DMA/NSS behaviour, DATA_READY GPIO path, signal integrity, sustained 512-byte transfers, and host-stall recovery on target hardware. | `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-| LIVE-04 | OPEN — IMPLEMENTATION / RELEASE BLOCKER | **TIME_SYNC implementation gaps** — close the five gaps identified by the 2026-09-21 audit before synchronization is treated as operational. | `Documentation/05_VERIFICATION/TIME_SYNC_CHARACTERISATION_EVIDENCE.md`; `Documentation/05_VERIFICATION/TIME_SYNC_VALIDATION.md`; `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md`; `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-| LIVE-05 | OPEN — RELEASE BLOCKER | **Independent safety release gates** — complete the machine risk assessment and required safety architecture/evidence, including E-stop, motor-disable, watchdog, brake/stop behaviour, stopping time, fault indication, reset, and applicable safety-rated architecture. | `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-| LIVE-06 | PROPOSED | **Differential end-effector mapping** — define and verify the two-motor/two-DOF transformation, limits, singular/invalid configurations, and its MoveIt 2 / ros2_control representation. | `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` (SYS-MECH-001); `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-| LIVE-07 | OPEN — DESIGN / VERIFICATION | **EKF and sensor-timing architecture** — define the asynchronous/multi-rate EKF handling policy, acceptable per-signal data age/staleness, and verify end-to-end timing against the measured ~46 ms six-axis sweep. | `Documentation/01_SYSTEM/SYSTEM_TIMING.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; SD-01/SD-08/SD-09 in this register | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-| LIVE-08 | OPEN — VERIFICATION | **Calibration/configuration release evidence** — complete the remaining schema, integrity, power-loss/endurance, controlled-transfer, and commissioning evidence required by the release conditions. | `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; release conditions below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-| LIVE-09 | OPEN — VERIFICATION | **System verification** — all system verification groups remain OPEN; integrated evidence must be accepted before `SYSTEM_VERIFIED` can be assigned. | `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
-
-### 0.2 Current release gate summary
-
-The following remain release-relevant even when the detailed evidence work is owned elsewhere:
-
-1. Machine risk assessment / safety architecture.
-2. Independent safety-path validation.
-3. CAN target-hardware and physical-layer verification.
-4. SPI target-hardware and physical-layer verification.
-5. Angle-representation schema migration before changing wire-field meaning.
-6. Calibration storage and integrity testing.
-7. Acceptance of integrated system verification evidence.
-
-### 0.3 Reconciliation rules
-
-- A **design question** is not closed merely because an implementation exists.
-- A **component verification result** does not establish system verification.
-- A **proposed** requirement or architecture decision must remain explicitly proposed until approved by the applicable decision authority.
-- Historical TODOs and archived sprint checklists remain below only as provenance; they are not automatically promoted into live work.
-- A current GitHub Issue is a tracking mechanism, not a source of technical authority.
-- When a live item is closed, update the relevant authoritative source/evidence first where necessary, then update this register and close the corresponding GitHub Issue.
-- When current evidence contradicts an inherited checklist entry, the current authoritative source takes precedence and the discrepancy should be recorded rather than silently discarded.
-
----
 
 ## 1.2 Detailed decisions
 
@@ -645,7 +653,7 @@ Source: `Open_Items_List.md`. These 145 questions are preserved as **source-coll
 - [ ] Validate per-motor direction, ID, and mapping consistency before multi-motor motion tests
 - [ ] Freeze a known-good CAN commissioning baseline (timing + topology + firmware revision + test evidence)
 
-### 3.2 Firmware / Protocol Documentation — Integration Gates
+### 3.2 Historical Source TODOs — Firmware / Protocol Integration Gates
 
 *Source: `TODO_List.md`, grouped by originating document.*
 
@@ -719,7 +727,7 @@ Five implementation gaps are recorded without proposed fixes — these are gaps 
 - [ ] Measure timestamp discontinuities when offset is stepped; validate acceptable for EKF and motion control
 - [ ] Measure round-trip TIME_SYNC latency and compare to transport uncertainty budget
 
-### 3.3 Contract Status — Next Actions
+### 3.3 Historical Source TODOs — Contract Status / Next Actions
 
 *Source: `Arm_Sensor_Hub/Documentation/CONTRACT_STATUS.md`*
 
@@ -740,7 +748,7 @@ Five implementation gaps are recorded without proposed fixes — these are gaps 
 - [ ] Preserve the successful CI firmware-build evidence, size/checksum output, and uploaded artifacts
 - [ ] Verify exact controller behaviour before freezing command semantics
 
-### 3.4 Safety Release Checklist — Source Records All Items as BLOCKED
+### 3.4 Historical Source Safety Checklist — Source Records All Items as BLOCKED
 
 *Historical source material only; current live safety work is indexed by LIVE-05 and related Section 0 items. Source: `Arm_Sensor_Hub/Documentation/SAFETY_RELEASE_CHECKLIST.md`. The source checklist records all 14 items as "BLOCKED: no artifact recorded". This is a source-reported status; its currency has not been independently revalidated against the current repository state in this working register. No item below is marked complete, and no missing safety evidence has been created or inferred here. Cross-referenced to the numbered release conditions in Part 4.*
 
@@ -794,21 +802,24 @@ See Section 3.4 for the more granular 14-item safety checklist mapped against th
 
 ---
 
-## 5. System-Level Issues Still Requiring Closure
+## 5. Source-Collected System Issues — Reconciled Against Section 0
 
-*Source: `SYSTEM_DECISIONS.md`. These are explicitly recorded as open requirements, not assumptions. Cross-references to related decisions are added for navigation.*
+*Source: `SYSTEM_DECISIONS.md`. These ten items are retained as source-collected issues. They are **not an independent live-work list**: current work status is represented only by Section 0. Each item is mapped to the live item(s) that now own its reconciliation.*
 
-1. **EKF timing** — EKF is currently set to 500 Hz; downstream constraints may require adjustment. This does not mean the complete six-axis sensor scan currently operates at 500 Hz. *(SD-01, SD-09)*
-2. **Sensor failure response** — the rule that sensor-data failure stops motion needs an explicit specification covering invalid, missing, stale, and failed sensors. *(SD-09; QUESTIONS Q37, Q92)*
-3. **Motor command acknowledgement** — must be separately defined from motor feedback and communication heartbeat. *(SD-04, SD-05)*
-4. **Fault-to-safe-state timing** — "stop immediately" must become a measurable timing requirement. *(SD-03; QUESTIONS Q94–95)*
-5. **Motion-permission authority** — define which system component has final authority to permit or inhibit motion. *(SD-02; QUESTIONS Q5)*
-6. **Differential end effector** — the two-motor/two-DOF mechanical transformation must be formally defined before the joint model is frozen. *(SD-26, SD-07)*
-7. **Motor-controller semantics** — exact MKS controller behaviour remains an integration dependency. *(SD-05)*
-8. **Safety boundary** — define the interface between application-level safety controls and the independent safety function. *(SD-25, SD-14)*
-9. **MoveIt 2 / ros2_control model** — the authoritative mechanical/joint model must include the differential end effector and its limits. *(SD-26)*
-10. **Sensor update architecture** — determine how a 500 Hz EKF consumes asynchronously updated sensor records and what maximum data age is acceptable. *(SD-01, SD-09)*
+| Source issue | Source-collected issue | Section 0 reconciliation |
+|---|---|---|
+| 1 | **EKF timing** — EKF is currently set to 500 Hz; downstream constraints may require adjustment. This does not mean the complete six-axis sensor scan currently operates at 500 Hz. | **LIVE-07 / LIVE-16** |
+| 2 | **Sensor failure response** — the rule that sensor-data failure stops motion needs an explicit specification covering invalid, missing, stale, and failed sensors. | **LIVE-10** |
+| 3 | **Motor command acknowledgement** — must be separately defined from motor feedback and communication heartbeat. | **LIVE-11 / LIVE-13** |
+| 4 | **Fault-to-safe-state timing** — “stop immediately” must become a measurable timing requirement. | **LIVE-12 / LIVE-05** |
+| 5 | **Motion-permission authority** — define which system component has final authority to permit or inhibit motion. | **LIVE-01 / LIVE-05** |
+| 6 | **Differential end effector** — the two-motor/two-DOF mechanical transformation must be formally defined before the joint model is frozen. | **LIVE-06 / LIVE-15**; SD-26 remains proposed |
+| 7 | **Motor-controller semantics** — exact MKS controller behaviour remains an integration dependency. | **LIVE-02 / LIVE-11 / LIVE-13** |
+| 8 | **Safety boundary** — define the interface between application-level safety controls and the independent safety function. | **LIVE-05 / LIVE-14** |
+| 9 | **MoveIt 2 / ros2_control model** — the authoritative mechanical/joint model must include the differential end effector and its limits. | **LIVE-06 / LIVE-15** |
+| 10 | **Sensor update architecture** — determine how a 500 Hz EKF consumes asynchronously updated sensor records and what maximum data age is acceptable. | **LIVE-07 / LIVE-16** |
 
+**Reconciliation rule:** If a source-collected issue is not mapped to a Section 0 item, it is not yet reconciled and must be either added to Section 0 or explicitly marked historical/deferred/superseded with supporting evidence. Section 0 is the sole live-work index in this document.
 ---
 
 ## 6. Source Document Status
@@ -820,7 +831,7 @@ See Section 3.4 for the more granular 14-item safety checklist mapped against th
 | `CTO_DECISION_BRIEF.md` | Original proposal for SD-01–SD-25 | **Superseded** by `CTO_DECISION_FINAL.md`; retained for historical justification text only |
 | `CTO_DECISION_FINAL.md` | CTO's approved decisions, SD-01–SD-25 | **Approved baseline**, dated 2026-09-07, subject to the 7 release conditions in Part 4 |
 | `Open_Items_List.md` | Source register of 145 open project questions (describes itself as "canonical" — see Section 2's qualifying note) | Active — none marked answered |
-| `SYSTEM_DECISIONS.md` | Historical decision index | **ARCHIVED / SUPERSEDED**. Preserve for provenance only. Current system requirement wording is maintained in `SYSTEM_REQUIREMENTS.md`; current architecture proposals are maintained in `ARCHITECTURE_DECISIONS.md`; this register is the reconciliation index. |
+| `SYSTEM_DECISIONS.md` | Historical decision index | **NON-AUTHORITATIVE / HISTORICAL INDEX**. Preserve for provenance; do not use it alone to establish current status. Current system requirement wording is maintained in `SYSTEM_REQUIREMENTS.md`; current architecture proposals are maintained in `ARCHITECTURE_DECISIONS.md`; this register is the reconciliation index. |
 | `TODO_List.md` | Consolidated TODOs pulled from ~15 other repository documents | Active — reorganized in Section 3 |
 
 This register (the document you are reading) is not listed above because it is not a Karetao source document — it is a reconciliation working artifact built from the sources above, and it does not itself carry authority over any of them.
