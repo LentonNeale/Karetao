@@ -99,11 +99,12 @@ The calibration model is versioned and integrity-protected.
 ## 5. Joint Angle Numeric Representation
 
 - **Canonical unit:** radians.
-- **Recommended external decimal precision:** **4 decimal places** (`0.0001 rad`, approximately `0.00573°`).
+- **Normal external decimal precision:** **4 decimal places** (`0.0001 rad`, approximately `0.00573°`).
 - **AS5600 nominal resolution:** 12-bit, 4096 codes/revolution, approximately `0.001534 rad` per code.
 - **Raw representation:** Raw AS5600 counts remain available diagnostically.
 - **Internal calculation precision:** Firmware/host calculations may retain greater floating-point precision where required for filtering, interpolation, or derivative calculations.
 - **Interpretation:** The four-decimal choice is a software representation requirement. It must not be interpreted as a claim that the physical joint angle is accurate to `0.0001 rad`.
+- **Wire-format constraint:** The current processed-millidegree wire field must not be silently reinterpreted as radians. A versioned schema change and documented conversion are required before the wire representation changes, as specified by SD-12.
 - **Supporting engineering reference:** `Arm_Sensor_Hub/Documentation/AS5600_PRECISION_AND_ACCURACY.md`.
 
 ## 6. Configuration Authority Boundary
