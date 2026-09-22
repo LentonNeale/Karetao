@@ -101,6 +101,14 @@ Asserted HIGH only when a complete frame is staged and DMA transfer is armed (ar
 
 ---
 
+## AS5600 Precision and Accuracy
+
+AS5600-specific resolution, physical accuracy considerations, magnetic/mechanical installation constraints, and the rationale for the system's four-decimal-radian representation are documented in:
+
+`Arm_Sensor_Hub/Documentation/AS5600_PRECISION_AND_ACCURACY.md`
+
+This component note is supporting engineering documentation. The AS5600 datasheet remains the authority for device specifications, while `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md` remains authoritative for the Karetao-level angle representation.
+
 ## Provenance
 
 Reconciled from `docs/project/hardware/arm-sensor-hub-baseline.md`. System-visible hardware baseline (MCU family, clock tree constraints, interface pin assignments that other components depend on) is included. Component-internal details (full pinout, peripheral configuration, DMA specifics, build system, service APIs) remain Arm Sensor Hub implementation authority.
