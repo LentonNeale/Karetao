@@ -1,6 +1,29 @@
 # Karetao Project — Decisions, Questions & Open Issues Register
 
-*Reorganized from the working collation in `final list/` (branch `doc/research-and-decisions`). This is a reformatting pass only: nothing below has been newly decided, answered, or resolved. Where source documents conflict or one supersedes another, that is flagged inline rather than settled. This register is itself a reconciliation working artifact — it is not a Karetao authority source, and nothing in it should be read as adjudicating between the source documents it organizes.*
+> **Live reconciliation register**
+>
+> This document is the current reconciliation index for Karetao decisions, questions, issues, verification work, and release gates. It is **not an authority source** and does not approve, modify, or supersede system requirements, interfaces, safety requirements, verification status, or approved decisions. Those authorities remain in the source documents identified below.
+>
+> The register intentionally preserves historical provenance, including inherited questions and TODOs, but **historical or superseded material must not be interpreted as current open work**. Current project work is identified in the live status sections below.
+>
+> **GitHub tracking:** [Issue #9 — Reconcile Decisions/Questions/Issues Register and create live GitHub issues](https://github.com/LentonNeale/Karetao/issues/9)
+>
+> **Reconciliation baseline:** current `main` repository state as reviewed for Issue #9. Do not hard-code a "current HEAD" hash in this file; the commit containing this document necessarily becomes the new HEAD.
+
+**Live status vocabulary**
+| Status | Meaning |
+|---|---|
+| **OPEN — DESIGN** | An unresolved system/design decision remains. |
+| **OPEN — IMPLEMENTATION** | A documented implementation gap remains. |
+| **OPEN — VERIFICATION** | The design/implementation exists but required evidence is not yet accepted. |
+| **OPEN — RELEASE BLOCKER** | Failure to close the item blocks the applicable release gate. |
+| **PROPOSED** | A proposed decision or requirement exists but is not approved. |
+| **DEFERRED** | Explicitly postponed; not current release work unless reactivated. |
+| **CLOSED / VERIFIED** | The cited work is complete at the stated scope; do not infer system-level verification unless the system verification authority says so. |
+| **HISTORICAL** | Retained for provenance only; not current work. |
+| **SUPERSEDED** | Replaced by a later applicable source. |
+
+**Status rule:** A checkbox or "open" wording inherited from an older source does **not** by itself make an item live. Current status must be established from the applicable authoritative source or current evidence.
 
 **Contents**
 - Status Vocabulary (definitions used throughout this register)
@@ -40,12 +63,12 @@ Where a source uses a status term slightly differently from the table above (for
 |---|---|
 | `CTO_DECISION_BRIEF.md` | Historical proposal / decision-background evidence. As an approval record it is superseded by `CTO_DECISION_FINAL.md` (see Section 6 and the conflict noted in Section 3.5). |
 | `CTO_DECISION_FINAL.md` | Evidence of CTO approval for SD-01–SD-25, dated 2026-09-07, subject to the release conditions in Part 4. |
-| `SYSTEM_DECISIONS.md` | Current working/index representation of the decision set, carrying SD-01–SD-25 forward and adding SD-26. Its currency is subject to its own source evidence (`CTO_DECISION_FINAL.md`) and to any newer approved decision — the index does not itself outrank the approval evidence it represents. |
+| `SYSTEM_DECISIONS.md` | **Archived / non-normative historical representation.** Superseded by this reconciliation register for current indexing; current system requirement wording is maintained in `SYSTEM_REQUIREMENTS.md`, and architecture-level proposals remain in `ARCHITECTURE_DECISIONS.md`. |
 | This register | Reconciliation *working* artifact assembled for readability. It is not itself a source of Karetao authority and does not resolve conflicts between the documents above. |
 
 SD-26 was added to `SYSTEM_DECISIONS.md` **after** the 2026-09-07 CTO approval and remains **PROPOSED — not CTO-approved** (see the SD-26 entry below). It is not part of the SD-01–SD-25 approval.
 
-**Overall status:** 18 APPROVED · 7 MODIFIED · 1 PROPOSED (SD-26) · 26 total.
+**Decision-set status:** SD-01–SD-25 are the approved/modified decision baseline subject to their release conditions; SD-26 remains **PROPOSED** and is not part of the 2026-09-07 CTO approval. Decision status is inherited from the applicable approval evidence; this register does not grant approval.
 
 > None of these decisions certify the assembled robot as safe or authorize energized motion. Every decision below is subject to the release conditions in Part 4.
 
@@ -80,7 +103,49 @@ SD-26 was added to `SYSTEM_DECISIONS.md` **after** the 2026-09-07 CTO approval a
 | SD-25 | Independent safety mechanisms | MODIFIED |
 | SD-26 | Differential end-effector motor/DOF mapping | **PROPOSED (not yet CTO-approved)** |
 
-### 1.2 Detailed decisions
+### 0. Live Reconciliation — Current Project Work
+
+This section is the **current work index**. Detailed historical source collation remains below for provenance, but an item should appear here only when current repository evidence supports it as live work.
+
+### 0.1 Current live items
+
+| ID | Current status | Live item | Primary source(s) | GitHub tracking |
+|---|---|---|---|---|
+| LIVE-01 | OPEN — DESIGN | **System motion-permission authority** — approve the owner/API, prerequisite set, freshness thresholds, inhibit semantics, and recovery/reactivation behaviour for the proposed aggregate motion gate. | `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; `Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-02 | OPEN — VERIFICATION / RELEASE BLOCKER | **CAN integration** — reconcile the current 875 kbps implementation with the 1 Mbps system target or formally revise the requirement; validate exact MKS controller behaviour, physical topology, timing, load, and recovery. | `Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-03 | OPEN — VERIFICATION / RELEASE BLOCKER | **SPI physical and host integration** — validate 5 MHz acceptance, DMA/NSS behaviour, DATA_READY GPIO path, signal integrity, sustained 512-byte transfers, and host-stall recovery on target hardware. | `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-04 | OPEN — IMPLEMENTATION / RELEASE BLOCKER | **TIME_SYNC implementation gaps** — close the five gaps identified by the 2026-09-21 audit before synchronization is treated as operational. | `Documentation/05_VERIFICATION/TIME_SYNC_CHARACTERISATION_EVIDENCE.md`; `Documentation/05_VERIFICATION/TIME_SYNC_VALIDATION.md`; `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md`; `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-05 | OPEN — RELEASE BLOCKER | **Independent safety release gates** — complete the machine risk assessment and required safety architecture/evidence, including E-stop, motor-disable, watchdog, brake/stop behaviour, stopping time, fault indication, reset, and applicable safety-rated architecture. | `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-06 | PROPOSED | **Differential end-effector mapping** — define and verify the two-motor/two-DOF transformation, limits, singular/invalid configurations, and its MoveIt 2 / ros2_control representation. | `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` (SYS-MECH-001); `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-07 | OPEN — DESIGN / VERIFICATION | **EKF and sensor-timing architecture** — define the asynchronous/multi-rate EKF handling policy, acceptable per-signal data age/staleness, and verify end-to-end timing against the measured ~46 ms six-axis sweep. | `Documentation/01_SYSTEM/SYSTEM_TIMING.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; SD-01/SD-08/SD-09 in this register | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-08 | OPEN — VERIFICATION | **Calibration/configuration release evidence** — complete the remaining schema, integrity, power-loss/endurance, controlled-transfer, and commissioning evidence required by the release conditions. | `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; release conditions below | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+| LIVE-09 | OPEN — VERIFICATION | **System verification** — all system verification groups remain OPEN; integrated evidence must be accepted before `SYSTEM_VERIFIED` can be assigned. | `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md` | Parent reconciliation: [#9](https://github.com/LentonNeale/Karetao/issues/9); dedicated issue to be created |
+
+### 0.2 Current release gate summary
+
+The following remain release-relevant even when the detailed evidence work is owned elsewhere:
+
+1. Machine risk assessment / safety architecture.
+2. Independent safety-path validation.
+3. CAN target-hardware and physical-layer verification.
+4. SPI target-hardware and physical-layer verification.
+5. Angle-representation schema migration before changing wire-field meaning.
+6. Calibration storage and integrity testing.
+7. Acceptance of integrated system verification evidence.
+
+### 0.3 Reconciliation rules
+
+- A **design question** is not closed merely because an implementation exists.
+- A **component verification result** does not establish system verification.
+- A **proposed** requirement or architecture decision must remain explicitly proposed until approved by the applicable decision authority.
+- Historical TODOs and archived sprint checklists remain below only as provenance; they are not automatically promoted into live work.
+- A current GitHub Issue is a tracking mechanism, not a source of technical authority.
+- When a live item is closed, update the relevant authoritative source/evidence first where necessary, then update this register and close the corresponding GitHub Issue.
+- When current evidence contradicts an inherited checklist entry, the current authoritative source takes precedence and the discrepancy should be recorded rather than silently discarded.
+
+---
+
+## 1.2 Detailed decisions
 
 #### SD-01 — System Timing Requirements
 **Status:** MODIFIED · Approved 2026-09-07
@@ -321,9 +386,11 @@ SD-26 was added to `SYSTEM_DECISIONS.md` **after** the 2026-09-07 CTO approval a
 
 ---
 
-## 2. Open Questions Register (145 questions)
+## 2. Historical / Source-Collected Questions (145 entries)
 
-Source: `Open_Items_List.md` — a source register containing 145 project questions. The source document describes itself as "the canonical register of project questions that must be answered before the corresponding requirements, interfaces, implementation decisions, or release gates can be considered complete"; that is the source document's own characterization of its role, not an authority determination made by this register or established by the Karetao documentation authority model. **All 145 are currently unanswered in the source; none carry a recorded resolution.** Numbering and grouping are preserved from the original. *Italicized notes* are added cross-references to the decisions in Part 1 where the connection is direct — they are navigation aids, not resolutions.
+Source: `Open_Items_List.md`. These 145 questions are preserved as **source-collected questions**, not as a claim that all 145 remain live project work today. The source document describes itself as "the canonical register of project questions that must be answered before the corresponding requirements, interfaces, implementation decisions, or release gates can be considered complete"; that is the source document's own characterization, not an authority determination made by this register.
+
+**Current-status rule:** A question is current work only when it is represented in the Live Reconciliation section or otherwise supported by current authoritative evidence. Questions answered or superseded by current system documents remain here for provenance.
 
 ### 2.1 System Scope and Architecture (Q1–10)
 *Related: SD-02, SD-23, SD-24; system issue #5 (motion-permission authority)*
@@ -753,9 +820,9 @@ See Section 3.4 for the more granular 14-item safety checklist mapped against th
 | `CTO_DECISION_BRIEF.md` | Original proposal for SD-01–SD-25 | **Superseded** by `CTO_DECISION_FINAL.md`; retained for historical justification text only |
 | `CTO_DECISION_FINAL.md` | CTO's approved decisions, SD-01–SD-25 | **Approved baseline**, dated 2026-09-07, subject to the 7 release conditions in Part 4 |
 | `Open_Items_List.md` | Source register of 145 open project questions (describes itself as "canonical" — see Section 2's qualifying note) | Active — none marked answered |
-| `SYSTEM_DECISIONS.md` | Current SD-01–SD-26 index, carrying `CTO_DECISION_FINAL.md` forward and adding SD-26 with live open-issue tracking | **Current index, not independent approval evidence.** Its own note states: "Do not use this summary to override a newer approved system decision." SD-26 is not CTO-approved. |
+| `SYSTEM_DECISIONS.md` | Historical decision index | **ARCHIVED / SUPERSEDED**. Preserve for provenance only. Current system requirement wording is maintained in `SYSTEM_REQUIREMENTS.md`; current architecture proposals are maintained in `ARCHITECTURE_DECISIONS.md`; this register is the reconciliation index. |
 | `TODO_List.md` | Consolidated TODOs pulled from ~15 other repository documents | Active — reorganized in Section 3 |
 
 This register (the document you are reading) is not listed above because it is not a Karetao source document — it is a reconciliation working artifact built from the sources above, and it does not itself carry authority over any of them.
 
-**Known internal inconsistency in the source collation:** `TODO_List.md` still lists the *Brief's* pending-approval checklist and "Approval record SD-01 to SD-25 is pending" as an open item, even though `CTO_DECISION_FINAL.md` already records that approval (with conditions) dated 2026-09-07. This was preserved as-is per the collation's stated intent not to resolve conflicts (see Section 3.5), but the FINAL document's exceptions/conditions (Part 4) should be treated as the live release gates going forward.
+**Reconciliation note:** Legacy source collation remains useful for provenance, but it is no longer sufficient to determine current status. In particular, any inherited item claiming that SD-01–SD-25 approval is pending is **SUPERSEDED / HISTORICAL** because `CTO_DECISION_FINAL.md` records the approval dated 2026-09-07. Current release conditions are the seven conditions in Part 4, and current live work is indexed in Section 0.
