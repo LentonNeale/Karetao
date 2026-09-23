@@ -12,7 +12,7 @@ The objective is to make every issue:
 - traceable to the relevant Karetao workstream or decision;
 - actionable without reconstructing missing context;
 - objectively closable through explicit acceptance criteria;
-- consistently categorised through the approved label taxonomy.
+- consistently categorised through the approved label taxonomy and Karetao Engineering Project fields.
 
 GitHub Issues are work-tracking records. They do not replace authoritative requirements, architecture, safety, verification, or decision documentation.
 
@@ -82,6 +82,9 @@ Use a direct action:
 Do not put the following into a title unless an established project convention explicitly requires it:
 
 - labels;
+- Project Status;
+- Project Workstream;
+- Project Work Type;
 - priority;
 - severity;
 - open/closed status;
@@ -209,7 +212,7 @@ For a simple issue, sections that are genuinely not applicable may be omitted. A
 
 Labels classify the **nature of the work**.
 
-They do not replace the issue title, project identifier, project status, or acceptance criteria.
+They do not replace the issue title, project identifier, Project Status, Project Workstream, Project Work Type, Project Priority, or acceptance criteria.
 
 ### 6.1 Required classification
 
@@ -265,7 +268,35 @@ Do not add technical labels merely because a component is mentioned incidentally
 
 ---
 
-## 7. Miscellaneous Issues
+## 7. Karetao Engineering Project Classification
+
+The Karetao Engineering Project provides planning metadata separately from labels.
+
+### 7.1 Workstream
+
+Set `Workstream` to `Documentation`, `Software`, `Hardware`, or `System` according to the primary engineering area.
+
+### 7.2 Work Type
+
+Set `Work Type` to `Design`, `Implementation`, or `Verification` according to the primary issue category.
+
+### 7.3 Priority
+
+Use `High`, `Medium`, or `Low` when a planning distinction is meaningful. Priority is project-planning metadata, not safety classification or engineering severity.
+
+### 7.4 Target Date
+
+Use only when there is a meaningful planning target. Do not interpret it as a system requirement unless authoritative documentation says so.
+
+### 7.5 Project Status
+
+Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Project Status represents work-tracking state and is not a substitute for the authoritative live status register.
+
+### 7.6 Milestones
+
+Use native GitHub Milestones for major engineering objectives or release groupings. Do not duplicate milestone information in labels or Project custom fields.
+
+## 8. Miscellaneous Issues
 
 Not every issue is a technical design, implementation, or verification task.
 
@@ -286,7 +317,7 @@ A new label should represent a stable and recurring category of work, not an exc
 
 ---
 
-## 8. Formal Identifiers
+## 9. Formal Identifiers
 
 Where an issue is part of an established project workstream, preserve the existing identifier.
 
@@ -304,7 +335,7 @@ The authoritative meaning and status of these identifiers remains defined by the
 
 ---
 
-## 9. Issue Creation Decision
+## 10. Issue Creation Decision
 
 Before creating an issue, the author or agent shall determine:
 
@@ -320,7 +351,7 @@ If these questions cannot be answered, the issue should normally be clarified be
 
 ---
 
-## 10. Closing Criteria
+## 11. Closing Criteria
 
 An issue should be closed only when its acceptance criteria have been satisfied or when GitHub's closure reason appropriately records that it is:
 
@@ -334,7 +365,7 @@ Where formal evidence is required, the issue shall reference the resulting evide
 
 ---
 
-## 11. Agent and Developer Rules
+## 12. Agent and Developer Rules
 
 Any developer or automated agent creating an issue shall:
 
@@ -347,11 +378,12 @@ Any developer or automated agent creating an issue shall:
 7. Identify verification evidence where applicable.
 8. Reference authoritative project documentation.
 9. Avoid creating labels for individual issues, temporary states, developers, branches, or priorities.
-10. Update this framework and the Issue Contract when the approved issue taxonomy changes.
+11. Do not treat Project Status, labels, or planning fields as authoritative engineering status.
+12. Update this framework and the Issue Contract when the approved issue taxonomy or Project-field convention changes.
 
 ---
 
-## 12. Relationship to the Issue Contract
+## 13. Relationship to the Issue Contract
 
 `.github/ISSUE_CONTRACT.md` defines the repository-level policy for GitHub Issues, including the approved label taxonomy and colour convention.
 
