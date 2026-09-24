@@ -1,0 +1,259 @@
+# Issue #12 — Clock Synchronization: Final Decisions
+
+**Status:** Living decision record. This is a single-maintainer project; these
+are recorded as the current contract in effect, not a frozen spec. Items
+marked *provisional* are expected to change as hardware data comes in —
+update this document in place when they do, rather than opening a parallel
+decision thread.
+
+**Supersedes:** the offset-only STM32 clock model described in the current
+`TIME_SYSTEM_INTERFACE.md`, and the fixed 500ms Pi-heartbeat motion-safety
+timeout (§7 below).
+
+---
+
+## 1. Sensor timestamp semantics — SETTLED
+
+`measurement_timestamp_us` remains the STM32 acquisition timestamp,
+expressed in the Pi-synchronized time domain via the ClockSync conversion
+model:
+
+```
+measurement_timestamp_us = STM32 acquisition local timestamp
+                            converted through current ClockSync model
+```
+
+Per-message SPI receipt timestamps are **observations that feed the
+ClockSync model**; they never replace the acquisition timestamp. Receipt
+time is transport-completion time, not sample time, and using it directly
+would fold SPI scheduling latency into the measurement.
+
+---
+
+## 2. STM32 fail-safe / liveness — SETTLED (mechanism), see §7 for the timeout itself
+
+The STM32 keeps a liveness state, independent of any offset/sync validity
+concept, so it can respond locally to loss of the Pi/link without depending
+on a message from the same failed link to tell it the link has failed.
+
+- **Reset condition:** an *accepted, valid* SPI message (not raw DMA
+  completion — a CRC-invalid or rejected frame does not count). A separate
+  raw-RX counter may still exist for electrical/link diagnostics.
+- **Evaluation context:** task context, in the existing main-loop cadence
+  alongside `HealthMonitor_Process()`. The ISR only records RX activity; it
+  does not evaluate the timeout.
+- **Failure behavior:** on expiry, latch `link_stale = true`. This is not a
+  halt — it auto-clears on the next accepted valid message.
+- **Motion gate:** `link_stale == true` fails closed — normal motion
+  permission is denied. Acquisition and diagnostics continue.
+
+**Relationship to the existing Pi-heartbeat timeout:** the previous 500ms
+Pi-heartbeat motion-safety mechanism and this liveness mechanism are being
+merged into one, not run as two independent fail-safes with unclear
+precedence — see §7. There is exactly one authoritative liveness timeout
+for motion gating going forward.
+
+---
+
+## 3. Architecture-change scope — SETTLED
+
+Removal of `TimeService_SyncStateAccept()`, `TimeService_SyncStateRefresh()`,
+the STM32 ±1s runtime offset-step check, and the STM32 5s
+synchronization-validity mechanism is approved as a **cross-component
+architecture change**, not a code-only deletion.
+
+This directly affects `SYS-SYNC-002`, `SYS-SYNC-004`, `SYS-SYNC-005`. The
+implementation must establish new ownership of: ClockSync state,
+offset/outlier rejection, synchronization validity, synchronization age,
+timestamp conversion, and loss-of-sync behavior — and update
+`protocol_test_main.c` / `service_test_main.c` around the new architecture
+rather than deleting the existing coverage outright.
+
+**Sequencing:** implement after §2/§7 (liveness/motion-gate) is resolved,
+since removing STM32-side validity depends on STM32 having a working
+independent fail-safe first.
+
+---
+
+## 4. Wire field: new field, not a redefinition — SETTLED
+
+Add `request_received_local_us` as a new field via a versioned payload
+extension. `frame_time_us` keeps its existing meaning (frame assembly time)
+and is not touched.
+
+**Scope:** carry `request_received_local_us` on **every applicable
+versioned response that contributes a ClockSync observation**, not just
+DIAGNOSTIC. Cost is ~8 bytes/response; at the nominal 100Hz sensor rate
+that's ~800 B/s, negligible against the fixed 512-byte transfer size.
+Definition:
+
+```
+request_received_local_us = STM32 local timestamp captured at SPI RX/DMA
+                             completion for the request that caused this
+                             response.
+```
+
+---
+
+## 5. TimeSyncSession drift-limit check — SETTLED
+
+Keep the existing Pi-side drift-limit check as a **transitional, secondary**
+safety/diagnostic check during migration. It must not independently modify
+ClockSync state or create a second acceptance policy — it only
+reports/flags discrepancies against the new ClockSync outlier rejection.
+Remove it in a later cleanup issue once ClockSync is hardware-validated.
+
+---
+
+## 6. DIAGNOSTIC v2 / GET_DIAGNOSTIC — SETTLED
+
+In scope for Issue #12. `GET_STATUS` currently returns ACK instead of a
+DIAGNOSTIC payload — building the diagnostic request/response path is
+required work, not something Issue #12 can defer, since otherwise the new
+ClockSync fields have no way to reach the Pi. Includes: `GET_DIAGNOSTIC`
+handling, DIAGNOSTIC response generation, schema versioning (v1 decoder
+stays v1-only, v2 explicitly selected), STM32 serialization, Pi decoding,
+and protocol/service tests for v1/v2 compatibility.
+
+---
+
+## 7. Timing thresholds — REVISED
+
+Two previously-conflated concepts, kept explicitly separate:
+
+### 7a. `counter_extension_gap_us` — provisional, 500ms
+
+Purpose: sanity-guard on the STM32's 32→64-bit TIM2 wrap extension (TIM2 =
+1MHz, 32-bit wrap ≈ 71.58 min). Detects "have I possibly missed a wrap,"
+not a link-health signal.
+
+```
+counter_extension_gap_us = 500,000   (500 ms)
+```
+
+Behavior on exceeding the threshold: **flag/reject the extension event, do
+not silently construct a potentially ambiguous 64-bit timestamp.** Recovery
+behavior (reject-and-halt vs. reject-and-rebase-from-current-counter) is
+still open — must be specified before this check is considered complete
+(see Open Items).
+
+**Marked for review:** 500ms is a starting value, not yet derived from
+characterization data. Before treating it as final, capture the actual
+worst-case interval between `TimeService_NowUs()`/extension calls under
+real load (reuse the Phase B/C hardware characterization work already
+planned for ClockSync) and set the threshold at a safety margin above the
+observed p99.9, while staying well below the 71.58-minute wrap limit. This
+is a pure timing/math property of TIM2 — it should stay a **fixed**
+conservative value, not dynamic; a threshold that changes while you're
+mid-calculation of "how many wraps happened" adds ambiguity to the exact
+thing it exists to remove.
+
+### 7b. `link_liveness_timeout_us` — moving to count-based, dynamic
+
+This replaces both the old 5s `link_stale` proposal and the existing fixed
+500ms Pi-heartbeat motion-safety timeout with **one** mechanism.
+
+**Model:** count consecutive missed expected messages rather than measuring
+raw elapsed time, and vary the trip threshold by whether the arm is
+currently moving.
+
+```
+missed_count:
+    incremented once per expected-message interval with no accepted,
+    valid SPI message received
+    reset to 0 on any accepted, valid SPI message
+
+expected_message_interval_us:
+    derived from the configured TIME_SYNC/telemetry cadence
+    (contract allows 1–10 Hz configurable; use the currently configured
+    rate, not a hardcoded assumption)
+
+trip threshold:
+    missed_count >= N_moving   while arm is in a moving state
+    missed_count >= N_idle     while arm is idle/stationary
+    (N_moving < N_idle — tighter tolerance while motion consequences
+    are live)
+
+on trip:
+    link_stale = true   -> motion gate fails closed (per §2)
+    on next accepted valid message: missed_count resets, link_stale clears
+```
+
+**Why count-based:** less sensitive to loop/scheduling jitter than a pure
+wall-clock timeout, and lets the tolerance reflect actual risk (tight while
+moving, looser while idle) rather than one number covering both.
+
+**Explicitly separate from `counter_extension_gap_us`:** they may happen to
+share similar magnitudes at some point, but must remain independently
+configured. Conflating them risks a future change to one silently altering
+the other's behavior (this was the same trap `max_gap_us` vs. the old
+`link_liveness_timeout_us` fixed-5s draft was in before this revision).
+
+**Status:** treat this as replacing the existing fixed 500ms Pi-heartbeat
+requirement, so it needs the same weight as §3 — a system-requirements and
+verification-evidence update, not just a code change, even on a
+single-maintainer project, because it changes an already-documented safety
+contract.
+
+---
+
+## Open items / research still required
+
+1. **Recovery behavior after a rejected counter-extension gap (§7a)** —
+   define exactly what happens next: hold last-good value, rebase from
+   current counter, or something else. Not yet specified.
+2. **`counter_extension_gap_us` final value (§7a)** — 500ms is provisional;
+   revisit once hardware characterization data (Phase B/C) exists.
+3. **`N_moving` / `N_idle` values and `expected_message_interval_us` source
+   (§7b)** — need real numbers before this is implementable. Suggested
+   starting point: derive `N_idle` from whatever the old 500ms fixed
+   timeout implied at the current cadence, and pick `N_moving` tighter from
+   there, then tune against real operating data rather than guessing both
+   from scratch.
+4. **What "arm is moving" means as an input to §7b** — needs an existing
+   motion-state signal identified (or created) that the liveness check can
+   read without introducing a circular dependency on the thing it's meant
+   to protect.
+5. **Update `SYS-SYNC-002/004/005` and the motion-safety requirement
+   currently specifying the fixed 500ms heartbeat** to reflect §7b before
+   implementation, since this is a contract change, not an internal detail.
+
+---
+
+## Implementation sequencing
+
+1. Resolve `link_stale` / motion-gate mechanism (§2) — build with
+   count-based liveness (§7b) directly rather than the old fixed-timeout
+   version, since that's now the target design.
+2. Freeze ClockSync ownership and acceptance semantics.
+3. Add ISR raw-counter capture + task-context 64-bit extension with the
+   `counter_extension_gap_us` guard (§7a) and defined recovery behavior
+   (Open Item 1).
+4. Add `request_received_local_us` to the versioned wire schema (§4).
+5. Extend `TimingSession.transact()` → `ClockSync.record_exchange()`.
+6. Implement DIAGNOSTIC v2 + `GET_DIAGNOSTIC` (§6).
+7. Migrate/remove STM32 `SyncStateAccept`/`Refresh` (§3).
+8. Update Pi `TimeSyncSession`, retaining the transitional drift check (§5).
+9. Update `protocol_test_main.c` / `service_test_main.c`.
+10. Update system requirements, interface documentation, and verification
+    evidence — including the §7b motion-safety requirement change.
+
+---
+
+## Architectural invariant
+
+```
+STM32 acquisition timestamp
+        |
+        v
+STM32 local monotonic clock
+        |
+        v
+ClockSync conversion model  <---  SPI receive timestamps (observations)
+        |
+        v
+synchronized measurement_timestamp_us
+```
+
+The SPI receipt timestamp feeds the clock model; it never replaces the
+measurement acquisition timestamp.
