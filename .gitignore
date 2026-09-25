@@ -1,0 +1,2 @@
+stages/*/output/*
+!stages/*/output/.gitkeep
