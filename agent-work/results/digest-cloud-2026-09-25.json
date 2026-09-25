@@ -1,0 +1,799 @@
+{
+ "schema": "icm-efficiency-digest/1",
+ "source": {
+  "sessions": 1,
+  "by_mode": {
+   "interactive": 1
+  },
+  "subagent_transcripts": 13,
+  "date_range": [
+   "2026-09-25",
+   "2026-09-25"
+  ],
+  "patterns_include_headless": true
+ },
+ "user_prompts": {
+  "count": 25,
+  "avg_chars": 606
+ },
+ "tokens_by_model": {
+  "claude-opus-5-5": {
+   "input": 803,
+   "cache_read": 85844212,
+   "cache_create": 744731,
+   "output": 453928,
+   "messages": 375
+  },
+  "claude-sonnet-5": {
+   "input": 94,
+   "cache_read": 2593145,
+   "cache_create": 533919,
+   "output": 324,
+   "messages": 47
+  },
+  "claude-haiku-4-5-20251001": {
+   "input": 7300,
+   "cache_read": 57169833,
+   "cache_create": 1911973,
+   "output": 4495,
+   "messages": 895
+  }
+ },
+ "tokens_by_mode": {
+  "interactive": {
+   "input": 8197,
+   "cache_read": 145607190,
+   "cache_create": 3190623,
+   "output": 458747,
+   "messages": 1317
+  }
+ },
+ "tools": [
+  {
+   "id": "T1",
+   "tool": "Bash",
+   "calls": 308,
+   "result_tokens_est": 77885,
+   "sessions": 1
+  },
+  {
+   "id": "T2",
+   "tool": "Read",
+   "calls": 120,
+   "result_tokens_est": 194178,
+   "sessions": 1
+  },
+  {
+   "id": "T3",
+   "tool": "Edit",
+   "calls": 56,
+   "result_tokens_est": 5095,
+   "sessions": 1
+  },
+  {
+   "id": "T4",
+   "tool": "Write",
+   "calls": 52,
+   "result_tokens_est": 2146,
+   "sessions": 1
+  },
+  {
+   "id": "T5",
+   "tool": "Agent",
+   "calls": 13,
+   "result_tokens_est": 3419,
+   "sessions": 1
+  },
+  {
+   "id": "T6",
+   "tool": "SubagentHandback",
+   "calls": 13,
+   "result_tokens_est": 198,
+   "sessions": 1
+  },
+  {
+   "id": "T7",
+   "tool": "SendUserFile",
+   "calls": 7,
+   "result_tokens_est": 498,
+   "sessions": 1
+  },
+  {
+   "id": "T8",
+   "tool": "ToolSearch",
+   "calls": 3,
+   "result_tokens_est": 0,
+   "sessions": 1
+  },
+  {
+   "id": "T9",
+   "tool": "mcp__github__add_issue_comment",
+   "calls": 3,
+   "result_tokens_est": 81,
+   "sessions": 1
+  },
+  {
+   "id": "T10",
+   "tool": "AskUserQuestion",
+   "calls": 2,
+   "result_tokens_est": 455,
+   "sessions": 1
+  },
+  {
+   "id": "T11",
+   "tool": "Grep",
+   "calls": 2,
+   "result_tokens_est": 526,
+   "sessions": 1
+  },
+  {
+   "id": "T12",
+   "tool": "SendMessage",
+   "calls": 1,
+   "result_tokens_est": 44,
+   "sessions": 1
+  },
+  {
+   "id": "T13",
+   "tool": "mcp__github__list_pull_requests",
+   "calls": 1,
+   "result_tokens_est": 337,
+   "sessions": 1
+  },
+  {
+   "id": "T14",
+   "tool": "mcp__github__create_pull_request",
+   "calls": 1,
+   "result_tokens_est": 21,
+   "sessions": 1
+  },
+  {
+   "id": "T15",
+   "tool": "mcp__Claude_Code_Remote__subscribe_pr_activity",
+   "calls": 1,
+   "result_tokens_est": 58,
+   "sessions": 1
+  },
+  {
+   "id": "T16",
+   "tool": "mcp__Claude_Code_Remote__send_later",
+   "calls": 1,
+   "result_tokens_est": 27,
+   "sessions": 1
+  },
+  {
+   "id": "T17",
+   "tool": "ReadNotifications",
+   "calls": 1,
+   "result_tokens_est": 2979,
+   "sessions": 1
+  }
+ ],
+ "bash_shapes": [
+  {
+   "id": "B1",
+   "shape": "grep",
+   "calls": 56,
+   "result_tokens_est": 5877,
+   "sessions": 1
+  },
+  {
+   "id": "B2",
+   "shape": "python3 -m unittest",
+   "calls": 49,
+   "result_tokens_est": 21147,
+   "sessions": 1
+  },
+  {
+   "id": "B3",
+   "shape": "python3 <script>",
+   "calls": 36,
+   "result_tokens_est": 3126,
+   "sessions": 1
+  },
+  {
+   "id": "B4",
+   "shape": "sed",
+   "calls": 35,
+   "result_tokens_est": 3791,
+   "sessions": 1
+  },
+  {
+   "id": "B5",
+   "shape": "ls",
+   "calls": 33,
+   "result_tokens_est": 3782,
+   "sessions": 1
+  },
+  {
+   "id": "B6",
+   "shape": "python3 smoke.py",
+   "calls": 31,
+   "result_tokens_est": 6595,
+   "sessions": 1
+  },
+  {
+   "id": "B7",
+   "shape": "python3 <stdin-script>",
+   "calls": 24,
+   "result_tokens_est": 2019,
+   "sessions": 1
+  },
+  {
+   "id": "B8",
+   "shape": "git diff",
+   "calls": 23,
+   "result_tokens_est": 4313,
+   "sessions": 1
+  },
+  {
+   "id": "B9",
+   "shape": "git status",
+   "calls": 22,
+   "result_tokens_est": 730,
+   "sessions": 1
+  },
+  {
+   "id": "B10",
+   "shape": "find",
+   "calls": 20,
+   "result_tokens_est": 2755,
+   "sessions": 1
+  },
+  {
+   "id": "B11",
+   "shape": "git show",
+   "calls": 14,
+   "result_tokens_est": 7855,
+   "sessions": 1
+  },
+  {
+   "id": "B12",
+   "shape": "git add",
+   "calls": 13,
+   "result_tokens_est": 161,
+   "sessions": 1
+  },
+  {
+   "id": "B13",
+   "shape": "git commit",
+   "calls": 13,
+   "result_tokens_est": 161,
+   "sessions": 1
+  },
+  {
+   "id": "B14",
+   "shape": "git log",
+   "calls": 12,
+   "result_tokens_est": 648,
+   "sessions": 1
+  },
+  {
+   "id": "B15",
+   "shape": "cat",
+   "calls": 12,
+   "result_tokens_est": 6161,
+   "sessions": 1
+  },
+  {
+   "id": "B16",
+   "shape": "cp",
+   "calls": 10,
+   "result_tokens_est": 155,
+   "sessions": 1
+  },
+  {
+   "id": "B17",
+   "shape": "-d",
+   "calls": 9,
+   "result_tokens_est": 156,
+   "sessions": 1
+  },
+  {
+   "id": "B18",
+   "shape": "python3 helper.py",
+   "calls": 8,
+   "result_tokens_est": 419,
+   "sessions": 1
+  },
+  {
+   "id": "B19",
+   "shape": "gui.sh",
+   "calls": 8,
+   "result_tokens_est": 391,
+   "sessions": 1
+  },
+  {
+   "id": "B20",
+   "shape": "mkdir",
+   "calls": 8,
+   "result_tokens_est": 730,
+   "sessions": 1
+  },
+  {
+   "id": "B21",
+   "shape": "python3 stage_status.py",
+   "calls": 7,
+   "result_tokens_est": 1914,
+   "sessions": 1
+  },
+  {
+   "id": "B22",
+   "shape": "head",
+   "calls": 5,
+   "result_tokens_est": 1672,
+   "sessions": 1
+  },
+  {
+   "id": "B23",
+   "shape": "sleep",
+   "calls": 5,
+   "result_tokens_est": 55,
+   "sessions": 1
+  },
+  {
+   "id": "B24",
+   "shape": "pkill",
+   "calls": 5,
+   "result_tokens_est": 55,
+   "sessions": 1
+  },
+  {
+   "id": "B25",
+   "shape": "setsid",
+   "calls": 5,
+   "result_tokens_est": 64,
+   "sessions": 1
+  },
+  {
+   "id": "B26",
+   "shape": "git fetch",
+   "calls": 4,
+   "result_tokens_est": 96,
+   "sessions": 1
+  },
+  {
+   "id": "B27",
+   "shape": "curl",
+   "calls": 4,
+   "result_tokens_est": 43,
+   "sessions": 1
+  },
+  {
+   "id": "B28",
+   "shape": "claude",
+   "calls": 4,
+   "result_tokens_est": 778,
+   "sessions": 1
+  },
+  {
+   "id": "B29",
+   "shape": "git branch",
+   "calls": 3,
+   "result_tokens_est": 83,
+   "sessions": 1
+  },
+  {
+   "id": "B30",
+   "shape": "3",
+   "calls": 3,
+   "result_tokens_est": 40,
+   "sessions": 1
+  },
+  {
+   "id": "B31",
+   "shape": "git switch",
+   "calls": 3,
+   "result_tokens_est": 60,
+   "sessions": 1
+  },
+  {
+   "id": "B32",
+   "shape": "helper-tasks.json",
+   "calls": 3,
+   "result_tokens_est": 14,
+   "sessions": 1
+  },
+  {
+   "id": "B33",
+   "shape": "git checkout",
+   "calls": 2,
+   "result_tokens_est": 38,
+   "sessions": 1
+  },
+  {
+   "id": "B34",
+   "shape": "git push",
+   "calls": 2,
+   "result_tokens_est": 41,
+   "sessions": 1
+  },
+  {
+   "id": "B35",
+   "shape": "mv",
+   "calls": 2,
+   "result_tokens_est": 46,
+   "sessions": 1
+  },
+  {
+   "id": "B36",
+   "shape": "30",
+   "calls": 2,
+   "result_tokens_est": 68,
+   "sessions": 1
+  },
+  {
+   "id": "B37",
+   "shape": "rm",
+   "calls": 2,
+   "result_tokens_est": 84,
+   "sessions": 1
+  },
+  {
+   "id": "B38",
+   "shape": "git merge-tree",
+   "calls": 2,
+   "result_tokens_est": 148,
+   "sessions": 1
+  },
+  {
+   "id": "B39",
+   "shape": "env",
+   "calls": 2,
+   "result_tokens_est": 95,
+   "sessions": 1
+  },
+  {
+   "id": "B40",
+   "shape": "git merge",
+   "calls": 2,
+   "result_tokens_est": 53,
+   "sessions": 1
+  }
+ ],
+ "sequences": [
+  {
+   "id": "S1",
+   "steps": [
+    "Bash:sed",
+    "Bash:python3 <stdin-script>"
+   ],
+   "count": 7,
+   "sessions": 1
+  },
+  {
+   "id": "S2",
+   "steps": [
+    "Agent:general-purpose",
+    "Agent:general-purpose"
+   ],
+   "count": 6,
+   "sessions": 1
+  },
+  {
+   "id": "S3",
+   "steps": [
+    "Bash:grep",
+    "Bash:sed"
+   ],
+   "count": 6,
+   "sessions": 1
+  },
+  {
+   "id": "S4",
+   "steps": [
+    "Bash:python3 <stdin-script>",
+    "Bash:sed"
+   ],
+   "count": 5,
+   "sessions": 1
+  },
+  {
+   "id": "S5",
+   "steps": [
+    "Write",
+    "Bash:python3 <stdin-script>"
+   ],
+   "count": 4,
+   "sessions": 1
+  },
+  {
+   "id": "S6",
+   "steps": [
+    "Write",
+    "SendUserFile"
+   ],
+   "count": 3,
+   "sessions": 1
+  },
+  {
+   "id": "S7",
+   "steps": [
+    "SendUserFile",
+    "Bash:git status"
+   ],
+   "count": 3,
+   "sessions": 1
+  },
+  {
+   "id": "S8",
+   "steps": [
+    "Bash:python3 <stdin-script>",
+    "Agent:general-purpose"
+   ],
+   "count": 3,
+   "sessions": 1
+  },
+  {
+   "id": "S9",
+   "steps": [
+    "Agent:general-purpose",
+    "Bash:git status"
+   ],
+   "count": 3,
+   "sessions": 1
+  },
+  {
+   "id": "S10",
+   "steps": [
+    "Bash:python3 <stdin-script>",
+    "Agent:general-purpose",
+    "Agent:general-purpose"
+   ],
+   "count": 3,
+   "sessions": 1
+  },
+  {
+   "id": "S11",
+   "steps": [
+    "Agent:general-purpose",
+    "Agent:general-purpose",
+    "Agent:general-purpose"
+   ],
+   "count": 3,
+   "sessions": 1
+  },
+  {
+   "id": "S12",
+   "steps": [
+    "Bash:grep",
+    "Bash:sed",
+    "Bash:python3 <stdin-script>"
+   ],
+   "count": 3,
+   "sessions": 1
+  },
+  {
+   "id": "S13",
+   "steps": [
+    "Bash:sed",
+    "Bash:python3 <stdin-script>",
+    "Bash:sed"
+   ],
+   "count": 3,
+   "sessions": 1
+  }
+ ],
+ "repeated_reads": [
+  {
+   "id": "R1",
+   "file": "tests/gui/smoke.py",
+   "reads": 15,
+   "sessions": 1,
+   "max_reads_one_session": 15,
+   "result_tokens_est": 21340
+  },
+  {
+   "id": "R2",
+   "file": "agents/haiku-dev.md",
+   "reads": 13,
+   "sessions": 1,
+   "max_reads_one_session": 13,
+   "result_tokens_est": 3497
+  },
+  {
+   "id": "R3",
+   "file": "stages/04-implement/output/icm-gui-plan.md",
+   "reads": 13,
+   "sessions": 1,
+   "max_reads_one_session": 13,
+   "result_tokens_est": 99272
+  },
+  {
+   "id": "R4",
+   "file": "gui/views.py",
+   "reads": 13,
+   "sessions": 1,
+   "max_reads_one_session": 13,
+   "result_tokens_est": 14313
+  },
+  {
+   "id": "R5",
+   "file": "gui/server.py",
+   "reads": 12,
+   "sessions": 1,
+   "max_reads_one_session": 12,
+   "result_tokens_est": 14953
+  },
+  {
+   "id": "R6",
+   "file": "scripts/icmlib.py",
+   "reads": 7,
+   "sessions": 1,
+   "max_reads_one_session": 7,
+   "result_tokens_est": 14100
+  },
+  {
+   "id": "R7",
+   "file": "scripts/checkpoint_policy.py",
+   "reads": 6,
+   "sessions": 1,
+   "max_reads_one_session": 6,
+   "result_tokens_est": 5348
+  },
+  {
+   "id": "R8",
+   "file": "scripts/helper.py",
+   "reads": 6,
+   "sessions": 1,
+   "max_reads_one_session": 6,
+   "result_tokens_est": 6085
+  },
+  {
+   "id": "R9",
+   "file": "gui/fixtures/demo/stages/05-verify/output/helper-tasks.json",
+   "reads": 4,
+   "sessions": 1,
+   "max_reads_one_session": 4,
+   "result_tokens_est": 2226
+  },
+  {
+   "id": "R10",
+   "file": "tests/unit/test_helper.py",
+   "reads": 3,
+   "sessions": 1,
+   "max_reads_one_session": 3,
+   "result_tokens_est": 1559
+  },
+  {
+   "id": "R11",
+   "file": "gui/fixtures/demo/icm-project/people.md",
+   "reads": 3,
+   "sessions": 1,
+   "max_reads_one_session": 3,
+   "result_tokens_est": 81
+  },
+  {
+   "id": "R12",
+   "file": "<external>",
+   "reads": 2,
+   "sessions": 1,
+   "max_reads_one_session": 2,
+   "result_tokens_est": 0
+  },
+  {
+   "id": "R13",
+   "file": "gui/fixtures/demo/stages/01-intake/output/11-demo-docs-brief-review.md",
+   "reads": 2,
+   "sessions": 1,
+   "max_reads_one_session": 2,
+   "result_tokens_est": 67
+  },
+  {
+   "id": "R14",
+   "file": "gui/fixtures/demo/stages/05-verify/output/14-demo-fw-evidence.md",
+   "reads": 2,
+   "sessions": 1,
+   "max_reads_one_session": 2,
+   "result_tokens_est": 172
+  },
+  {
+   "id": "R15",
+   "file": "scripts/review.py",
+   "reads": 2,
+   "sessions": 1,
+   "max_reads_one_session": 2,
+   "result_tokens_est": 3616
+  },
+  {
+   "id": "R16",
+   "file": "gui/fixtures/demo/stages/01-intake/output/10-demo-led-brief.md",
+   "reads": 2,
+   "sessions": 1,
+   "max_reads_one_session": 2,
+   "result_tokens_est": 313
+  },
+  {
+   "id": "R17",
+   "file": "scripts/stage_status.py",
+   "reads": 2,
+   "sessions": 1,
+   "max_reads_one_session": 2,
+   "result_tokens_est": 2314
+  }
+ ],
+ "large_results": [
+  {
+   "id": "L1",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 8187
+  },
+  {
+   "id": "L2",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 8106
+  },
+  {
+   "id": "L3",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 8106
+  },
+  {
+   "id": "L4",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 8106
+  },
+  {
+   "id": "L5",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 8014
+  },
+  {
+   "id": "L6",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 7926
+  },
+  {
+   "id": "L7",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 7926
+  },
+  {
+   "id": "L8",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 7784
+  },
+  {
+   "id": "L9",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 7784
+  },
+  {
+   "id": "L10",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 7784
+  },
+  {
+   "id": "L11",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 7784
+  },
+  {
+   "id": "L12",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 6504
+  },
+  {
+   "id": "L13",
+   "source": "Read:stages/04-implement/output/icm-gui-plan.md",
+   "result_tokens_est": 5255
+  },
+  {
+   "id": "L14",
+   "source": "Bash:cat",
+   "result_tokens_est": 3688
+  },
+  {
+   "id": "L15",
+   "source": "Read:tests/gui/smoke.py",
+   "result_tokens_est": 3476
+  }
+ ],
+ "subagents": [
+  {
+   "id": "A1",
+   "agent": "general-purpose",
+   "spawns": 13
+  }
+ ]
+}

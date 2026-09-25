@@ -1,6 +1,6 @@
 # Board — ICM GUI
 
-**Coordination PR:** #4 (draft, never merged) · **Contract:** `agent-work/CONTRACT.md` v1 · **Plans:** `agent-work/plans/`
+**Coordination PR:** #4 (draft, never merged) · **Contract:** `agent-work/CONTRACT.md` v1.1 · **Plans:** `agent-work/plans/`
 
 **Plan approval:** `icm-gui-fieldfix-plan.md` is **proposed**, not yet approved by the User. Open questions for the User: the stage 01 status `accepted`, and C2 at T1. `icm-gui-chat-plan.md` is **proposed**; it follows the fieldfix plan.
 
@@ -8,7 +8,7 @@
 
 | WP | Plan | Owner | Status | Approved | Branch / PR | Budget | Used | Notes |
 |---|---|---|---|---|---|---|---|---|
-| CONN | this contract | both | in-progress | yes (User asked for the connection test) | `agent-work/icm-gui` / #4 | 20k | | Handshake: local HELLO → cloud ACK → local CONNECTED |
+| CONN-R | `plans/conn-review-plan.md` | both | in-progress | yes (the User asked for the connection test, the process review and the boundary tests) | `agent-work/icm-gui` / #4 | 60k per side | cloud: phase B evidence done | Phases A→F: handshake, evidence, boundary tests, independent review, cross-review, joint summary for the User |
 | WP0 | fieldfix | cloud | proposed | no | `icm-gui-prototype` | 5k | | Merge `main` a60f2ff |
 | FF1a | fieldfix | cloud | proposed | no | `icm-gui-prototype` | 15k | | Workspace contracts; User CHECKPOINT on the diff |
 | FF1b | fieldfix | cloud | proposed | no | | 100k | | Also the "empty tier" rule (moved from FF2) |

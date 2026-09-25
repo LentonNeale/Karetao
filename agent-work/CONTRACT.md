@@ -1,6 +1,6 @@
 # Agent working contract — ICM GUI (cloud ⇄ local)
 
-**Version:** 1 (2026-09-25). A change to this contract needs the User's approval, recorded as a `DECISION` note.
+**Version:** 1.1 (2026-09-25; adds the `probe:` header for the User-requested boundary tests). A change to this contract needs the User's approval, recorded as a `DECISION` note.
 
 ## 1. Parties and authority
 
@@ -41,6 +41,7 @@ A message is a file in `notes/` **plus** a comment on the coordination PR. The f
   type: HELLO | ACK | CLAIM | DONE | BLOCKED | QUESTION | REVIEW | DECISION | INFO
   re: <WP id or topic>
   needs: reply | review | nothing
+  probe: yes          # only on boundary-test probes (plans/conn-review-plan.md §C2); omit otherwise
   ```
   The body follows. Keep it short and factual, and link to commits, pull requests and files rather than pasting them.
 - **The PR comment** is exactly one line:
