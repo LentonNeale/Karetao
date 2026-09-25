@@ -384,7 +384,7 @@ class TestFindBrief(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp()
         self.root = Path(self.tmpdir)
         (self.root / "stages" / "01-intake" / "output").mkdir(parents=True)
-        (self.root / "stages" / "01-intake" / "output" / "demo-brief.md").touch()
+        (self.root / "stages" / "01-intake" / "output" / "12-demo-brief.md").write_text("```\ntask: demo\n```\n")
 
     def tearDown(self):
         """Clean up temporary directory."""

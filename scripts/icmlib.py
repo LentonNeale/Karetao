@@ -319,14 +319,14 @@ def find_brief(root: Path = None, task: str = None) -> Path | None:
         return None
 
     root = Path(root)
-    brief_pattern = f"{task}-brief.md"
-
-    # Search in 01-intake/output
     intake_output = root / "stages" / "01-intake" / "output"
-    if intake_output.exists():
-        brief_file = intake_output / brief_pattern
-        if brief_file.exists():
-            return brief_file
+    if not intake_output.exists():
+        return None
+
+    # The brief is the -brief.md whose header names this task (the file name may carry an issue prefix)
+    for f in sorted(intake_output.glob("*-brief.md")):
+        if read_header(f).get("task") == task:
+            return f
 
     return None
 
