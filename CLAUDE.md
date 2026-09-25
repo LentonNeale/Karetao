@@ -13,7 +13,9 @@ Karetao is a monorepo for a robotic arm platform:
 
 ## Working method (ICM)
 
-Task definition, issue tracking and delivery run through the ICM workspace. For any request to plan, track, implement or close work, read `workspace/CLAUDE.md`, then `workspace/CONTEXT.md`. Karetao's own settings (GitHub IDs, authority map, build commands) are in `icm-project/`. Simple, fully specified tasks are delegated to the `issue-clerk`, `build-runner` and `doc-checker` subagents, which run on cheaper models.
+All work in this repo, including audits, builds, questions and tracker changes, runs through the ICM workspace. Its Layer 0 rules and delegation table are imported below and apply to every request. Before starting multi-step work, read `workspace/CONTEXT.md` to route it. Karetao's own settings (GitHub IDs, authority map, build commands) are in `icm-project/`.
+
+@workspace/CLAUDE.md
 
 ## Commands
 
