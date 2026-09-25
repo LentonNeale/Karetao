@@ -114,6 +114,12 @@ The GUI **never writes to GitHub**. It only edits artifact headers and appends r
    git log --grep='git-subtree-dir: workspace' -1
    ```
    Note whether `--squash` was used, and the prefix (normally `workspace`).
+
+   **If nothing is found**, the workspace was built inside the project and published with `git subtree split`/`push`, so it has no link to this repo yet, and a plain `subtree pull` fails with unrelated histories. Record the link once, on your branch:
+   ```bash
+   git subtree split --prefix=workspace --rejoin
+   ```
+   Then pull as in step 3. Try it in a throwaway worktree first.
 3. Create a branch, e.g. `icm-gui-field-test`, then pull the GUI:
    ```bash
    git subtree pull --prefix=workspace https://github.com/LentonNeale/Karetao_Consulting icm-gui-prototype [--squash]
