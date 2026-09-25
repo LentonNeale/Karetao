@@ -22,3 +22,4 @@ echo "linked agents: $(cd "$ws/agents" && ls *.md | tr '\n' ' ')"
 for d in "$ws"/stages/*/; do mkdir -p "$d/output" "$d/references"; touch "$d/output/.gitkeep"; done
 chmod +x "$ws"/scripts/*.sh "$ws"/scripts/*.py
 echo "done"
+echo; "$ws/scripts/check-deps.sh" || echo "Some dependencies are missing: run workspace/scripts/check-deps.sh --install"

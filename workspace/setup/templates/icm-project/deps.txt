@@ -1,0 +1,2 @@
+# Tools this project needs for building and testing (read by workspace/scripts/check-deps.sh).
+# check | apt packages | note
