@@ -32,7 +32,7 @@ See [`Arm_Sensor_Hub/CMakePresets.json`](../CMakePresets.json),
 - CMake 3.22 or newer
 - Ninja
 - ARM GNU Embedded toolchain with `arm-none-eabi-gcc` and `arm-none-eabi-g++`
-- Python 3.10+ for Raspberry Pi-side scaffold tests
+- Python 3.12+ for Raspberry Pi-side scaffold tests
 - `gdb-multiarch` or equivalent debugger
 - ST-Link tools if you will flash or debug hardware
 
