@@ -56,14 +56,6 @@ class JsonStore(HelperStore):
     def __init__(self, path: Path, root: Path):
         self.path = Path(path)
         self.root = Path(root)
-        self._ensure_file()
-
-    def _ensure_file(self):
-        """Ensure the JSON file exists."""
-        if not self.path.exists():
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.path, "w") as f:
-                json.dump([], f)
 
     def _read_tasks(self) -> list[dict]:
         """Read all tasks from file."""
@@ -75,6 +67,8 @@ class JsonStore(HelperStore):
 
     def _write_tasks(self, tasks: list[dict]) -> None:
         """Atomically write tasks to file."""
+        # The file is created on the first write, so viewing tasks never writes (field feedback F6).
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         # Use a temporary file in the same directory for atomic write
         temp_fd, temp_path = tempfile.mkstemp(dir=self.path.parent)
         try:
