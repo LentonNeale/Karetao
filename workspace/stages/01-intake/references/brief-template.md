@@ -16,6 +16,7 @@ status: draft
 ## 8. Related
 ## 9. Priority
 ## 10. Evidence
+## 11. Delivery
 
 ## Open questions
 <!-- for the orchestrator: decisions, feasibility, anything that needs the tracker or the web -->
