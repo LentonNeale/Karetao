@@ -36,3 +36,5 @@ The main session (the most capable model) plans, decides, reviews every delegate
 | Builds, tests, evidence capture | `build-runner` | haiku |
 
 Run a single command yourself rather than spawning an agent for it. Give the agent the contract path and the input file paths, not a restated summary.
+
+**Reviewing is not redoing.** Read the agent's report and check that it answers the brief. Spot-check at most one claim cheaply, for example one file read. Never repeat the agent's work yourself: no re-running its commands and no writing your own version of its checks. If the report is incomplete or doubtful, re-delegate with a sharper brief, or tell the user what is missing. Redoing delegated work on the main model defeats the purpose of delegation.
