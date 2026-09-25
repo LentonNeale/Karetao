@@ -4,7 +4,8 @@ Match the request, then open only the listed contract.
 
 | Request | Go to |
 |---|---|
-| New idea, bug, question or "we should…" | `stages/01-intake/CONTEXT.md` |
+| New idea, bug, question or "we should…" | Suggest the user runs `workspace/scripts/liaison.sh` (a cheap Haiku intake session). If they'd rather stay here, follow `stages/01-intake/CONTEXT.md` directly |
+| "take brief <slug>" | `stages/01-intake/CONTEXT.md`, orchestrator steps 4–6 |
 | Create or update an issue, milestone or board fields from an agreed brief | `stages/02-issue-spec/CONTEXT.md` |
 | Design or decision work on an existing issue | `stages/03-design/CONTEXT.md` |
 | Implement an issue | `stages/04-implement/CONTEXT.md` |
