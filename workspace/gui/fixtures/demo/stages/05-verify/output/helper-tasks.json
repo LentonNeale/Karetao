@@ -1,0 +1,73 @@
+[
+  {
+    "id": "H1",
+    "task": "demo-fw",
+    "criterion": "AC2",
+    "title": "Flash firmware v0.3 to board A",
+    "instructions": "Flash the firmware binary to the hardware board using the standard procedure",
+    "priority": "High",
+    "blocks_approval": true,
+    "created": "2026-09-24T09:00:00Z",
+    "status": "blocked",
+    "assignee": "helper1",
+    "blocked_reason": "Awaiting hardware board delivery",
+    "result": "",
+    "result_path": ""
+  },
+  {
+    "id": "H2",
+    "task": "demo-hw",
+    "criterion": "AC1",
+    "title": "Assemble hardware components",
+    "instructions": "Assemble the hardware components according to the specification",
+    "priority": "High",
+    "blocks_approval": true,
+    "created": "2026-09-24T08:30:00Z",
+    "status": "todo",
+    "assignee": "helper1",
+    "result": "",
+    "result_path": ""
+  },
+  {
+    "id": "H3",
+    "task": "demo-led",
+    "criterion": "AC1",
+    "title": "Test LED control interface",
+    "instructions": "Verify that the LED control interface responds correctly to commands",
+    "priority": "Medium",
+    "blocks_approval": false,
+    "created": "2026-09-24T08:00:00Z",
+    "status": "doing",
+    "assignee": "helper1",
+    "result": "",
+    "result_path": ""
+  },
+  {
+    "id": "H4",
+    "task": "demo-ui",
+    "criterion": "AC2",
+    "title": "Perform user acceptance testing",
+    "instructions": "Conduct UAT on the UI components and document feedback",
+    "priority": "Medium",
+    "blocks_approval": false,
+    "created": "2026-09-24T07:30:00Z",
+    "status": "todo",
+    "assignee": "helper1",
+    "result": "",
+    "result_path": ""
+  },
+  {
+    "id": "H5",
+    "task": "demo-docs",
+    "criterion": "AC3",
+    "title": "Review and update documentation",
+    "instructions": "Review the generated documentation and ensure it is complete and accurate",
+    "priority": "Low",
+    "blocks_approval": false,
+    "created": "2026-09-24T07:00:00Z",
+    "status": "done",
+    "assignee": "helper1",
+    "result": "Documentation review completed successfully",
+    "result_path": ""
+  }
+]
