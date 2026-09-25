@@ -10,7 +10,7 @@ from urllib.parse import urlencode, parse_qs
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from icmlib import check_inside_outputs, read_header, read_reviews, list_artifacts, checkpoint_of, open_questions
+from icmlib import check_inside_outputs, read_header, read_reviews, list_artifacts, checkpoint_of, open_questions, task_tier
 from helper import get_store
 import checkpoint_policy
 
@@ -186,9 +186,8 @@ def render_action_forms(artifact_path, header, role, viewer_identity):
     forms_html = '<div class="action-forms">\n'
 
     # Show disabled approve button with reason if not allowed
-    tier = ""
-    # We need to get tier from stage_status, but we can infer it from the fixture for now
-    # In a real implementation, we'd pass status_data through
+    # artifact_path is ROOT/stages/NN-name/output/<file>, so ROOT is three levels up
+    tier = task_tier(Path(artifact_path).resolve().parents[3], task)
     open_q = open_questions(artifact_path)
     allowed, reason = checkpoint_policy.may_approve(cp, tier, author, viewer_identity)
 
@@ -199,7 +198,8 @@ def render_action_forms(artifact_path, header, role, viewer_identity):
         <button type="submit">Approve</button>
     </form>\n'''
     else:
-        forms_html += f'''    <button disabled title="{html.escape(reason) if reason else ('Cannot approve' if open_q > 0 else 'Tier not selected')}">Approve</button>\n'''
+        why = f"{open_q} open question(s) must be answered first" if allowed else reason
+        forms_html += f'''    <button disabled title="{html.escape(why)}">Approve</button> <small>{html.escape(why)}</small>\n'''
 
     # Request changes (users only)
     if role == "user":

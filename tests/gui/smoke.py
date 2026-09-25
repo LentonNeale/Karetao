@@ -199,11 +199,13 @@ def test_helper_access_control():
         try:
             time.sleep(0.5)
 
-            # Try to access queue as helper
+            # A helper opening / is redirected to the Helper tab, and never sees the queue
             url = f"http://127.0.0.1:{port}/"
+            response = urllib.request.urlopen(url)
+            assert response.url.endswith("/helper"), response.url
             try:
-                response = urllib.request.urlopen(url)
-                assert response.status == 403
+                urllib.request.urlopen(f"http://127.0.0.1:{port}/audit")
+                assert False, "helper reached /audit"
             except urllib.error.HTTPError as e:
                 assert e.code == 403
 
@@ -672,6 +674,61 @@ def test_user_cannot_start_task():
             server_proc.wait(timeout=5)
 
 
+
+def test_tier_then_approve_end_to_end():
+    """A user selects a tier, the Approve button becomes enabled, and approving updates the file."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        demo_src = Path(__file__).resolve().parents[2] / "gui" / "fixtures" / "demo"
+        demo_dst = Path(tmpdir) / "demo"
+        shutil.copytree(demo_src, demo_dst)
+        rel = "stages/01-intake/output/10-demo-led-brief.md"
+        brief = demo_dst / rel
+
+        port = get_free_port()
+        server_proc = subprocess.Popen(
+            [sys.executable, "-m", "gui.server", "--port", str(port), "--root", str(demo_dst),
+             "--project", str(demo_dst / "icm-project"), "--as", "user:user1"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=Path(__file__).resolve().parents[2])
+        try:
+            time.sleep(0.5)
+            base = f"http://127.0.0.1:{port}"
+            page = urllib.request.urlopen(f"{base}/artifact?path={urllib.parse.quote(rel)}").read().decode()
+            assert 'title="tier not selected"' in page
+
+            def post(fields):
+                data = urllib.parse.urlencode(fields).encode()
+                return urllib.request.urlopen(urllib.request.Request(f"{base}/action", data=data))
+
+            post({"action": "set-tier", "path": str(brief), "tier": "T2"})
+            page = urllib.request.urlopen(f"{base}/artifact?path={urllib.parse.quote(rel)}").read().decode()
+            assert 'title="tier not selected"' not in page, "Approve still disabled after selecting a tier"
+
+            post({"action": "approve", "path": str(brief)})
+            text = brief.read_text()
+            assert "status: approved" in text and "approver: user:user1" in text, text[:300]
+            print("✓ Tier selection enables Approve, and approving updates the brief")
+        finally:
+            server_proc.terminate()
+            server_proc.wait()
+
+
+def test_review_cli_relative_path():
+    """review.py resolves relative artifact paths against --root, not the current directory."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        demo_src = Path(__file__).resolve().parents[2] / "gui" / "fixtures" / "demo"
+        demo_dst = Path(tmpdir) / "demo"
+        shutil.copytree(demo_src, demo_dst)
+        ws = Path(__file__).resolve().parents[2]
+        cmd = [sys.executable, str(ws / "scripts" / "review.py"), "--root", str(demo_dst),
+               "--project", str(demo_dst / "icm-project"), "--as", "agent:orchestrator/opus", "approve"]
+        ok = subprocess.run(cmd + ["stages/04-implement/output/14-demo-fw-plan.md"], capture_output=True, text=True, cwd=tmpdir)
+        assert ok.returncode == 0, ok.stderr
+        selfapp = subprocess.run(cmd + ["stages/02-issue-spec/output/13-demo-docs-spec.md"], capture_output=True, text=True, cwd=tmpdir)
+        assert selfapp.returncode == 1 and "no self-approval" in selfapp.stderr, selfapp.stderr
+        t3 = subprocess.run(cmd + ["stages/04-implement/output/15-demo-ui-plan.md"], capture_output=True, text=True, cwd=tmpdir)
+        assert t3.returncode == 1 and "may not approve C5 at T3" in t3.stderr, t3.stderr
+        print("✓ review.py accepts paths relative to --root")
+
 def main():
     """Run all tests."""
     tests = [
@@ -691,6 +748,8 @@ def main():
         test_user_cannot_start_task,
         test_audit_feed,
         test_evidence_unmapped,
+        test_tier_then_approve_end_to_end,
+        test_review_cli_relative_path,
     ]
 
     failed = []

@@ -70,7 +70,9 @@ def redirect(location):
 # --- base routes (WP7) ---
 
 def handle_root(req):
-    """GET / — the Queue page (users)."""
+    """GET / — the Queue page (users); helpers are sent to their own tab."""
+    if req.role == "helper":
+        return redirect("/helper")
     body = render_queue(req.status_data, req.root, req.role)
     if body is None:
         return send_html(403, "<h1>403 Forbidden</h1>")
@@ -105,7 +107,7 @@ POST_ROUTES = {}
 # Which roles may reach a given path. A path left out of this dict is open
 # to every role; a role not listed for a path present here gets 403.
 ROLE_ALLOWED = {
-    "/": {"user", "agent"},
+    "/": {"user", "helper", "agent"},
     "/pipeline": {"user", "helper", "agent"},
     "/artifact": {"user", "helper", "agent"},
 }

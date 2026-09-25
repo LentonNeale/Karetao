@@ -1,146 +1,118 @@
-# ICM GUI Prototype Acceptance Walkthrough
+# ICM GUI prototype — acceptance walkthrough
 
-**Date:** 2026-09-25
+Run every command from the repository root. The demo uses a shared copy of the demo data at `/tmp/icm-gui-demo`, so the browser and the CLI see the same files, while `gui/fixtures/demo` is never changed. Set a different location with `ICM_GUI_DEMO=/path`.
 
-## Prerequisites
+Before you start, and whenever you want a clean slate:
 
-The prototype requires `playwright` for screenshots. If `playwright` is not available, screenshots are skipped.
+```bash
+scripts/gui.sh --demo-reset --as user1 --check     # recopy the demo data, then check the server starts
+D=/tmp/icm-gui-demo
+R="python3 scripts/review.py --root $D --project $D/icm-project"
+```
 
-## Step 1: Start the server with demo data
+## 1. Start the GUI as the User
 
-**Command:**
 ```bash
 scripts/gui.sh --demo --as user1
 ```
 
-**Expected result:**
-The server starts on port 8765. Opening http://127.0.0.1:8765/ shows the Queue tab.
+**Expected:** the script prints `Open http://127.0.0.1:8765/`. The page has the tabs Queue · Pipeline · Helper · Audit.
 
-**Queue contents (in order, blocking items first):**
-- demo-led's brief (marked **Blocking**), reason "select tier", with T2 suggested
-- demo-hw's plan (marked **Blocking**)
-- demo-ui's plan (marked **Non-blocking**)
+## 2. The Queue
 
-## Step 2: Check the Pipeline view
+Open http://127.0.0.1:8765/
 
-**Command:**
-Navigate to http://127.0.0.1:8765/pipeline
+**Expected:**
+- Three red **Blocking** items come first:
+  - demo-led's brief, reason "select tier", tier —;
+  - demo-docs' spec, T1;
+  - demo-hw's plan, T4.
+- demo-ui's plan (T3) comes last, with a grey **Non-blocking** badge.
+- demo-fw doesn't appear: its plan and evidence are waiting on the orchestrator, not on you.
 
-**Expected result:**
-A table showing tasks × stages 01–06. demo-ui shows "can proceed"; demo-hw shows "blocked".
+On the **Pipeline** tab, demo-ui shows "✓ proceed" and demo-hw shows "✗ blocked".
 
-**Screenshot:** (if playwright available) Save to `tests/gui/screenshots/pipeline.png`
+## 3. Select a tier and approve a brief
 
-## Step 3: Set tier on demo-led brief and approve
+Click demo-led's brief (`10-demo-led-brief.md`) and scroll to the forms under the text.
 
-**Command:**
-Open http://127.0.0.1:8765/artifact?path=stages/01-intake/output/11-brief.md
+1. Before selecting a tier, **Approve** is disabled, with the reason "tier not selected".
+2. Click **T2** (marked as suggested) → the page says "Action completed" and the header shows `tier: T2`.
+3. **Approve** is now enabled. Click it.
 
-1. Select T2 in the tier selector
-2. Click Approve
+**Expected:** `status: approved`, `approver: user:user1`. At T2 the orchestrator may not approve a brief (C1), so it had to be you.
 
-**Expected result:**
-The artifact status changes to approved. The page shows the approval in the review thread.
+## 4. Ask a question on a spec, answer it, approve
 
-## Step 4: Ask and answer on demo-led spec
+Open http://127.0.0.1:8765/artifact?path=stages/02-issue-spec/output/12-demo-led-spec.md
 
-**Command:**
-Navigate to http://127.0.0.1:8765/artifact?path=stages/02-issue-spec/output/12-spec.md
-
-1. Click Ask and enter a question
-2. In another terminal, run:
+1. Type a question in **Ask** and submit it → `status: needs-clarification`. Approve is disabled with the reason "1 open question(s) must be answered first".
+2. In a second terminal, answer as the orchestrator:
    ```bash
-   python3 scripts/review.py --root gui/fixtures/demo --project gui/fixtures/demo/icm-project --as agent:orchestrator/opus answer stages/02-issue-spec/output/12-spec.md --text "Answered"
+   $R --as agent:orchestrator/opus answer stages/02-issue-spec/output/12-demo-led-spec.md --text "GPIO 5"
    ```
-3. Approve the spec
+3. Reload the page → `status: draft`, the answer appears in the thread, and **Approve** is enabled. Click it.
 
-**Expected result:**
-- Status changes to needs-clarification when the question is asked
-- Approve button becomes enabled after the answer
-- Final status is approved
+**Expected:** `status: approved`.
 
-## Step 5: View and reopen demo-docs approval in audit feed
+## 5. Audit feed and reopen
 
-**Command:**
-Navigate to http://127.0.0.1:8765/audit
+Open the **Audit** tab.
 
-**Expected result:**
-The audit feed shows the orchestrator's approval of demo-docs' brief (13-brief.md).
+**Expected:** a row for `11-demo-docs-brief.md`, approved by `agent:orchestrator/opus`, with a **Reopen** button.
 
-1. Click Reopen
-2. Verify demo-docs' brief is back in the Queue with status draft
+Click **Reopen** → the brief's status is `draft`. It's a T1 brief written by a Haiku agent, so it goes back to the **orchestrator's** queue, not yours. Check this with:
 
-## Step 6: Test orchestrator CLI approvals
-
-**Commands:**
-
-Approving demo-fw's plan (T2, C5, haiku work):
 ```bash
-python3 scripts/review.py --root gui/fixtures/demo --project gui/fixtures/demo/icm-project --as agent:orchestrator/opus approve stages/04-implement/output/14-plan.md
-```
-**Expected result:** Exit code 0 (success)
-
-Approving demo-docs' spec (self-approval attempt):
-```bash
-python3 scripts/review.py --root gui/fixtures/demo --project gui/fixtures/demo/icm-project --as agent:orchestrator/opus approve stages/02-issue-spec/output/13-spec.md
-```
-**Expected result:** Exit code 1, stderr: "no self-approval"
-
-Approving demo-ui's plan (T3, C5, not allowed at T3):
-```bash
-python3 scripts/review.py --root gui/fixtures/demo --project gui/fixtures/demo/icm-project --as agent:orchestrator/opus approve stages/04-implement/output/15-plan.md
-```
-**Expected result:** Exit code 1, stderr: "orchestrator may not approve C5 at T3"
-
-## Step 7: Helper view
-
-**Command:**
-Start the server with helper identity:
-```bash
-scripts/gui.sh --demo --as helper1
+python3 scripts/stage_status.py --root $D --project $D/icm-project --awaiting orchestrator
 ```
 
-**Expected result:**
-Only two tabs appear: Helper and Pipeline. No Queue or Artifact actions.
+## 6. Orchestrator approvals from the CLI
 
-1. Navigate to the Helper tab
-2. Verify tasks are sorted by: priority (High/Medium/Low), blocks_approval (true first), created ascending
-3. Test buttons: Start, Done (with result textarea and optional path), Block (with reason), Unblock (users only)
-4. Verify a POST to `/action` to approve is refused (403)
-
-**Screenshot:** (if playwright available) Save to `tests/gui/screenshots/helper.png`
-
-## Step 8: Evidence view
-
-**Command:**
-Navigate to http://127.0.0.1:8765/evidence?task=demo-fw
-
-**Expected result:**
-- AC1: met
-- AC2: needs-hardware (or met if the Helper task is complete)
-- AC3: **unmapped** (displayed in bold)
-
-**Screenshot:** (if playwright available) Save to `tests/gui/screenshots/evidence.png`
-
-## Step 9: Run all tests
-
-**Commands:**
-
-Unit tests:
 ```bash
-python3 -m unittest discover -s tests/unit
+$R --as agent:orchestrator/opus approve stages/04-implement/output/14-demo-fw-plan.md   # exit 0: T2 plan (C5) written by haiku
+$R --as agent:orchestrator/opus approve stages/02-issue-spec/output/13-demo-docs-spec.md # exit 1: "no self-approval"
+$R --as agent:orchestrator/opus approve stages/04-implement/output/15-demo-ui-plan.md    # exit 1: "orchestrator may not approve C5 at T3"
 ```
-**Expected result:** All tests pass
 
-GUI smoke test:
+Artifact paths are relative to `--root`, so they work from any directory.
+
+## 7. The Helper view
+
+Stop the User server (Ctrl+C), or keep it and use another port:
+
 ```bash
-python3 tests/gui/smoke.py
+scripts/gui.sh --demo --as helper1 --port 8766
 ```
-**Expected result:** All smoke tests pass
 
-## Notes
+Open http://127.0.0.1:8766/
 
-- The prototype uses demo data only; no real GitHub writes
-- Identity is provided via `--as <login>` and role is looked up in `people.md`
-- All CLI commands use standard-library imports only
-- HTML output is properly escaped to prevent injection
+**Expected:**
+- You land on the **Helper** tab. Helpers only get Helper and Pipeline; Queue and Audit return 403 if typed in.
+- The order is H2, H1, H4, H3, H5: High before Medium before Low; blocks-approval first; the T4 task before the T2 task.
+- **Start** on H2 → `doing`. **Done** with a result → `done`. **Block** with a reason → `blocked`.
+- Artifact pages are read-only for the Helper, with no forms. A hand-made approve is refused:
+  ```bash
+  curl -si -X POST http://127.0.0.1:8766/action -d action=approve -d path=stages/04-implement/output/16-demo-hw-plan.md | grep -i location
+  ```
+  The redirect message says `helpers cannot approve`, and the plan stays `draft`.
+
+## 8. Evidence view
+
+On the User's **Pipeline** tab, click **evidence** next to demo-fw, or open http://127.0.0.1:8765/evidence?task=demo-fw
+
+**Expected:**
+- AC1 met;
+- AC2 needs-hardware;
+- AC3 **unmapped** in bold.
+
+Helper task H1 (demo-fw, AC2) starts out blocked. Once a User unblocks it and the Helper marks it done, AC2 also shows the Helper's result.
+
+## 9. Automated tests
+
+```bash
+python3 -m unittest discover -s tests/unit   # 130 tests, OK
+python3 tests/gui/smoke.py                   # All 18 tests passed
+```
+
+The `error: …` lines printed during the unit tests are expected: they come from tests of refusals.

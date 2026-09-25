@@ -1,119 +1,60 @@
 #!/usr/bin/env bash
+# Start the ICM GUI (local only, http://127.0.0.1:PORT/).
+# Usage: gui.sh [--demo] [--demo-reset] [--as LOGIN] [--port N] [--check]
+#   --demo        serve demo data from $ICM_GUI_DEMO (default /tmp/icm-gui-demo), copied from
+#                 gui/fixtures/demo on first use and kept, so several servers and the CLI share it
+#   --demo-reset  recopy the demo data first (implies --demo)
+#   --as LOGIN    viewer login from people.md (default: gh api user)
+#   --check       start, fetch /pipeline, stop; exit 0 on success
 set -euo pipefail
+ws="$(cd "$(dirname "$0")/.." && pwd)"
 
-# gui.sh: wrapper for the ICM GUI server
-# Usage: gui.sh [--demo] [--as LOGIN] [--port N] [--check]
-
-DEMO=false
-LOGIN=""
-PORT=8765
-CHECK=false
-DEMO_DIR=""
-CLEANUP_DEMO=false
-
-# Parse arguments
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --demo)
-            DEMO=true
-            shift
-            ;;
-        --as)
-            LOGIN="$2"
-            shift 2
-            ;;
-        --port)
-            PORT="$2"
-            shift 2
-            ;;
-        --check)
-            CHECK=true
-            shift
-            ;;
-        *)
-            echo "Unknown option: $1" >&2
-            exit 1
-            ;;
-    esac
+demo=false reset=false login="" port=8765 check=false
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --demo) demo=true; shift ;;
+    --demo-reset) demo=true; reset=true; shift ;;
+    --as) login="$2"; shift 2 ;;
+    --port) port="$2"; shift 2 ;;
+    --check) check=true; shift ;;
+    *) echo "unknown option: $1" >&2; exit 2 ;;
+  esac
 done
 
-# Determine root and project directories
-if [ "$DEMO" = true ]; then
-    DEMO_DIR=$(mktemp -d)
-    CLEANUP_DEMO=true
-    cp -r gui/fixtures/demo/* "$DEMO_DIR/"
-    ROOT="$DEMO_DIR"
-    PROJECT="$DEMO_DIR/icm-project"
+if $demo; then
+  root="${ICM_GUI_DEMO:-/tmp/icm-gui-demo}"
+  if $reset || [ ! -d "$root/stages" ]; then
+    rm -rf "$root"; mkdir -p "$root"
+    cp -r "$ws/gui/fixtures/demo/." "$root/"
+  fi
+  project="$root/icm-project"
+  echo "Demo data: $root  (use it as --root for scripts/review.py and scripts/helper.py)"
 else
-    ROOT=$(dirname "$(pwd)/scripts")
-    PROJECT="$ROOT/../icm-project"
+  root="$ws"
+  project="$ws/../icm-project"
 fi
 
-# Clean up demo directory on exit
-cleanup() {
-    if [ "$CLEANUP_DEMO" = true ] && [ -n "$DEMO_DIR" ] && [ -d "$DEMO_DIR" ]; then
-        rm -rf "$DEMO_DIR"
-    fi
-}
-trap cleanup EXIT
+[ -f "$project/people.md" ] || { echo "people.md not found at $project/people.md" >&2; exit 1; }
+if [ -z "$login" ]; then
+  login=$(gh api user --jq .login 2>/dev/null) || { echo "--as LOGIN is required (gh not available)" >&2; exit 1; }
+fi
+role=$(awk -F'|' -v l="$login" '{gsub(/ /,"",$2); gsub(/ /,"",$3)} $2==l {print $3; exit}' "$project/people.md")
+[ -n "$role" ] || { echo "unknown login '$login' (not in $project/people.md)" >&2; exit 1; }
 
-# Determine login
-if [ -z "$LOGIN" ]; then
-    if command -v gh &> /dev/null; then
-        LOGIN=$(gh api user --jq .login) || {
-            echo "Error: --as required when gh cli is not available" >&2
-            exit 1
-        }
-    else
-        echo "Error: --as required when gh cli is not available" >&2
-        exit 1
-    fi
+start_page="/"; [ "$role" = helper ] && start_page="/helper"
+server=(python3 "$ws/gui/server.py" --root "$root" --project "$project" --as "$role:$login" --port "$port")
+
+if ! $check; then
+  echo "Open http://127.0.0.1:$port$start_page  (viewing as $role:$login; Ctrl+C to stop)"
+  exec "${server[@]}"
 fi
 
-# Look up role in people.md
-if [ ! -f "$PROJECT/people.md" ]; then
-    echo "Error: people.md not found at $PROJECT/people.md" >&2
-    exit 1
-fi
-
-ROLE=$(grep "^| $LOGIN |" "$PROJECT/people.md" | awk -F'|' '{print $3}' | tr -d ' ' || true)
-if [ -z "$ROLE" ]; then
-    echo "Error: unknown login '$LOGIN'" >&2
-    exit 1
-fi
-
-IDENTITY="$ROLE:$LOGIN"
-
-if [ "$CHECK" = true ]; then
-    # Start server in background
-    python3 gui/server.py --root "$ROOT" --project "$PROJECT" --as "$IDENTITY" --port "$PORT" &
-    SERVER_PID=$!
-
-    # Wait for server to start and poll /pipeline
-    MAX_ATTEMPTS=5
-    ATTEMPT=0
-    HTTP_STATUS=0
-
-    while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-        sleep 1
-        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/pipeline" 2>/dev/null || true)
-        if [ "$HTTP_STATUS" = "200" ]; then
-            break
-        fi
-        ATTEMPT=$((ATTEMPT + 1))
-    done
-
-    # Kill server
-    if kill $SERVER_PID 2>/dev/null; then
-        wait $SERVER_PID 2>/dev/null || true
-    fi
-
-    if [ "$HTTP_STATUS" = "200" ]; then
-        exit 0
-    else
-        exit 1
-    fi
-else
-    # Run server in foreground
-    exec python3 gui/server.py --root "$ROOT" --project "$PROJECT" --as "$IDENTITY" --port "$PORT"
-fi
+"${server[@]}" >/dev/null 2>&1 &
+pid=$!
+trap 'kill $pid 2>/dev/null; wait $pid 2>/dev/null || true' EXIT
+for _ in $(seq 1 25); do
+  sleep 0.2
+  [ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$port/pipeline" || true)" = 200 ] && { echo "check ok"; exit 0; }
+done
+echo "check failed: server did not answer on port $port" >&2
+exit 1

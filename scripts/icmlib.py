@@ -4,7 +4,7 @@ Standard-library utilities for ICM artifact and workflow management.
 
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -26,7 +26,10 @@ def check_inside_outputs(root: Path, path: Path) -> Path:
     Returns the normalized path; raises ValueError if outside.
     """
     root = Path(root).resolve()
-    path = Path(path).resolve()
+    path = Path(path)
+    if not path.is_absolute():
+        path = root / path  # relative artifact paths are relative to ROOT, not the current directory
+    path = path.resolve()
 
     # Check if path is within any output folder
     outputs_base = root / "stages"
@@ -349,4 +352,4 @@ def task_tier(root: Path = None, task: str = None) -> str:
 
 def now_iso() -> str:
     """Return the current time in ISO-8601 UTC format."""
-    return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
