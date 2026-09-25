@@ -304,7 +304,7 @@ The component documentation contract is defined in [`03_COMPONENTS/COMPONENT_DOC
 
 ## Archive boundary
 
-`Documentation/99_ARCHIVE/` contains historical and non-normative material, including where applicable:
+Historical and non-normative material is not retained in the working tree, including:
 
 - superseded specifications;
 - historical decisions;
@@ -312,7 +312,7 @@ The component documentation contract is defined in [`03_COMPONENTS/COMPONENT_DOC
 - conversations;
 - obsolete planning material.
 
-Archive content must never silently override current authoritative documentation. If archived material is retained for traceability, its historical status must remain clear.
+Git history is the archive. The former `Documentation/99_ARCHIVE/` was last present at commit `9c637ba`. Historical content must never override current authoritative documentation; where it is cited for traceability, cite it by commit and path and state its historical status.
 
 ## Refactoring sequence
 

@@ -2,6 +2,8 @@
 
 Working memory tracking the migration of legacy `docs/project/**` content into `Documentation/**`. This ledger records the disposition of every statement and block migrated, for acceptance criterion 1 verification.
 
+> **Archive removed (2026-09-25):** `Documentation/99_ARCHIVE/` has been deleted from the working tree. References below to `99_ARCHIVE/**` paths are historical and resolve in Git history at commit `9c637ba`.
+
 ---
 
 ## WP-1: Decisions (Completed)

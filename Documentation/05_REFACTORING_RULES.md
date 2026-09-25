@@ -41,7 +41,7 @@ Component verification evidence is not the same as Karetao system verification. 
 
 ## Historical Material
 
-Preserve historically useful material in `99_ARCHIVE/`. Archive material is non-normative.
+Historical material is not kept in the working tree. Once its authoritative content has been migrated, remove it and rely on Git history for provenance (the former `99_ARCHIVE/` was last present at commit `9c637ba`). Historical material is non-normative.
 
 ## Deletion
 

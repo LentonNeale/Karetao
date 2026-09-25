@@ -7,12 +7,11 @@ This repository contains two active subtrees:
 
 ## Canonical References
 
-- Architecture: [docs/architecture.md](architecture.md)
-- ARM hardware and firmware baseline: [docs/hardware/arm-sensor-hub-baseline.md](hardware/arm-sensor-hub-baseline.md)
-- SPI transport contract: [docs/protocols/spi-contract.md](protocols/spi-contract.md)
-- SPI payload schema: [docs/protocols/spi-payload-schema.md](protocols/spi-payload-schema.md)
-- SPI service contract: [docs/interfaces/spi-service-contract.md](interfaces/spi-service-contract.md)
-- Raspberry Pi SPI scaffold notes: [docs/interfaces/raspberry-pi-spi.md](interfaces/raspberry-pi-spi.md)
+- System architecture: [SYSTEM_ARCHITECTURE.md](../../Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md)
+- Arm Sensor Hub component definition and hardware baseline: [ARM_SENSOR_HUB.md](../../Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md)
+- SPI system interface (transport, DATA_READY, service behaviour): [SPI_SYSTEM_INTERFACE.md](../../Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md)
+- SPI payload schema: [SPI_PAYLOAD_SCHEMA.md](../../Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md)
+- Raspberry Pi bring-up and SPI host notes: [RASPBERRY_PI_BRINGUP_V1.md](../../RaspberryPi_Sensor_Hub/Documentation/RASPBERRY_PI_BRINGUP_V1.md)
 
 ## Main Tooling
 
@@ -24,9 +23,9 @@ The repository currently uses:
 - Python standard-library modules for the Raspberry Pi SPI scaffold,
 - optional VS Code launch/task files for ARM debug workflow.
 
-See [`Arm_Sensor_Hub/CMakePresets.json`](../Arm_Sensor_Hub/CMakePresets.json),
-[`Arm_Sensor_Hub/CMakeLists.txt`](../Arm_Sensor_Hub/CMakeLists.txt), and
-[`Arm_Sensor_Hub/cmake/gcc-arm-none-eabi.cmake`](../Arm_Sensor_Hub/cmake/gcc-arm-none-eabi.cmake).
+See [`Arm_Sensor_Hub/CMakePresets.json`](../CMakePresets.json),
+[`Arm_Sensor_Hub/CMakeLists.txt`](../CMakeLists.txt), and
+[`Arm_Sensor_Hub/cmake/gcc-arm-none-eabi.cmake`](../cmake/gcc-arm-none-eabi.cmake).
 
 ## Recommended Local Prerequisites
 

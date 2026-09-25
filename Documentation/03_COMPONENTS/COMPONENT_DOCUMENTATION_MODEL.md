@@ -233,7 +233,7 @@ A lower-level document may explain how a higher-level requirement is implemented
 
 ## Archive boundary
 
-Historical component documentation belongs in the appropriate repository's archive according to that repository's process. Karetao's [`99_ARCHIVE/`](../99_ARCHIVE/) is for historical/non-normative Karetao material.
+Historical component documentation belongs in the appropriate repository's archive according to that repository's process. Karetao does not keep historical material in the working tree; it is recoverable from Git history.
 
 Archived material may be retained for traceability but must never silently override current authoritative documentation.
 

@@ -1,5 +1,7 @@
 # Documentation Framework Implementation Checklist
 
+> **Archive removed (2026-09-25):** `Documentation/99_ARCHIVE/` has been deleted from the working tree; archive items below are historical and resolve in Git history at commit `9c637ba`.
+
 ## Branch
 
 - [ ] Repository is `LentonNeale/Karetao`.

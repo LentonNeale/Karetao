@@ -56,7 +56,6 @@ These are governance/process documents. They are not competing system requiremen
 | [`05_VERIFICATION/`](05_VERIFICATION/) | System-level verification requirements, plans, matrices, and evidence references |
 | [`06_CONFIGURATION/`](06_CONFIGURATION/) | System-level configuration requirements and controlled configuration information |
 | [`07_DECISIONS/`](07_DECISIONS/) | Authoritative system decisions and decision records |
-| [`99_ARCHIVE/`](99_ARCHIVE/) | Historical and non-normative Karetao material |
 
 The framework deliberately retains these top-level sections without introducing additional documentation categories.
 
@@ -141,9 +140,9 @@ Component verification does not automatically constitute system verification.
 
 ## Archive boundary
 
-[`99_ARCHIVE/`](99_ARCHIVE/) contains historical/non-normative material such as superseded specifications, historical decisions, sprint reports, conversations, and obsolete planning material.
+Historical and superseded material (superseded specifications, historical decisions, sprint reports, conversations, obsolete planning material) is not kept in the working tree. It is recoverable from Git history; the former `Documentation/99_ARCHIVE/` was last present at commit `9c637ba`.
 
-Archived content must never silently override current authoritative documentation.
+Historical content retrieved from Git history is non-normative and must never override current authoritative documentation.
 
 ## Refactoring sequence
 

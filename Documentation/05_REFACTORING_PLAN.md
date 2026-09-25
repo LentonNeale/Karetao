@@ -6,6 +6,8 @@
 
 This document is a governance/process artifact. It defines no system requirements and carries no authority over any system-level document.
 
+> **Archive removed (2026-09-25):** `Documentation/99_ARCHIVE/` has been deleted from the working tree. `99_ARCHIVE/` destinations below are historical and resolve in Git history at commit `9c637ba`.
+
 ---
 
 ## 1. Purpose
