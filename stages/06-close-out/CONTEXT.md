@@ -15,7 +15,8 @@ Bring the tracker and the docs in line with what was actually delivered. The mai
 2. **CHECKPOINT:** the user approves the close-out plan.
 3. `issue-clerk` ticks the met criteria, posts an evidence comment, sets Status, and closes the issue only if all criteria are met. It also updates the register row and the parent issue.
 4. Run `../../scripts/link-check.py`. If docs changed, delegate a consistency pass to `doc-checker`.
-5. If code or docs changed, prepare the commit or PR. Never push without the user's approval.
+5. For each subject the work touched (`../../../icm-project/subjects/`), update that subject's dossier: status rows, pointers, conflicts, issues and the `updated:` date. Fold in any `Dossier gaps:` the subject-expert reported during the work.
+6. If code or docs changed, prepare the commit or PR. Never push without the user's approval.
 
 ## Outputs
 
