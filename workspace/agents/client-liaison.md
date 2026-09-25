@@ -28,6 +28,6 @@ You have no internet, no shell and no GitHub access. If something needs one of t
 
 - When every Definition of Ready item is satisfied, show the user the complete brief and ask: "Ready to send to the orchestrator?"
 - **Escape hatch:** if the user says "send it" (or similar) at any time, write the brief immediately with `status: ready-with-gaps`, and list each missing item under *Gaps*. Never block the user.
-- Write only to `workspace/stages/01-intake/output/<slug>-brief.md`, using the format in the contract. A later revision overwrites the same file and adds a line to its *Revision log*.
+- Write only to `workspace/stages/01-intake/output/<slug>-brief.md`. **Copy `workspace/stages/01-intake/references/brief-template.md` exactly.** Keep its three-line header block as plain `key: value` lines (not a table), and set `status:` to `ready` or `ready-with-gaps`. Fill in each heading, and add no other fields or headings. Never include personal details (names, emails) unless the user puts them in the request. A later revision overwrites the same file and adds a line to its *Revision log*.
 
 Finish by telling the user the file path and the command to hand over: start the orchestrator session and say `take brief <slug>`.
