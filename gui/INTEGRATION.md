@@ -8,7 +8,7 @@
 3. Write a feedback report that tells the GUI's maintainer everything needed to make it work for this project.
 
 You are the field tester, not the maintainer:
-- **Don't change the GUI code** under `workspace/gui/` or `workspace/scripts/`. When something needs changing, describe the change, as a diff if you can, in the report.
+- **Don't change the GUI code** in the project's `workspace/` copy. When something needs changing, describe the change in the report, or propose it as a draft pull request against the Karetao repo (see section 5).
 - Project configuration under `icm-project/` is yours to add, with the User's approval.
 
 ---
@@ -200,7 +200,14 @@ Both drive `claude -p --input-format stream-json --output-format stream-json` su
 
 ## 5. The feedback report
 
-Write it to `workspace/stages/05-verify/output/icm-gui-field-feedback.md`. That folder is gitignored, so project facts stay out of the shared workspace. Then give it to the User, who passes it to the GUI's maintainer.
+Write it to `workspace/stages/05-verify/output/icm-gui-field-feedback.md`. That folder is gitignored, so project facts stay out of the shared workspace.
+
+**Delivering it:** if you have push access to `LentonNeale/Karetao_Consulting`, ask the User for approval, then:
+
+- **The report:** push it, alone, to a new branch `field-feedback/<project-slug>` as `feedback/<project-slug>/icm-gui-field-feedback.md`. Branch from `icm-gui-prototype`. This branch is **never merged**, because it holds project facts and the workspace is shared by several projects. Tell the User the branch name; the maintainer reads it from there.
+- **Proposed fixes (optional):** for findings where you're confident of a fix, push it to a separate branch `field-fix/<project-slug>-<n>` and open a **draft** pull request into `icm-gui-prototype`. Each pull request should hold one finding, reference the finding number in the report, and add or update a test. Don't merge anything; the maintainer reviews, tests and merges. Fix branches must contain no project facts.
+
+Without push access, give the report file to the User instead, who passes it on.
 
 ```markdown
 issue: none yet
