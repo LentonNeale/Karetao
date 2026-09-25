@@ -1,0 +1,7 @@
+# Tools the ICM workspace itself needs (all projects).
+# check | apt packages | note
+git     | git     | version control, subtree
+gh      | gh      | GitHub CLI for issues and the project board; then run `gh auth login` (add the `project` scope)
+jq      | jq      | JSON processing in the board scripts
+python3 | python3 | link-check.py
+claude  | -       | Claude Code CLI: install it from the official Claude Code docs, not with apt
