@@ -297,6 +297,44 @@ class TestCliLogic(unittest.TestCase):
         updated = store.update("F1", {"status": "done"})
         self.assertEqual(updated["status"], "done")
 
+    # --- field feedback F4: roles must match people.md; unblock needs a blocked task ---
+
+    def _args(self, identity, task_id="F1"):
+        from types import SimpleNamespace
+        return SimpleNamespace(as_identity=identity, project=self.root.parent / "icm-project", id=task_id,
+                               reason="no cable", result="ok", path=None)
+
+    def _store_with_task(self, status="todo"):
+        store = FakeHelperStore()
+        store.add({"task": "demo-test", "title": "T", "instructions": "I", "priority": "High",
+                   "criterion": "AC1", "blocks_approval": True})
+        if status != "todo":
+            store.update("F1", {"status": status})
+        return store
+
+    def test_unblock_rejects_role_claim_not_in_people(self):
+        from helper import cmd_unblock
+        store = self._store_with_task("blocked")
+        self.assertEqual(cmd_unblock(self._args("user:helper1"), store), 1)
+        self.assertEqual(store.get("F1")["status"], "blocked")
+
+    def test_start_rejects_role_claim_not_in_people(self):
+        from helper import cmd_start
+        store = self._store_with_task()
+        self.assertEqual(cmd_start(self._args("helper:user1"), store), 1)
+        self.assertEqual(store.get("F1")["status"], "todo")
+
+    def test_unblock_requires_blocked_task(self):
+        from helper import cmd_unblock
+        store = self._store_with_task("todo")
+        self.assertEqual(cmd_unblock(self._args("user:user1"), store), 1)
+
+    def test_unblock_blocked_task_by_user(self):
+        from helper import cmd_unblock
+        store = self._store_with_task("blocked")
+        self.assertEqual(cmd_unblock(self._args("user:user1"), store), 0)
+        self.assertEqual(store.get("F1")["status"], "todo")
+
 
 class TestCliWithDemoFixtures(unittest.TestCase):
     """Test CLI with actual demo fixtures."""

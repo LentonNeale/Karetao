@@ -228,6 +228,14 @@ def cmd_add(args, store):
     return 0
 
 
+def _role_ok(args, kind, name) -> bool:
+    """The claimed role must match people.md, as review.py and the server require."""
+    if icmlib.load_people(args.project).get(name) != kind:
+        print(f"error: {args.as_identity} has unknown or wrong role", file=sys.stderr)
+        return False
+    return True
+
+
 def cmd_start(args, store):
     """Start a task (set assignee)."""
     # Get the current user as assignee
@@ -236,6 +244,9 @@ def cmd_start(args, store):
 
     if kind != "helper":
         print("error: only helpers can start tasks", file=sys.stderr)
+        return 1
+
+    if not _role_ok(args, kind, name):
         return 1
 
     task = store.update(args.id, {"assignee": name, "status": "doing"})
@@ -251,6 +262,9 @@ def cmd_done(args, store):
 
     if kind != "helper":
         print("error: only helpers can mark tasks as done", file=sys.stderr)
+        return 1
+
+    if not _role_ok(args, kind, name):
         return 1
 
     fields = {
@@ -277,6 +291,9 @@ def cmd_block(args, store):
         print("error: only helpers can block tasks", file=sys.stderr)
         return 1
 
+    if not _role_ok(args, kind, name):
+        return 1
+
     task = store.update(args.id, {"status": "blocked", "blocked_reason": args.reason})
     print(json.dumps(task))
     return 0
@@ -290,6 +307,13 @@ def cmd_unblock(args, store):
 
     if kind != "user":
         print("error: only users can unblock tasks", file=sys.stderr)
+        return 1
+
+    if not _role_ok(args, kind, name):
+        return 1
+
+    if store.get(args.id).get("status") != "blocked":
+        print(f"error: task {args.id} is not blocked", file=sys.stderr)
         return 1
 
     task = store.update(args.id, {"status": "todo", "blocked_reason": ""})
