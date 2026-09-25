@@ -79,6 +79,18 @@ class TestJsonStore(unittest.TestCase):
         """Clean up temporary directory."""
         self.temp_dir.cleanup()
 
+    def test_reading_does_not_create_file(self):
+        """Constructing the store and listing must not write anything (field feedback F6)."""
+        self.assertEqual(JsonStore(self.store_path, self.root).list(), [])
+        self.assertFalse(self.store_path.exists())
+
+    def test_first_write_creates_file(self):
+        """The first add creates the file, including missing folders."""
+        store = JsonStore(self.root / "new" / "helper-tasks.json", self.root)
+        store.add({"task": "t", "title": "T", "instructions": "I", "priority": "Low",
+                   "criterion": "AC1", "blocks_approval": False})
+        self.assertTrue((self.root / "new" / "helper-tasks.json").exists())
+
     def test_list_empty(self):
         """Test listing empty store."""
         tasks = self.store.list()
