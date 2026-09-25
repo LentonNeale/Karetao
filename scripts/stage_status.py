@@ -10,6 +10,7 @@ from pathlib import Path
 # Import from icmlib and checkpoint_policy
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from icmlib import (
+    task_of,
     default_root, default_project, list_artifacts, read_header,
     checkpoint_of, open_questions
 )
@@ -32,9 +33,9 @@ def collect(root, project):
 
     for artifact_path in artifacts:
         header = read_header(artifact_path)
-        task = header.get("task", "")
-        if not task:
-            continue
+        if not header:
+            continue  # not an ICM artifact (e.g. board.md)
+        task = task_of(artifact_path, header)
 
         if task not in task_info:
             task_info[task] = {"tier": "", "tier_suggested": ""}
@@ -48,9 +49,9 @@ def collect(root, project):
     tasks = {}
     for artifact_path in artifacts:
         header = read_header(artifact_path)
-        task = header.get("task", "")
-        if not task:
-            continue
+        if not header:
+            continue  # not an ICM artifact (e.g. board.md)
+        task = task_of(artifact_path, header)
 
         if task not in tasks:
             tasks[task] = {"artifacts": []}

@@ -461,3 +461,16 @@ class TestNowIso(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTaskOf(unittest.TestCase):
+    """task_of falls back to the issue, then the file name, for artifacts without a task: header."""
+
+    def test_task_header_wins(self):
+        self.assertEqual(icmlib.task_of("x/12-spec.md", {"task": "led", "issue": "#12"}), "led")
+
+    def test_issue_fallback(self):
+        self.assertEqual(icmlib.task_of("x/12-spec.md", {"issue": "#12"}), "#12")
+
+    def test_filename_fallback(self):
+        self.assertEqual(icmlib.task_of("x/led-timer-brief.md", {"issue": "none yet"}), "led-timer")

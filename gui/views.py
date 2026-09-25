@@ -10,7 +10,7 @@ from urllib.parse import urlencode, parse_qs
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from icmlib import check_inside_outputs, read_header, read_reviews, list_artifacts, checkpoint_of, open_questions, task_tier
+from icmlib import check_inside_outputs, read_header, read_reviews, list_artifacts, checkpoint_of, open_questions, task_tier, task_of
 from helper import get_store
 import checkpoint_policy
 
@@ -175,7 +175,7 @@ def render_action_forms(artifact_path, header, role, viewer_identity):
 
     # Get checkpoint and task info
     cp = checkpoint_of(artifact_path)
-    task = header.get("task", "")
+    task = task_of(artifact_path, header)
     status = header.get("status", "")
     author = header.get("author", "")
     approver = header.get("approver", "")
@@ -509,7 +509,7 @@ def render_evidence(task, root):
         if artifact_path.name.endswith("-spec.md"):
             try:
                 header = read_header(artifact_path)
-                if header.get("task") == task:
+                if task_of(artifact_path, header) == task:
                     spec_path = artifact_path
                     break
             except Exception:

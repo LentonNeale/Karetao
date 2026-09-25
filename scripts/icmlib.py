@@ -311,6 +311,22 @@ def model_rank(model: str) -> int:
     return ranks.get(model, 99)
 
 
+
+def task_of(path, header: dict | None = None) -> str:
+    """The task an artifact belongs to: its `task:` header; else its issue ("#12");
+    else the file name without the artifact suffix ("led-timer-brief.md" -> "led-timer").
+    The fallbacks let artifacts written before the `task:` header existed still group."""
+    if header is None:
+        header = read_header(path)
+    task = (header.get("task") or "").strip()
+    if task:
+        return task
+    m = re.fullmatch(r"#?(\d+)", (header.get("issue") or "").strip())
+    if m:
+        return "#" + m.group(1)
+    stem = Path(path).name[:-3] if Path(path).name.endswith(".md") else Path(path).name
+    return stem.rsplit("-", 1)[0] if "-" in stem else stem
+
 def find_brief(root: Path = None, task: str = None) -> Path | None:
     """
     Find the brief artifact for a task.
@@ -328,7 +344,7 @@ def find_brief(root: Path = None, task: str = None) -> Path | None:
 
     # The brief is the -brief.md whose header names this task (the file name may carry an issue prefix)
     for f in sorted(intake_output.glob("*-brief.md")):
-        if read_header(f).get("task") == task:
+        if task_of(f) == task:
             return f
 
     return None

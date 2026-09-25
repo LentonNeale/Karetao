@@ -34,7 +34,7 @@ def cmd_approve(args):
 
     # Get the header and check tier
     header = icmlib.read_header(artifact_path)
-    task = header.get("task", "")
+    task = icmlib.task_of(artifact_path, header)
     tier = icmlib.task_tier(root, task)
 
     # Check open questions
