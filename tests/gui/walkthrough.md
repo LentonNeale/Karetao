@@ -6,9 +6,9 @@ Before you start, and whenever you want a clean slate:
 
 ```bash
 scripts/gui.sh --demo-reset --as user1 --check     # recopy the demo data, then check the server starts
-D=/tmp/icm-gui-demo
-R="python3 scripts/review.py --root $D --project $D/icm-project"
 ```
+
+The CLI commands below spell out the demo path in full, so they work in any terminal. If you set `ICM_GUI_DEMO`, change `/tmp/icm-gui-demo` to match.
 
 ## 1. Start the GUI as the User
 
@@ -49,7 +49,7 @@ Open http://127.0.0.1:8765/artifact?path=stages/02-issue-spec/output/12-demo-led
 1. Type a question in **Ask** and submit it → `status: needs-clarification`. Approve is disabled with the reason "1 open question(s) must be answered first".
 2. In a second terminal, answer as the orchestrator:
    ```bash
-   $R --as agent:orchestrator/opus answer stages/02-issue-spec/output/12-demo-led-spec.md --text "GPIO 5"
+   python3 scripts/review.py --root /tmp/icm-gui-demo --project /tmp/icm-gui-demo/icm-project --as agent:orchestrator/opus answer stages/02-issue-spec/output/12-demo-led-spec.md --text "GPIO 5"
    ```
 3. Reload the page → `status: draft`, the answer appears in the thread, and **Approve** is enabled. Click it.
 
@@ -64,15 +64,15 @@ Open the **Audit** tab.
 Click **Reopen** → the brief's status is `draft`. It's a T1 brief written by a Haiku agent, so it goes back to the **orchestrator's** queue, not yours. Check this with:
 
 ```bash
-python3 scripts/stage_status.py --root $D --project $D/icm-project --awaiting orchestrator
+python3 scripts/stage_status.py --root /tmp/icm-gui-demo --project /tmp/icm-gui-demo/icm-project --awaiting orchestrator
 ```
 
 ## 6. Orchestrator approvals from the CLI
 
 ```bash
-$R --as agent:orchestrator/opus approve stages/04-implement/output/14-demo-fw-plan.md   # exit 0: T2 plan (C5) written by haiku
-$R --as agent:orchestrator/opus approve stages/02-issue-spec/output/13-demo-docs-spec.md # exit 1: "no self-approval"
-$R --as agent:orchestrator/opus approve stages/04-implement/output/15-demo-ui-plan.md    # exit 1: "orchestrator may not approve C5 at T3"
+python3 scripts/review.py --root /tmp/icm-gui-demo --project /tmp/icm-gui-demo/icm-project --as agent:orchestrator/opus approve stages/04-implement/output/14-demo-fw-plan.md   # exit 0: T2 plan (C5) written by haiku
+python3 scripts/review.py --root /tmp/icm-gui-demo --project /tmp/icm-gui-demo/icm-project --as agent:orchestrator/opus approve stages/02-issue-spec/output/13-demo-docs-spec.md # exit 1: "no self-approval"
+python3 scripts/review.py --root /tmp/icm-gui-demo --project /tmp/icm-gui-demo/icm-project --as agent:orchestrator/opus approve stages/04-implement/output/15-demo-ui-plan.md    # exit 1: "orchestrator may not approve C5 at T3"
 ```
 
 Artifact paths are relative to `--root`, so they work from any directory.

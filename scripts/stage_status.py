@@ -216,14 +216,15 @@ def main(argv=None):
         print(json.dumps(tasks, indent=2))
     else:
         # Print as Markdown table
-        print("| Task | Tier | Can Proceed | Artifacts |")
-        print("|---|---|---|---|")
+        print("| Task | Tier | Can proceed | Artifact | Status | Awaiting | Reason |")
+        print("|---|---|---|---|---|---|---|")
         for task in tasks:
-            task_name = task["task"]
             tier = task["tier"] or "—"
             can_proceed = "Yes" if task["can_proceed"] else "No"
-            artifact_count = len(task["artifacts"])
-            print(f"| {task_name} | {tier} | {can_proceed} | {artifact_count} |")
+            for art in task["artifacts"]:
+                name = art["path"].rsplit("/", 1)[-1]
+                print(f"| {task['task']} | {tier} | {can_proceed} | {name} | {art['status']} "
+                      f"| {art['awaiting']} | {art.get('reason', '')} |")
 
     return 0
 
