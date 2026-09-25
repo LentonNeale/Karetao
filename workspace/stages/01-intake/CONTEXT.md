@@ -8,6 +8,7 @@ Turn a raw request into a brief that meets the Definition of Ready. **The Client
 |---|---|---|---|
 | User | Conversation | The request | What is wanted |
 | Stage reference | `references/definition-of-ready.md` | Full | The standard to meet |
+| Project | `../../../icm-project/requester-profile.md` (if present) | Full | Ask for what this requester often omits; don't re-ask what they reliably give; read their shorthand |
 | Project | `../../../icm-project/PROJECT.md` | Components | Name the "Where" |
 | Project | `../../../icm-project/authority.md` | Subjects table | Name the owning docs |
 | Tracker | `output/board.md` (written by the orchestrator from `../../scripts/board-snapshot.sh`) | Open items | Spot likely related issues |
@@ -28,5 +29,5 @@ Turn a raw request into a brief that meets the Definition of Ready. **The Client
 
 | Artifact | Location | Format |
 |---|---|---|
-| Task brief | `output/<slug>-brief.md` | Exactly `references/brief-template.md`: a plain `key: value` header block, the ten Definition of Ready headings, then Open questions, Gaps and Revision log |
+| Task brief | `output/<slug>-brief.md` | Exactly `references/brief-template.md`: a plain `key: value` header block, the eleven Definition of Ready headings, then Open questions, Gaps and Revision log |
 | Board snapshot | `output/board.md` | Written by the orchestrator whenever it refreshes the board; read-only for the liaison |

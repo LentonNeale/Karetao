@@ -10,6 +10,13 @@ cd "$ICM_ROOT"
 ws="$(basename "$ICM_WORKSPACE")"
 settings=$(printf '{"permissions":{"allow":["Edit(%s/stages/01-intake/output/**)"]}}' "$ws")
 
+liaison=(claude --agent client-liaison --model haiku --disallowedTools Bash WebFetch WebSearch Agent NotebookEdit --settings "$settings")
+
+# Headless use (tests, other agents, the GUI) has no terminal for tmux: run the liaison directly.
+if [ ! -t 0 ] || [ ! -t 1 ] || [ "${1:-}" = "-p" ] || [ "${1:-}" = "--print" ] || ! command -v tmux >/dev/null; then
+  exec "${liaison[@]}" "$@"
+fi
+
 # Create a tmux session with a descriptive name
 SESSION_NAME="liaison-$(date +%s)"
 
@@ -28,7 +35,7 @@ tmux send-keys -t "$SESSION_NAME:0.1" "cd '$ICM_ROOT' && bash" Enter
 # Small delay to ensure panes are ready, then run the liaison command
 sleep 0.5
 tmux send-keys -t "$SESSION_NAME:0.0" \
-  "echo '=== Client Liaison Agent ===' && claude --agent client-liaison --model haiku --disallowedTools Bash WebFetch WebSearch Agent NotebookEdit --settings '$settings' $*" \
+  "echo '=== Client Liaison Agent ===' && $(printf '%q ' "${liaison[@]}" "$@")" \
   Enter
 
 # Attach to the session

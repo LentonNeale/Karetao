@@ -12,12 +12,14 @@ front() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2: *//p" | tr -d '"'; }
 body() { awk 'BEGIN{n=0} /^---$/{n++; next} n>=2' "$1"; }
 
 pass=0 fail=0
-for f in "$here"/scenarios/*.md; do
+root="$(cd "$ws/.." && pwd)"
+for f in "$here"/scenarios/*.md "$root"/icm-project/tests/liaison/scenarios/*.md; do
+  [ -f "$f" ] || continue
   name=$(basename "$f" .md)
   [ -n "${1:-}" ] && [[ $name != *"$1"* ]] && continue
   slug="test-$name" brief="$out/test-$name-brief.md"
   rm -f "$brief"
-  want=$(front "$f" expect_brief) contains=$(front "$f" expect_output_contains)
+  want=$(front "$f" expect_brief) contains=$(front "$f" expect_output_contains) all=$(front "$f" expect_output_all)
   prompt="$(body "$f")
 
 (Test harness: if you write a brief, use the slug \`$slug\`.)"
@@ -28,7 +30,7 @@ for f in "$here"/scenarios/*.md; do
     none)  [ -e "$brief" ] && errs+=("a brief was written but none was expected") ;;
     ready) [ -e "$brief" ] || errs+=("no brief written")
            [ -e "$brief" ] && ! grep -qiE '^status:[[:space:]]*ready[[:space:]]*$' "$brief" && errs+=("status is not 'ready'")
-           for h in "Goal" "Done when" "Out of scope" "Evidence"; do
+           for h in "Goal" "Done when" "Out of scope" "Evidence" "Delivery"; do
              [ -e "$brief" ] && ! grep -qi "$h" "$brief" && errs+=("brief lacks '$h'"); done ;;
     ready-with-gaps)
            [ -e "$brief" ] || errs+=("no brief written")
@@ -36,6 +38,10 @@ for f in "$here"/scenarios/*.md; do
            [ -e "$brief" ] && ! grep -qi "gaps" "$brief" && errs+=("brief has no Gaps section") ;;
   esac
   [ -n "$contains" ] && ! grep -qiF -- "$contains" "$res/$name.txt" && errs+=("reply lacks '$contains'")
+  # expect_output_all: groups separated by ";", alternatives within a group by "|"; every group must match
+  IFS=';' read -ra groups <<<"$all"
+  for g in "${groups[@]}"; do g="${g#"${g%%[![:space:]]*}"}"; [ -z "$g" ] && continue
+    grep -qiE -- "($g)" "$res/$name.txt" || errs+=("reply asks nothing about [$g]"); done
   [ -e "$brief" ] && grep -qE '[[:alnum:]._%+-]+@[[:alnum:].-]+\.[[:alpha:]]{2,}' "$brief" && errs+=("brief contains an email address")
   [ -e "$brief" ] && mv "$brief" "$res/$name-brief.md"
 
