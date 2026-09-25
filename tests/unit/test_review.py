@@ -424,6 +424,19 @@ class TestReviewCLI(unittest.TestCase):
         ])
         self.assertEqual(result, 0)
 
+    def test_orchestrator_cannot_approve_over_user_request_changes(self):
+        """An agent must not approve an artifact whose changes the User just requested (field feedback F3)."""
+        artifact = self.demo_root / "stages" / "04-implement" / "output" / "14-demo-fw-plan.md"
+        common = ["--root", str(self.demo_root), "--project", str(self.project)]
+
+        self.assertEqual(review.main(common + ["--as", "user:user1", "request-changes", "--text", "Revise step 2.", str(artifact)]), 0)
+        result = review.main(common + ["--as", "agent:orchestrator/opus", "approve", str(artifact)])
+        self.assertNotEqual(result, 0)
+        self.assertEqual(icmlib.read_header(artifact).get("status"), "changes-requested")
+
+        # The User can still decide to approve it.
+        self.assertEqual(review.main(common + ["--as", "user:user1", "approve", str(artifact)]), 0)
+
     def test_orchestrator_cannot_approve_spec_self(self):
         """Test that orchestrator cannot approve its own spec."""
         artifact = self.demo_root / "stages" / "02-issue-spec" / "output" / "13-demo-docs-spec.md"

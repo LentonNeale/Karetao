@@ -43,6 +43,16 @@ def cmd_approve(args):
         print(f"error: cannot approve with {num_open_questions} open question(s)", file=sys.stderr)
         return 1
 
+    # An agent may not approve over the User's request for changes; the author must revise first.
+    if header.get("status") == "changes-requested":
+        try:
+            approver_kind = icmlib.parse_identity(args.as_identity)[0]
+        except ValueError:
+            approver_kind = ""
+        if approver_kind == "agent":
+            print("error: changes were requested; the author must revise before an agent can approve", file=sys.stderr)
+            return 1
+
     # Get checkpoint
     cp = icmlib.checkpoint_of(artifact_path)
     if not cp:
