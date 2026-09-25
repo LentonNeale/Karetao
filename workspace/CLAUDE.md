@@ -30,6 +30,7 @@ The main session (the most capable model) plans, decides, reviews every delegate
 
 | Work | Agent | Model |
 |---|---|---|
+| Talk with the user until a request meets the Definition of Ready; write the brief (**its own main session** via `scripts/liaison.sh`, never spawned) | `client-liaison` | haiku |
 | Create or edit issues, board fields, milestones, register rows from an approved spec | `issue-clerk` | sonnet |
 | Consistency and link checks of docs against the authority map | `doc-checker` | sonnet |
 | Builds, tests, evidence capture | `build-runner` | haiku |
