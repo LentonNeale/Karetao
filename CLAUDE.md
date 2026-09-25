@@ -11,6 +11,10 @@ Karetao is a monorepo for a robotic arm platform:
 - `Documentation/`: the Karetao system-level documentation authority. Start at `Documentation/00_INDEX.md`.
 - `shared/`: placeholder directories (`libs`, `protocols`, `test-vectors`) that are currently empty.
 
+## Working method (ICM)
+
+Task definition, issue tracking and delivery run through the ICM workspace. For any request to plan, track, implement or close work, read `workspace/CLAUDE.md`, then `workspace/CONTEXT.md`. Karetao's own settings (GitHub IDs, authority map, build commands) are in `icm-project/`. Simple, fully specified tasks are delegated to the `issue-clerk`, `build-runner` and `doc-checker` subagents, which run on cheaper models.
+
 ## Commands
 
 Run the firmware commands from `Arm_Sensor_Hub/`:

@@ -1,0 +1,1 @@
+../../workspace/agents/issue-clerk.md
