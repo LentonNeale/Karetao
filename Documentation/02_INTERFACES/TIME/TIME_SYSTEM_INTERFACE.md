@@ -1,139 +1,125 @@
 # Time System Interface
 
-**Scope:** Synchronization contract between Raspberry Pi (time authority) and STM32 (synchronized time consumer).  
-**Status:** Pre-freeze approval baseline
+**Scope:** Clock-synchronization contract between the Raspberry Pi (time authority, owner of the ClockSync model) and the STM32 (local monotonic clock only).  
+**Status:** Pre-freeze approval baseline, revised for the Issue #12 clock-synchronization decisions ([`ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md`](../../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md)).
 
 ## Authority
 
-This document defines the Karetao system-level time interface. Component repositories own TIME_SYNC service implementation details, timestamp capture mechanics, and task synchronization.
+This document defines the Karetao system-level time interface. Component repositories own implementation details: ISR capture, 64-bit counter extension, the ClockSync estimator, and task synchronization.
 
 ---
 
 ## 1. Time Model
 
-The **Raspberry Pi is the system time authority.** The STM32 maintains a monotonic local clock and does not reset that clock during synchronization.
+The **Raspberry Pi is the system time authority.** The STM32 maintains a monotonic local clock only. It performs **no clock math**: it does not hold, apply or step a time offset.
 
 ```text
-hub_time_us = local_time_us + time_offset_us
-time_offset_us = pi_time_us - stm32_capture_time_us
+STM32 acquisition timestamp
+        |
+        v
+STM32 local monotonic clock
+        |
+        v
+ClockSync conversion model (Pi)  <---  SPI receive timestamps (observations)
+        |
+        v
+synchronized measurement_timestamp_us
 ```
 
 **Invariants:**
-- STM32 local time is monotonic and is never reset by synchronization.
-- Exported timestamps use local time plus the current accepted offset.
-- Measurement timestamps represent acquisition time, not transport or frame assembly time.
+- STM32 local time is monotonic and is never reset or adjusted by synchronization.
+- The STM32 exports acquisition timestamps as raw local time. The Pi-side ClockSync model converts them into the synchronized `measurement_timestamp_us` consumed by the estimator.
+- The SPI receipt timestamp feeds the clock model. It never replaces the measurement acquisition timestamp.
 
 ---
 
-## 2. Measurement vs. Frame Timestamps
+## 2. Measurement, Frame and Exchange Timestamps
 
 | Timestamp | Meaning | Ownership |
 |---|---|---|
-| `measurement_timestamp_us` | Acquisition time in the synchronized Pi time domain | Physical measurement record |
-| `frame_time_us` | Frame assembly time (SPI) | Outer SPI frame (SPI_SYSTEM_INTERFACE.md) |
+| `measurement_timestamp_us` | Acquisition instant, converted into the synchronized Pi time domain by ClockSync | Physical measurement record |
+| `frame_time_us` | Frame assembly time (SPI); unchanged | Outer SPI frame (SPI_SYSTEM_INTERFACE.md) |
+| `request_received_local_us` | STM32 local time at which the correlated request was received; a clock-sync observation | Versioned response payload extension |
 
-`frame_time_us` identifies frame assembly and is not a measurement timestamp. The measurement timestamp is captured immediately after the measurement bytes have been successfully received and decoded. It is not captured at transaction start or preparation time.
+These are three distinct fields. `frame_time_us` is not a measurement timestamp, and `request_received_local_us` is not an acquisition timestamp.
 
-Until a synchronization is accepted, exported timestamps are **local-only** and must be marked unsynchronized. Consumers must not treat unsynchronized timestamps as valid.
+Until ClockSync is valid, converted timestamps must be marked unsynchronized. Consumers must not treat unsynchronized timestamps as valid.
 
 ---
 
-## 3. TIME_SYNC Transaction
+## 3. Clock-Sync Observations
 
-The Raspberry Pi sends `TIME_SYNC` through SPI with:
+There is no separate periodic `TIME_SYNC` exchange and no `sync_seq`. **Every applicable SPI response contributes an observation:**
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `pi_time_us` | `uint64_t` | Pi time associated with the defined synchronization point. |
-| `sync_seq` | `uint32_t` | Monotonic synchronization sequence. |
-| `flags` | `uint16_t` | Synchronization/control flags. |
+| Point | Definition |
+|---|---|
+| `T1` | Pi request send time (`monotonic_us()`). |
+| `T2` | STM32 receipt: the **raw TIM2 counter captured in the SPI DMA-complete ISR**, extended to a 64-bit local timestamp in a separate, serialized **task-context** step. That extended value is carried as `request_received_local_us`. |
+| `T4` | Pi response receipt time. |
+| `T_pi_obs` | `(T1 + T4) / 2`, the Pi-side observation instant. |
 
-When the STM32 processes the validated message, it captures its local monotonic time `t_stm32` in task context and calculates:
-
-```text
-time_offset_us = pi_time_us - t_stm32
-```
-
-The STM32 stores and maintains:
-
-```text
-time_sync_valid         // bool: offset is synchronized
-time_offset_us          // signed: current accepted offset
-last_sync_sequence      // sequence of last accepted update
-last_sync_local_time_us // local time of last accepted update
-sync_age_us             // time since last accepted update
-```
-
-**Initial contract detail:** `pi_time_us` represents the Pi time associated with the synchronization transaction, including one-way transport uncertainty. This is a one-way transaction-point estimate (SPI_SYSTEM_INTERFACE.md § 11). A future two-way exchange may add Pi `t1`/`t3` and STM32 `t2` timestamps to estimate round-trip delay. That is a versioned enhancement, not a requirement for v1.
+- The existing Pi request `seq` is the exchange-correlation ID. STM32 and Pi sequence spaces are independent, but the Pi always initiates, so its `seq` is sufficient.
+- `request_received_local_us` is added through a versioned payload extension on every response that contributes an observation. Diagnostic-only responses do not contribute.
+- `TimeService_NowUs()` must not be called in the ISR, because it mutates wrap-extension state. `response_staged_us` must not be used as T2, because it occurs later than reception.
+- The 32-bit wrap extension is guarded by a fixed, non-dynamic `counter_extension_gap_us` (currently 500 ms, to be reviewed once hardware characterization data exists). Recovery behaviour after a rejected extension gap is open.
 
 ---
 
 ## 4. Synchronization Validity and Rejection
 
-The v1 synchronization validity timeout is **5 seconds.** When the timeout expires:
+ClockSync on the Pi estimates offset and frequency from accepted observations. It is the **single acceptance policy**.
 
-```text
-local monotonic clock continues
-hub-time calculation continues
-time_sync_valid = false
-```
+- `ClockSync.is_valid()` governs timestamp-conversion validity and measurement usability, which feeds EKF acceptance.
+- Synchronization becomes invalid **5 seconds** after the last accepted observation (SD-19).
+- Implausible observations are **rejected without silent slew** (SD-21). The legacy drift-limit rejection (initial bound ±24 h, runtime step ±1 s) may remain temporarily as a secondary diagnostic check only. It must not modify ClockSync state or act as a second acceptance policy, and it is removed once ClockSync is hardware-validated.
+- Diagnostics expose ClockSync state through DIAGNOSTIC v2 and a `GET_DIAGNOSTIC` request (see `SPI_PAYLOAD_SCHEMA.md`). The top-level `time_sync_valid` becomes a derived summary field.
 
-The STM32 must not claim synchronized timestamps while `time_sync_valid` is false. Status/diagnostic messages must expose synchronization validity, age since the last accepted update, and quality (`SYNCHRONIZED` or `UNSYNCHRONIZED`).
-
-**Rejection criteria:** The initial accepted offset must be within a configurable initial bound (default ±24 hours). Later updates require:
-- strictly newer sequence number;
-- offset change within the configurable runtime step bound, initially ±1 second.
-
-Rejected updates retain the previous accepted offset, sequence, local timestamp, and validity state for diagnostics. **Implausible updates are rejected without silent slew** (SD-21).
-
-**Initial correction strategy:** The first implementation applies a direct offset step. `hub_time_us` is therefore permitted to jump when synchronization is updated. Two-way round-trip-time estimation and slewed correction are future versioned enhancements.
+**Open:** numeric ClockSync acceptance criteria, and field-by-field confirmation of the DIAGNOSTIC v2 content.
 
 ---
 
-## 5. Motion Safety During Unsynchronization
+## 5. Motion Safety
 
-Synchronization becomes invalid **5 seconds** after the last accepted TIME_SYNC update, or immediately after reset.
+Two independent signals apply (Issue #12 item 6):
 
-While synchronization is invalid (`time_sync_valid == false`):
-- acquisition and diagnostics continue;
-- timestamp quality must report `UNSYNCHRONIZED`;
-- **time-dependent motion is inhibited** until a new accepted TIME_SYNC update restores validity (SD-20).
+- **STM32 link liveness (`link_stale`)** gates STM32 motion permission locally and fails closed. It is count-based. `missed_count` increments once per expected-message interval without an accepted, valid SPI message and resets on any accepted, valid message. It trips at `>= N_moving` while moving or `>= N_idle` while idle (`N_moving < N_idle`). Until those values are set, detection shall occur within **500 ms** (SYS-FAIL-001). `link_stale` is not derived from ClockSync quality.
+- **ClockSync validity** does not itself drive motion permission. While it is invalid, acquisition and diagnostics continue, timestamps are marked `UNSYNCHRONIZED`, and **time-dependent motion is inhibited** through the motion-permission authority (SD-20).
 
-Reset clears synchronization validity and the volatile offset; timestamps remain marked unsynchronized until resynchronization. Only explicitly defined non-motion service operations may continue while synchronization is invalid.
+An STM32 reset invalidates the ClockSync model. Timestamps remain unsynchronized until ClockSync is valid again.
 
 ---
 
 ## 6. Atomicity and Visibility
 
-A synchronization update and its validity metadata must be committed as one logical update. Measurement readers (SPI service, diagnostic aggregators) must see either the previous complete update or the new complete update, never a partially written offset/validity pair.
-
-The implementation must ensure that:
-- offset and validity transitions are observable as atomic changes;
-- timestamp readers see consistent offset/validity pairs;
-- diagnostics never expose torn updates.
+- The ISR-captured raw counter and its task-context 64-bit extension must be paired consistently with the response they describe.
+- Pi-side ClockSync model updates and validity must be observable as one logical update. Timestamp conversions must never use a partially updated model.
+- Diagnostics never expose torn updates.
 
 ---
 
 ## 7. System Requirements Summary
 
-- The shared STM32/Pi time model targets timestamp error **≤ ±1 ms** (SD-18).
-- TIME_SYNC operates nominally at **1 Hz**, configurable to **10 Hz** (SD-19).
-- Synchronization becomes invalid after **5 s** without an accepted update.
-- While synchronization is invalid, motion is inhibited and quality is marked `UNSYNCHRONIZED`.
-- Initial and runtime time-offset validation use distinct bounds.
-- Reset clears synchronization validity and volatile offset.
-- Implausible updates are rejected without silent slew.
+- Timestamp error target **≤ ±1 ms** (SD-18, SYS-SYNC-001).
+- Every applicable SPI response is a clock-sync observation. The STM32 performs no clock math (SYS-SYNC-002).
+- Invalid after **5 s** without an accepted observation (SYS-SYNC-002).
+- Implausible observations are rejected by ClockSync without silent slew (SYS-SYNC-004).
+- Reset invalidates ClockSync (SYS-SYNC-005).
+- `link_stale` and `ClockSync.is_valid()` are independent (SYS-SYNC-006, SYS-FAIL-001).
 
 ---
 
-## 8. Integration Obligations
+## 8. Integration Obligations and Acceptance Gates
 
-The system must explicitly define the exact set of time-dependent motion operations and ensure one motion-permission authority enforces the rule consistently. All timestamp consumers (especially the 500 Hz EKF) must respect synchronization validity and reject unsynchronized records.
+The system must explicitly define the set of time-dependent motion operations and ensure one motion-permission authority enforces the rule consistently. All timestamp consumers, especially the 500 Hz EKF, must respect ClockSync validity.
 
-Validation of drift between synchronization updates and conformance of achieved timestamp error to the ±1 ms target remain required integration tasks. These depend on live system validation.
+Acceptance uses two sequential gates (Issue #12 item 10):
+- **Gate A (model characterized):** synthetic and integration tests show the ClockSync regression converges and behaves correctly.
+- **Gate B (±1 ms validated):** a hardware-validated milestone against an independent reference, attempted only after Gate A passes.
+
+Current exported measurement timestamps are **not yet** in the synchronized domain. Passing Gate A does not imply Gate B.
 
 ---
 
 ## Provenance
 
-Reconciled from `docs/project/firmware/TIMESTAMP_SYNC_CONTRACT.md`. Time model, TIME_SYNC transaction semantics, validity timeout, rejection criteria, motion safety rules, and atomicity requirements are system-owned. Component implementations of TIM2 counter wrap handling, TimeService_NowUs() mechanism, reader context restrictions, AS5600 timestamp migration, and task synchronization remain component authority.
+Originally reconciled from `docs/project/firmware/TIMESTAMP_SYNC_CONTRACT.md`. The one-way `TIME_SYNC` transaction (`pi_time_us`/`sync_seq`/`flags`), STM32-held `time_offset_us`, and direct offset stepping were superseded on 2026-09-24 by the Issue #12 decisions. The superseded text is in Git history.

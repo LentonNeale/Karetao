@@ -1,9 +1,15 @@
 # TIME_SYNC System Validation Against Contracts
 
+> **As-built evidence (2026-09-21).** This document records measurements against the *current* one-way TIME_SYNC implementation. That design is superseded by [Issue #12](../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) (2026-09-24): the STM32 performs no clock math, every SPI exchange is a ClockSync observation, and acceptance uses Gate A then Gate B. The evidence here stays valid for the current code and must be re-run once Issue #12 is implemented.
+>
+> **Status terms.** "VERIFIED" below means component-level evidence (code review or unit test) only. `SYSTEM_VERIFIED` is set only in `SYSTEM_VERIFICATION_MATRIX.md`.
+>
+> **Requirement IDs corrected (2026-09-25).** Drift and stability were previously labelled SYS-SYNC-003 and SYS-SYNC-005, and schema compliance was labelled SYS-SPI-003. Those IDs mean motion inhibit on sync loss, reset behaviour, and DATA_READY/polling respectively. Drift and stability are supporting measurements for SYS-SYNC-001, and schema compliance belongs to SYS-SPI-001.
+
 ## Authority
 
 This document maps observed TIME_SYNC measurements and implementation evidence to system requirements defined in:
-- `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` — baseline SYS-SYNC-001..005, SYS-SPI-003/004, SYS-TIM-003
+- `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` — SYS-SYNC-001/002/004, SYS-SPI-001/004, SYS-TIM-003
 - `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` — time model and synchronization contract
 - `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md` — SPI transaction semantics and DATA_READY contract
 - `Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md` — TIME_SYNC payload structure
@@ -76,7 +82,7 @@ This document maps observed TIME_SYNC measurements and implementation evidence t
 
 ---
 
-### SYS-SYNC-003: Offset Change Rate (Drift)
+### SYS-SYNC-001 (supporting): Offset Change Rate (Drift)
 **Requirement (SYSTEM_REQUIREMENTS.md:33, 34):**
 > When synchronization is invalid, acquisition and diagnostics shall continue but time-dependent motion shall be inhibited. Implausible time-offset updates shall be rejected without silent slew, using the approved wide-initial/narrow-runtime validation model.
 
@@ -146,7 +152,7 @@ This document maps observed TIME_SYNC measurements and implementation evidence t
 
 ---
 
-### SYS-SYNC-005: Offset Stability
+### SYS-SYNC-001 (supporting): Offset Stability
 **Requirement (SYSTEM_REQUIREMENTS.md:35):**
 > Reset shall clear synchronization validity and volatile offset; timestamps remain unsynchronized until a new TIME_SYNC update is accepted.
 
@@ -180,7 +186,7 @@ This document maps observed TIME_SYNC measurements and implementation evidence t
 
 ---
 
-### SYS-SPI-003: Request/Response Schema Compliance
+### SYS-SPI-001: Request/Response Schema Compliance
 **Requirement (SYSTEM_REQUIREMENTS.md:29):**
 > DATA_READY may provide latency notification and polling shall provide recovery; polling is initially 1 ms and the Pi is SPI clock master.
 
@@ -283,11 +289,11 @@ This document maps observed TIME_SYNC measurements and implementation evidence t
 | Requirement | Category | Evidence Source | Verification Status | Acceptance Criterion | Remaining Work |
 |---|---|---|---|---|---|
 | **SYS-SYNC-001** | Offset Accuracy | spi_time_sync_probe.py + time_sync_analysis.py + SWD readout | READY TO VERIFY | offset p50 ≤ ±1000 µs, p95 ≤ ±2000 µs, std < 500 µs | Hardware measurement on Karetao (SWD correlation per SWD_READOUT_PROCEDURES.md) |
-| **SYS-SYNC-002** | Frequency | spi_time_sync_probe.py configurable interval + firmware timeout | CONFIGURABLE + VERIFIED | 1–10 Hz configurable, 5 s timeout in code | Measure actual production frequency |
-| **SYS-SYNC-003** | Drift Rate | time_sync_analysis.py:drift_rate_us_per_sec + firmware bounds | READY TO VERIFY | drift < 10,000 µs/s, runtime bound ±1 s | Long-term (hours/days) drift measurement |
+| **SYS-SYNC-002** | Frequency | spi_time_sync_probe.py configurable interval + firmware timeout | CONFIGURABLE + COMPONENT EVIDENCE (as-built; requirement modified by Issue #12) | 1–10 Hz configurable, 5 s timeout in code | Measure actual production frequency |
+| **SYS-SYNC-001 (supporting)** | Drift Rate | time_sync_analysis.py:drift_rate_us_per_sec + firmware bounds | READY TO VERIFY | drift < 10,000 µs/s, runtime bound ±1 s | Long-term (hours/days) drift measurement |
 | **SYS-SYNC-004** | Acceptance Rate | time_sync_analysis.py:acceptance_rate + spi_slave_service.c validation | READY TO VERIFY | acceptance_rate ≥ 0.90 (≥90%) | Run probe on Karetao hardware |
-| **SYS-SYNC-005** | Stability | time_sync_analysis.py:offset_std_us + percentiles | READY TO VERIFY | offset_std < 500 µs, p95–p5 < 2000 µs | Run 100+ transaction session |
-| **SYS-SPI-003** | Schema Compliance | Task 4 unit tests + code review | VERIFIED | 16-byte payload, correct offsets | None (v1 schema stable) |
+| **SYS-SYNC-001 (supporting)** | Stability | time_sync_analysis.py:offset_std_us + percentiles | READY TO VERIFY | offset_std < 500 µs, p95–p5 < 2000 µs | Run 100+ transaction session |
+| **SYS-SPI-001** | Schema Compliance | Task 4 unit tests + code review | COMPONENT EVIDENCE | 16-byte payload, correct offsets | None (v1 schema stable) |
 | **SYS-SPI-004** | Cable Delay | data_ready_analysis.py (future) + hardware measurement | MEASURABLE | dr_to_nss_max < 5000 µs, zero CRC errors | Oscilloscope measurement, stress test |
 | **SYS-TIM-003** | SPI Clock | spi_time_sync_probe.py:--speed-hz + transaction logging | READY TO TEST | 0 CRC failures at 1 MHz, success ≥ 99% | 5 MHz sustained test, thermal/EMI stress |
 
@@ -295,15 +301,15 @@ This document maps observed TIME_SYNC measurements and implementation evidence t
 
 ## Audit Status Summary
 
-### VERIFIED (requirements satisfied by code review and existing infrastructure)
+### COMPONENT EVIDENCE (code review / unit tests; not SYSTEM_VERIFIED)
 - **SYS-SYNC-002:** 5-second timeout configured in firmware; 1–10 Hz range supported by probe
-- **SYS-SPI-003:** TIME_SYNC payload schema matches specification; unit tests confirm byte layout
+- **SYS-SPI-001:** TIME_SYNC payload schema matches specification; unit tests confirm byte layout
 
 ### READY TO VERIFY (infrastructure in place; measurements ready to run)
 - **SYS-SYNC-001:** Offset accuracy measurement via probe statistics
-- **SYS-SYNC-003:** Drift rate and validation bounds via time_sync_analysis.py and firmware validation
+- **SYS-SYNC-001 (supporting):** Drift rate and validation bounds via time_sync_analysis.py and firmware validation
 - **SYS-SYNC-004:** Acceptance rate via NACKs and ACK tracking
-- **SYS-SYNC-005:** Stability (std dev, percentiles) from session data
+- **SYS-SYNC-001 (supporting):** Stability (std dev, percentiles) from session data
 - **SYS-TIM-003:** CRC error rate and success rate via probe at configurable clock speed
 
 ### MEASURABLE (requires additional hardware instrumentation)
@@ -351,7 +357,7 @@ Task 11 will add software debugging (SWD) instrumentation to verify:
 3. **Timestamp application:** Verify STM32 applies offset to measurement timestamps before export
 4. **Synchronization state transitions:** Trace acceptance and rejection of TIME_SYNC updates in real time
 
-These measurements will complete the validation of SYS-SYNC-001..005 after the implementation gaps are closed.
+These measurements will complete the as-built validation of SYS-SYNC-001, -002 and -004 after the implementation gaps are closed.
 
 ---
 

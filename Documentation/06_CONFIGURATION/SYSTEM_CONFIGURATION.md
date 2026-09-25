@@ -11,7 +11,9 @@ This document is the authoritative Karetao destination for system-level controll
 - **CAN nominal rate:** **1 Mbps** for v1, standard 11-bit IDs (SD-05).
 - **SPI initial maximum:** **5 MHz**, pending target-system validation (SD-01, SD-15).
 - **SPI framing:** 512-byte frame, maximum 490-byte payload, Mode 0, little-endian, CRC-32/ISO-HDLC (SD-15).
-- **TIME_SYNC:** 1 Hz nominal, configurable to 10 Hz; invalid after 5 s without accepted update (SD-19).
+- **Clock sync:** observation on every applicable SPI exchange; invalid after 5 s without an accepted observation (SD-19, Issue #12).
+- **Pi link liveness:** count-based (`N_moving` < `N_idle`, values open); interim detection limit 500 ms (SYS-FAIL-001).
+- **`counter_extension_gap_us`:** fixed 500 ms TIM2 wrap-extension guard, to be reviewed after hardware characterization (Issue #12 item 11).
 
 ---
 
@@ -90,9 +92,9 @@ The calibration model is versioned and integrity-protected.
 ## 4. System Time Representation
 
 - **Host/API authoritative joint representation:** Calibrated radians (SD-12).
-- **STM32 internal time domain:** Hub time in microseconds (`hub_time_us = local_time_us + time_offset_us`), synchronized from Pi.
-- **Timestamp acquisition:** Measurement timestamps captured immediately after successful sensor read/decode, in hub-time domain.
-- **Synchronization quality:** Timestamps marked `SYNCHRONIZED` when valid `TIME_SYNC` is less than 5 seconds old; otherwise marked `UNSYNCHRONIZED`.
+- **STM32 internal time domain:** Monotonic local time in microseconds only; the STM32 holds no offset (Issue #12).
+- **Timestamp acquisition:** Measurement timestamps captured immediately after successful sensor read/decode, in STM32 local time, then converted to Pi time by ClockSync.
+- **Synchronization quality:** Timestamps marked `SYNCHRONIZED` while `ClockSync.is_valid()` (last accepted observation less than 5 seconds old); otherwise marked `UNSYNCHRONIZED`.
 
 ---
 

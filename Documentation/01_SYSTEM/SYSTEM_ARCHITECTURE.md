@@ -109,10 +109,10 @@ The system startup sequence ensures dependency ordering and safe initialization:
 4. Pi clocks the transaction; STM32 returns the staged frame while accepting the next request.
 
 **Time synchronization path:**
-1. Pi sends `TIME_SYNC` via SPI with its current time.
-2. STM32 receives the update, captures local monotonic time, calculates offset.
-3. Offset is atomically committed in `TimeService` state.
-4. All exported timestamps use `local_time_us + time_offset_us` (hub-time domain).
+1. Pi records T1 and sends any request. The STM32 SPI DMA-complete ISR captures the raw TIM2 counter (T2).
+2. The STM32 extends T2 to 64 bits in task context and returns it as `request_received_local_us` in the response. The Pi records T4.
+3. `TimingSession.transact()` passes the correlated exchange to `ClockSync.record_exchange()`, which estimates offset and frequency.
+4. The STM32 exports raw local acquisition timestamps. ClockSync converts them to synchronized `measurement_timestamp_us`, and the STM32 performs no clock math (Issue #12).
 
 ---
 

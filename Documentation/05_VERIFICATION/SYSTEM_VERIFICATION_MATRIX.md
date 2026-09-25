@@ -9,7 +9,7 @@ This document is the authoritative Karetao system-level verification status reco
 | Requirement group | System status | Required evidence |
 |---|---|---|
 | Timing / synchronization | OPEN | Target hardware timing, timestamp error, sync drift and EKF adequacy |
-| Raspberry heartbeat / loss response | OPEN | End-to-end timeout, controlled-stop/motor-disable timing, no last-command hold |
+| Pi link liveness (`link_stale`) / loss response | OPEN | Count-based detection within interim 500 ms (SYS-FAIL-001), end-to-end timeout, controlled-stop/motor-disable timing, no last-command hold |
 | Motor feedback timeout | OPEN | Integrated freshness and escalation behaviour |
 | CAN interface | OPEN | Live CAN configuration, load, bus-off recovery and motion-inhibit evidence |
 | Joint/state mapping | OPEN | Versioned mapping and differential end-effector verification |

@@ -30,7 +30,7 @@ The system collects synchronized sensor measurements from six joint encoders and
 
 - **SPI:** 512-byte fixed frames at 5 MHz max (integration ceiling, pending validation), carrying snapshots, diagnostics, and responses.
 - **CAN:** 1 Mbps nominal (integration ceiling pending physical validation), MKS motor controller protocol, polling and commanded feedback.
-- **TIME_SYNC:** 1 Hz nominal (configurable to 10 Hz) synchronization of STM32 local time to Pi authority.
+- **Clock synchronization:** every SPI exchange is a clock-sync observation; the Pi-side ClockSync model converts STM32 local timestamps to Pi time (Issue #12).
 - **Lifecycle:** Four-state machine (UNCONFIGURED, INACTIVE, ACTIVE, ERROR) controlling readiness and motion safety.
 
 ## Current Status

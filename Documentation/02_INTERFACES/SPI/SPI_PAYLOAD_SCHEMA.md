@@ -123,6 +123,8 @@ Event types and severity values remain reserved for the error-handling contract;
 
 The diagnostic payload may be extended only by schema versioning or an explicitly reserved extension area.
 
+**DIAGNOSTIC v2 (decided in [Issue #12](../../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) item 8; field layout not yet reconfirmed):** v2 is selected through explicit `schema_version` dispatch. A v1 decoder stays v1-only. v2 is requested by a new `GET_DIAGNOSTIC` request; today `GET_STATUS` returns only an ACK. The recommended v2 content keeps all v1 fields unchanged and adds the ClockSync field set: `sync_valid`, `sync_sample_count`, `rejected_sample_count`, `estimated_frequency_hz`, `estimated_frequency_error_ppm`, `reference_pi_time_us`, `reference_stm32_time_us`, `current_offset_us`, `min_half_rtt_us`, `last_sync_age_us`, `prediction_stddev_us`. In v2, `time_sync_valid` becomes a derived summary field.
+
 ---
 
 ### VERSION (`0x04`)
@@ -163,7 +165,11 @@ Adding this message type does not increment `protocol_version`: `0x04` was previ
 | `pi_time_us` | 8 |
 | `sync_seq` | 4 |
 
-The STM32 captures local monotonic time when processing the validated payload and updates its offset according to SPI_SYSTEM_INTERFACE.md § 11.
+**Deprecated** by [Issue #12](../../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md). The STM32 no longer holds or applies an offset. Clock synchronization uses the `request_received_local_us` response extension below. This payload is retained only until the Issue #12 implementation removes the message.
+
+### Clock-sync response extension (Issue #12 item 1)
+
+Every response that contributes a ClockSync observation carries `request_received_local_us` (64-bit STM32 local time of request receipt; see `TIME_SYSTEM_INTERFACE.md` §3) through a versioned payload extension. Diagnostic-only responses do not carry it. `frame_time_us` is unchanged.
 
 ---
 
@@ -208,6 +214,8 @@ The outer `protocol_version`, CRC-32/ISO-HDLC parameters, and payload `schema_ve
 - Whether diagnostic counters are 32-bit or 64-bit on the wire.
 - Snapshot dropped-count width and reset behavior.
 - Whether future records use a tagged extension mechanism.
+- Wire placement and version number of the `request_received_local_us` extension (Issue #12 item 1).
+- `GET_DIAGNOSTIC` message value and field-by-field DIAGNOSTIC v2 layout (Issue #12 item 8).
 
 ---
 

@@ -87,12 +87,14 @@ Initial policy:
 
 ## 5. Safety Gates During Desynchronization
 
-After TIME_SYNC validity expires (5 seconds without an accepted update):
+After ClockSync validity expires (5 seconds without an accepted observation):
 
 - Acquisition and diagnostics continue.
 - Timestamp quality reports `UNSYNCHRONIZED`.
-- **Time-dependent motion is inhibited** until a new accepted TIME_SYNC restores validity.
+- **Time-dependent motion is inhibited** until ClockSync validity is restored.
 - Only explicitly defined non-motion service operations may continue.
+
+Separately, Pi link loss (`link_stale`, SYS-FAIL-001) fails the STM32 motion gate closed.
 
 Reset and recovery leave services `INACTIVE`; motion requires explicit reactivation after prerequisites pass.
 

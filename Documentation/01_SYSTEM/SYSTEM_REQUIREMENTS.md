@@ -2,7 +2,7 @@
 
 ## Authority
 
-This document is the authoritative Karetao system-requirement destination. Requirement statements are reconciled from the approved/modified Karetao system decisions and system-facing contracts. Each statement retains source provenance; decision records remain authoritative for decision status and rationale.
+This document is the authoritative Karetao system-requirement destination. Requirement statements are reconciled from the approved/modified Karetao system decisions, the Issue #12 clock-synchronization decisions ([`ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md`](../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md)), and system-facing contracts. Each statement retains source provenance; decision records remain authoritative for decision status and rationale.
 
 ## Requirement baseline
 
@@ -11,7 +11,7 @@ This document is the authoritative Karetao system-requirement destination. Requi
 | SYS-TIM-001 | The baseline sensor/state publication and initial control-loop rate shall be 100 Hz. | SD-01 | Baseline |
 | SYS-TIM-002 | The EKF operating rate is 500 Hz unless downstream system constraints require adjustment. | SD-01 | Current setting; integration-dependent |
 | SYS-TIM-003 | SPI initial maximum operating point is 5 MHz pending live integration and physical-layer validation. | SD-01, SD-15 | Provisional validation limit |
-| SYS-FAIL-001 | A Raspberry Pi heartbeat timeout of 500 ms shall cause motion commands to be rejected. | SD-03 | Approved |
+| SYS-FAIL-001 | Raspberry Pi communication loss shall be detected by a count-based liveness check on the STM32: `missed_count` increments once per expected-message interval without an accepted, valid SPI message and resets on any accepted, valid message; `link_stale` trips at `missed_count >= N_moving` while moving or `>= N_idle` while idle (`N_moving < N_idle`). On trip, motion commands shall be rejected and the STM32 motion gate shall fail closed; `link_stale` clears on the next accepted, valid message. Until `N_moving`/`N_idle` are set, detection shall occur within **500 ms**. | SD-03; Issue #12 item 11 | Modified; `N_moving`/`N_idle`, expected-interval source and motion-state input open |
 | SYS-FAIL-002 | On Raspberry Pi communication loss, the system shall perform a controlled stop where possible and then motor disable; it shall never hold the last motion command. | SD-03 | Approved; stop timing remains to be measured |
 | SYS-FAIL-003 | Motor feedback timeout shall be based on five times the commissioned feedback period; one miss is degraded and three consecutive misses inhibit the motor and escalate to FAULT. | SD-04 | Approved |
 | SYS-CAN-001 | The v1 CAN network shall target 1 Mbps nominal operation with standard 11-bit identifiers. | SD-05 | Modified; target-hardware validation required |
@@ -29,10 +29,11 @@ This document is the authoritative Karetao system-requirement destination. Requi
 | SYS-SPI-003 | DATA_READY may provide latency notification and polling shall provide recovery; polling is initially 1 ms and the Pi is SPI clock master. | SD-17 | Approved; physical DATA_READY assignment remains unresolved |
 | SYS-SPI-004 | The SPI connection shall use a cable with a length of 20–30 cm. The implemented SPI link shall be tested over the specified cable length to measure link performance and verify that the link operates as required. | Engineering specification | Proposed; physical-link measurement required |
 | SYS-SYNC-001 | Timestamp error target shall be no more than ±1 ms relative to the shared STM32/Pi time model; synchronization validity and age shall be exposed. | SD-18 | Approved; adequacy for 500 Hz EKF requires validation |
-| SYS-SYNC-002 | TIME_SYNC shall operate at 1 Hz nominal, configurable to 10 Hz; synchronization becomes invalid after five seconds without an accepted update. | SD-19 | Approved |
+| SYS-SYNC-002 | Every applicable SPI response shall provide a clock-sync observation: the request `seq` is the exchange ID and the response carries `request_received_local_us` (versioned payload extension) captured from the raw TIM2 counter in the SPI DMA-complete ISR and extended to 64 bits in task context. The Pi-side ClockSync model estimates offset and frequency; the STM32 performs no clock math. Synchronization becomes invalid after five seconds without an accepted observation. | SD-19; Issue #12 items 1–5, 7 | Modified; supersedes the dedicated 1 Hz TIME_SYNC exchange |
 | SYS-SYNC-003 | When synchronization is invalid, acquisition and diagnostics shall continue but time-dependent motion shall be inhibited. | SD-20 | Modified; exact motion scope requires definition |
-| SYS-SYNC-004 | Implausible time-offset updates shall be rejected without silent slew, using the approved wide-initial/narrow-runtime validation model. | SD-21 | Approved; numeric bounds require commissioning validation |
-| SYS-SYNC-005 | Reset shall clear synchronization validity and volatile offset; timestamps remain unsynchronized until a new TIME_SYNC update is accepted. | SD-22 | Approved |
+| SYS-SYNC-004 | Implausible clock-sync observations shall be rejected without silent slew by the ClockSync model, which is the single acceptance policy. The legacy drift-limit check may remain temporarily as a secondary diagnostic only and shall not modify ClockSync state. | SD-21; Issue #12 item 9 | Modified; numeric bounds require commissioning validation |
+| SYS-SYNC-005 | An STM32 reset shall invalidate the ClockSync model; timestamps remain unsynchronized until ClockSync is valid again from new accepted observations. | SD-22; Issue #12 items 3, 7 | Modified |
+| SYS-SYNC-006 | STM32 link liveness (`link_stale`) and Pi-side `ClockSync.is_valid()` are independent signals: `link_stale` gates STM32 motion permission; `ClockSync.is_valid()` governs timestamp conversion and measurement usability for the EKF. | Issue #12 item 6 | Approved (Issue #12) |
 | SYS-REC-001 | Persistent/repeated/freshness failures shall enter ERROR; bounded recovery shall return to INACTIVE. | SD-23 | Approved; system-level motion gating during recovery requires explicit definition |
 | SYS-REC-002 | System restart shall return to INACTIVE, use explicit dependency-ordered reactivation, and never automatically resume motor motion. | SD-24 | Approved |
 | SYS-SAFE-001 | Independent E-stop, motor-disable/power-removal path, watchdog, stop/brake behaviour, fault indication, reset behaviour and applicable safety-rated architecture are release gates. | SD-25 | Modified; safety boundary follows risk assessment |
@@ -61,4 +62,5 @@ SD-01 through SD-26 have been systematically reviewed. The table above captures 
 - Define the safety boundary between application controlled-stop and independent safety functions (SD-25).
 - Define the measurement method and acceptance criteria for the SYS-SPI-004 physical-link test.
 - Validate provisional CAN, SPI, timing and synchronization values on target hardware.
+- Set `N_moving`/`N_idle`, the `expected_message_interval_us` source and the motion-state input for SYS-FAIL-001 (Issue #12 item 11).
 - Complete and verify the SD-26 mechanical transformation.

@@ -1,5 +1,7 @@
 # TIME_SYNC Implementation and Contract Audit
 
+> **As-built.** This document describes the current TIME_SYNC implementation (STM32-held offset, one-way TIME_SYNC). That design is superseded by [Issue #12](../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) (2026-09-24) and will change when Issue #12 is implemented. Do not treat the mechanism described here as the target design.
+
 **Status:** Integration audit in progress — five implementation gaps identified  
 **Scope:** Verification of TIME_SYNC and time-offset contract clauses against STM32 and Raspberry Pi implementation  
 **Audit date:** 2026-09-21

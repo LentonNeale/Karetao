@@ -1,5 +1,7 @@
 # TIME_SYNC Debug Mirror Instrumentation
 
+> **As-built.** This document describes the current TIME_SYNC implementation (STM32-held offset, one-way TIME_SYNC). That design is superseded by [Issue #12](../../Documentation/07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) (2026-09-24) and will change when Issue #12 is implemented. Do not treat the mechanism described here as the target design.
+
 ## Overview
 
 The STM32 firmware maintains a debug mirror of every `TimeService_SyncStateAccept` call, allowing hardware debuggers (SWD: Serial Wire Debug) to inspect the acceptance/rejection history without modifying the SPI protocol or firmware behavior.
@@ -347,7 +349,7 @@ After running spi_time_sync_probe.py on the Pi and reading STM32 debug mirrors v
 2. **Transaction timing:** Validate that measured transaction latencies match contract (SPI_SYSTEM_INTERFACE.md §4)
 3. **Drift detection:** Check that offset doesn't creep beyond ±1ms/sync (SYS-SYNC-001)
 
-See [../../../Documentation/05_VERIFICATION/TIME_SYNC_VALIDATION.md](../../../Documentation/05_VERIFICATION/TIME_SYNC_VALIDATION.md) for acceptance criteria.
+See [TIME_SYNC_VALIDATION.md](../../Documentation/05_VERIFICATION/TIME_SYNC_VALIDATION.md) for acceptance criteria.
 
 ## References
 

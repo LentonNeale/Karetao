@@ -77,7 +77,9 @@ Where a source uses a status term slightly differently from the table above (for
 - **Investigate:** build a state/action matrix (severity × required motion behaviour × owning component) as its own design artifact reviewed with the risk assessment; designate a single motion-permission authority that all components defer to; model the mapping as a formal state machine and verify no reachable state has two components disagreeing on permission.
 
 #### SD-03 — Raspberry Pi Communication Loss
-**Status:** APPROVED
+**Status:** MODIFIED
+
+- **Modification ([Issue #12](ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) item 11, 2026-09-24):** Detection is now count-based STM32 link liveness (`link_stale`). It trips at `missed_count >= N_moving` (moving) or `>= N_idle` (idle), and any accepted, valid SPI message resets it. It replaces the fixed 500 ms heartbeat timeout, but 500 ms remains the interim detection limit until `N_moving`/`N_idle` are set. The response (reject motion, controlled stop, motor disable, never hold the last command) is unchanged.
 
 - **Decision:** Monotonic heartbeat + command freshness check. After 500 ms without a valid heartbeat: reject new motion commands, issue a controlled stop if transport is usable, then assert motor disable. Never hold the last motion command.
 - **Reasoning:** Bounds how long stale commands can affect the machine; holding the last command is not fail-safe.
@@ -223,7 +225,9 @@ Where a source uses a status term slightly differently from the table above (for
 - **Investigate:** inject known timestamp errors up to ±1 ms into a simulation/bench test at the target 500 Hz rate and measure resulting estimate error; if unacceptable, tighten the time-sync mechanism (SD-19) or add hardware timestamping closer to the sensor, rather than relaxing the EKF rate.
 
 #### SD-19 — TIME_SYNC Frequency
-**Status:** APPROVED
+**Status:** MODIFIED
+
+- **Modification ([Issue #12](ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) items 1–5, 2026-09-24):** The dedicated 1 Hz / 10 Hz TIME_SYNC exchange is superseded. Every applicable SPI response is a clock-sync observation (`request_received_local_us`, keyed by request `seq`), fed to the Pi-side ClockSync model. The 5 s validity window is retained, measured from the last accepted observation.
 
 - **Decision:** `TIME_SYNC` at 1 Hz nominal, configurable to 10 Hz; sync invalid after 5 seconds without an accepted update.
 - **Reasoning:** Accommodates expected oscillator drift while avoiding unnecessary traffic.
@@ -241,7 +245,9 @@ Where a source uses a status term slightly differently from the table above (for
 - **Investigate:** produce an explicit enumerated list of what counts as time-dependent motion (likely: all closed-loop motion), documented alongside SD-02's classification matrix; implement the check as a single shared gate in the motion-permission authority, not per-component interpretation; add an integration test that forces a sync loss and confirms motion is inhibited end-to-end.
 
 #### SD-21 — Time Offset Validation
-**Status:** APPROVED
+**Status:** MODIFIED
+
+- **Modification ([Issue #12](ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) item 9, 2026-09-24):** Acceptance moves to ClockSync on the Pi, which is the single acceptance policy. The wide-initial / ±1 s runtime drift-limit check below remains temporarily as a secondary diagnostic only. It must not modify ClockSync state, and it will be removed after ClockSync hardware validation.
 
 - **Decision:** Wide initial offset range accepted before first sync; narrower runtime bound afterward, initially ±1 s; implausible updates rejected (last valid offset retained, diagnostic reported); no silent slewing in v1.
 - **Reasoning:** Distinguishes initial epoch acquisition from an implausible runtime jump; retaining the last valid value prevents one bad packet corrupting every timestamp.
@@ -250,7 +256,9 @@ Where a source uses a status term slightly differently from the table above (for
 - **Investigate:** survey realistic worst-case cold-boot offset (STM32 with/without battery-backed RTC) to confirm the wide range covers it; during commissioning/reset testing, log any legitimate updates rejected by the ±1 s bound; tune bounds based on evidence rather than leaving them provisional.
 
 #### SD-22 — Time Behaviour After Reset
-**Status:** APPROVED
+**Status:** MODIFIED
+
+- **Modification ([Issue #12](ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md), 2026-09-24):** The STM32 no longer holds an offset. A reset invalidates the Pi-side ClockSync model, and timestamps stay unsynchronized until ClockSync is valid again.
 
 - **Decision:** Reset clears `time_sync_valid` and discards the volatile offset; timestamps stay unsynchronized until a new `TIME_SYNC` is accepted.
 - **Reasoning:** A reset can invalidate the Pi/STM32 timeline relationship; reusing stale validity would create plausible-but-wrong timestamps.
@@ -739,21 +747,21 @@ This section is the **current work index**. Detailed historical source collation
 | ID | Current status | Live item | Primary source(s) | GitHub tracking |
 |---|---|---|---|---|
 | LIVE-01 | OPEN — DESIGN | **System motion-permission authority** — approve the owner/API, prerequisite set, freshness thresholds, inhibit semantics, and recovery/reactivation behaviour for the proposed aggregate motion gate. | `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; `Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md` | [Issue #10](https://github.com/LentonNeale/Karetao/issues/10)
-| LIVE-02 | OPEN — VERIFICATION / RELEASE BLOCKER | **CAN integration** — reconcile the current 875 kbps implementation with the 1 Mbps system target or formally revise the requirement; validate exact MKS controller behaviour, physical topology, timing, load, and recovery. | `Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` | [Issue #9](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/9)
-| LIVE-03 | OPEN — VERIFICATION / RELEASE BLOCKER | **SPI physical and host integration** — validate 5 MHz acceptance, DMA/NSS behaviour, DATA_READY GPIO path, signal integrity, sustained 512-byte transfers, and host-stall recovery on target hardware. | `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | [Issue #10](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/10)
-| LIVE-04 | OPEN — IMPLEMENTATION / RELEASE BLOCKER | **TIME_SYNC implementation gaps** — close the five gaps identified by the 2026-09-21 audit before synchronization is treated as operational. | `Documentation/05_VERIFICATION/TIME_SYNC_CHARACTERISATION_EVIDENCE.md`; `Documentation/05_VERIFICATION/TIME_SYNC_VALIDATION.md`; `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md`; `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md` | [Issue #11](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/11)
-| LIVE-05 | OPEN — RELEASE BLOCKER | **Independent safety release gates** — complete the machine risk assessment and required safety architecture/evidence, including E-stop, motor-disable, watchdog, brake/stop behaviour, stopping time, fault indication, reset, and applicable safety-rated architecture. | `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | [Issue #12](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/12)
+| LIVE-02 | OPEN — VERIFICATION / RELEASE BLOCKER | **CAN integration** — reconcile the current 875 kbps implementation with the 1 Mbps system target or formally revise the requirement; validate exact MKS controller behaviour, physical topology, timing, load, and recovery. | `Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` | [Issue #43](https://github.com/LentonNeale/Karetao/issues/43)
+| LIVE-03 | OPEN — VERIFICATION / RELEASE BLOCKER | **SPI physical and host integration** — validate 5 MHz acceptance, DMA/NSS behaviour, DATA_READY GPIO path, signal integrity, sustained 512-byte transfers, and host-stall recovery on target hardware. | `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | [Issue #44](https://github.com/LentonNeale/Karetao/issues/44)
+| LIVE-04 | OPEN — IMPLEMENTATION / RELEASE BLOCKER | **TIME_SYNC implementation gaps** — close the five gaps identified by the 2026-09-21 audit before synchronization is treated as operational. *Re-scoped 2026-09-25:* the gap list predates the Issue #12 clock-sync decisions, and gaps 4–5 no longer apply. Implementation is tracked in [Karetao #42](https://github.com/LentonNeale/Karetao/issues/42). | `Documentation/05_VERIFICATION/TIME_SYNC_CHARACTERISATION_EVIDENCE.md`; `Documentation/05_VERIFICATION/TIME_SYNC_VALIDATION.md`; `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md`; `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md` | [Issue #45](https://github.com/LentonNeale/Karetao/issues/45)
+| LIVE-05 | OPEN — RELEASE BLOCKER | **Independent safety release gates** — complete the machine risk assessment and required safety architecture/evidence, including E-stop, motor-disable, watchdog, brake/stop behaviour, stopping time, fault indication, reset, and applicable safety-rated architecture. | `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md`; `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` | [Issue #46](https://github.com/LentonNeale/Karetao/issues/46)
 | LIVE-06 | PROPOSED / OPEN — DESIGN & VERIFICATION | **Differential end-effector mapping** — define and verify the two-motor/two-DOF transformation, limits, singular/invalid configurations, and its MoveIt 2 / ros2_control representation. SD-26 remains proposed and is not CTO-approved. | `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` (SYS-MECH-001); `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md` | [Issue #11](https://github.com/LentonNeale/Karetao/issues/11)
-| LIVE-07 | OPEN — DESIGN / VERIFICATION | **EKF and sensor-timing architecture** — define the asynchronous/multi-rate EKF handling policy, acceptable per-signal data age/staleness, and verify end-to-end timing against the measured ~46 ms six-axis sweep. | `Documentation/01_SYSTEM/SYSTEM_TIMING.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; SD-01/SD-08/SD-09 in this register | [Issue #12](https://github.com/LentonNeale/Karetao/issues/12)
-| LIVE-08 | OPEN — VERIFICATION | **Calibration/configuration release evidence** — complete the remaining calibration/configuration schema, integrity, power-loss/endurance, controlled-transfer, and commissioning evidence required by the release conditions. | `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; release conditions below | [Issue #13](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/13)
+| LIVE-07 | OPEN — DESIGN / VERIFICATION | **EKF and sensor-timing architecture** — define the asynchronous/multi-rate EKF handling policy, acceptable per-signal data age/staleness, and verify end-to-end timing against the measured ~46 ms six-axis sweep. | `Documentation/01_SYSTEM/SYSTEM_TIMING.md`; `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; SD-01/SD-08/SD-09 in this register; LIVE-16 consolidated here 2026-09-23; clock-sync decisions: `ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md` | [Issue #12](https://github.com/LentonNeale/Karetao/issues/12); sub-issues [#32](https://github.com/LentonNeale/Karetao/issues/32) acquisition timing, [#33](https://github.com/LentonNeale/Karetao/issues/33) freshness rules, [#34](https://github.com/LentonNeale/Karetao/issues/34) async scheduling, [#35](https://github.com/LentonNeale/Karetao/issues/35) late/OOSM handling, [#36](https://github.com/LentonNeale/Karetao/issues/36) EKF rate, [#42](https://github.com/LentonNeale/Karetao/issues/42) clock-sync implementation
+| LIVE-08 | OPEN — VERIFICATION | **Calibration/configuration release evidence** — complete the remaining calibration/configuration schema, integrity, power-loss/endurance, controlled-transfer, and commissioning evidence required by the release conditions. | `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md`; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; release conditions below | [Issue #47](https://github.com/LentonNeale/Karetao/issues/47)
 | LIVE-09 | OPEN — VERIFICATION | **System verification** — all system verification groups remain OPEN; integrated evidence must be accepted before `SYSTEM_VERIFIED` can be assigned. | `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`; `Documentation/05_VERIFICATION/INTEGRATION_GATES.md` | [Issue #13](https://github.com/LentonNeale/Karetao/issues/13)
-| LIVE-10 | OPEN — DESIGN / VERIFICATION | **Sensor failure response** — define explicit handling for invalid, missing, stale, and failed sensor data, including motion-inhibit behaviour, owner, recovery, and evidence. | `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; SD-09; source-collected issue #2 below | [Issue #14](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/14)
-| LIVE-11 | OPEN — DESIGN / VERIFICATION | **Motor command acknowledgement** — define command-acceptance semantics separately from feedback freshness and heartbeat, including timeout, failure response, and target-controller capability. | SD-04/SD-05; CAN interface/evidence; source-collected issue #3 below | [Issue #15](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/15)
-| LIVE-12 | OPEN — DESIGN / VERIFICATION / RELEASE BLOCKER | **Fault-to-safe-state timing** — derive measurable stopping/fault-response limits from the machine risk assessment and verify worst-case stop behaviour at commissioned operating conditions. | SD-03; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; release condition #2; source-collected issue #4 below | [Issue #16](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/16)
-| LIVE-13 | OPEN — DESIGN / VERIFICATION | **Motor-controller semantics** — establish the exact MKS controller model/firmware, command/feedback semantics, acknowledgement behaviour, brake/stop behaviour, and recovery contract before freezing integration assumptions. | SD-05; CAN interface/evidence; safety checklist item 9 | [Issue #17](https://github.com/LentonNeale/Arm_Sensor_Hub/issues/17)
+| LIVE-10 | OPEN — DESIGN / VERIFICATION | **Sensor failure response** — define explicit handling for invalid, missing, stale, and failed sensor data, including motion-inhibit behaviour, owner, recovery, and evidence. | `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md`; SD-09; source-collected issue #2 below | [Issue #48](https://github.com/LentonNeale/Karetao/issues/48)
+| LIVE-11 | OPEN — DESIGN / VERIFICATION | **Motor command acknowledgement** — define command-acceptance semantics separately from feedback freshness and heartbeat, including timeout, failure response, and target-controller capability. | SD-04/SD-05; CAN interface/evidence; source-collected issue #3 below | [Issue #49](https://github.com/LentonNeale/Karetao/issues/49)
+| LIVE-12 | OPEN — DESIGN / VERIFICATION / RELEASE BLOCKER | **Fault-to-safe-state timing** — derive measurable stopping/fault-response limits from the machine risk assessment and verify worst-case stop behaviour at commissioned operating conditions. | SD-03; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; release condition #2; source-collected issue #4 below | [Issue #50](https://github.com/LentonNeale/Karetao/issues/50)
+| LIVE-13 | OPEN — DESIGN / VERIFICATION | **Motor-controller semantics** — establish the exact MKS controller model/firmware, command/feedback semantics, acknowledgement behaviour, brake/stop behaviour, and recovery contract before freezing integration assumptions. | SD-05; CAN interface/evidence; safety checklist item 9 | [Issue #51](https://github.com/LentonNeale/Karetao/issues/51)
 | LIVE-14 | OPEN — DESIGN | **Safety boundary** — define the interface between application-level safety controls and the independent safety function, including ownership, inhibit path, reset, and non-automatic reactivation. | SD-25/SD-14; `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`; source-collected issue #8 below | [Issue #14](https://github.com/LentonNeale/Karetao/issues/14)
 | LIVE-15 | OPEN — DESIGN / VERIFICATION | **MoveIt 2 / ros2_control mechanical model** — reconcile the authoritative joint model, differential end-effector mapping, limits, and control interfaces with the proposed SD-26 architecture. | SD-26/SD-07; `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md`; source-collected issue #9 below | [Issue #15](https://github.com/LentonNeale/Karetao/issues/15)
-| LIVE-16 | OPEN — DESIGN / VERIFICATION | **Sensor update architecture** — define how the 500 Hz EKF consumes asynchronously updated sensor records and the maximum acceptable data age, including late/out-of-sequence data handling where applicable. | SD-01/SD-09; `Documentation/01_SYSTEM/SYSTEM_TIMING.md`; source-collected issue #10 below | [Issue #16](https://github.com/LentonNeale/Karetao/issues/16)
+| LIVE-16 | CLOSED — CONSOLIDATED INTO LIVE-07 (2026-09-23) | **Sensor update architecture** — define how the 500 Hz EKF consumes asynchronously updated sensor records and the maximum acceptable data age, including late/out-of-sequence data handling where applicable. | SD-01/SD-09; `Documentation/01_SYSTEM/SYSTEM_TIMING.md`; source-collected issue #10 below | [Issue #16](https://github.com/LentonNeale/Karetao/issues/16)
 
 ### 0.2 Current release gate summary
 
@@ -803,7 +811,7 @@ SD-26 was added to `SYSTEM_DECISIONS.md` **after** the 2026-09-07 CTO approval a
 |---|---|---|
 | SD-01 | System timing | MODIFIED |
 | SD-02 | System-wide failure classification | MODIFIED |
-| SD-03 | Raspberry Pi communication loss | APPROVED |
+| SD-03 | Raspberry Pi communication loss | MODIFIED (Issue #12) |
 | SD-04 | Motor feedback/command timeout | APPROVED |
 | SD-05 | CAN network requirements | MODIFIED |
 | SD-06 | CAN bus failure | APPROVED |
@@ -819,10 +827,10 @@ SD-26 was added to `SYSTEM_DECISIONS.md` **after** the 2026-09-07 CTO approval a
 | SD-16 | GET_SNAPSHOT priority | APPROVED |
 | SD-17 | SPI host transaction strategy | APPROVED |
 | SD-18 | Timestamp accuracy | APPROVED |
-| SD-19 | TIME_SYNC frequency | APPROVED |
+| SD-19 | TIME_SYNC frequency | MODIFIED (Issue #12) |
 | SD-20 | Loss of time synchronization | MODIFIED |
-| SD-21 | Time offset validation | APPROVED |
-| SD-22 | Time behaviour after reset | APPROVED |
+| SD-21 | Time offset validation | MODIFIED (Issue #12) |
+| SD-22 | Time behaviour after reset | MODIFIED (Issue #12) |
 | SD-23 | Transient vs persistent fault recovery | APPROVED |
 | SD-24 | System restart and recovery | APPROVED |
 | SD-25 | Independent safety mechanisms | MODIFIED |

@@ -98,7 +98,8 @@ The STM32 never initiates SPI clocking. The first response after boot is a defin
 | `0x04` | `VERSION` | STM32 → Pi | Firmware and protocol version report, solicited by `GET_VERSION`. |
 | `0x10` | `GET_SNAPSHOT` | Pi → STM32 | Request current snapshot. |
 | `0x11` | `GET_STATUS` | Pi → STM32 | Request status. |
-| `0x12` | `TIME_SYNC` | Pi → STM32 | Update STM32-to-Pi time relationship. |
+| `0x12` | `TIME_SYNC` | Pi → STM32 | **Deprecated** by [Issue #12](../../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md): no longer the synchronization mechanism (see §11). Retained until the Issue #12 implementation removes it. |
+| TBD | `GET_DIAGNOSTIC` | Pi → STM32 | Request DIAGNOSTIC v2 (Issue #12 item 8); value to be assigned. |
 | `0x13` | `SET_MOTOR_COMMAND` | Pi → STM32 | Send a motor command subject to lifecycle/safety checks. |
 | `0x14` | `GET_VERSION` | Pi → STM32 | Request firmware/protocol version. |
 | `0x80` | `ACK` | STM32 → Pi | Successful command acknowledgement. |
@@ -161,7 +162,7 @@ Coherency does not imply simultaneous acquisition. TCA9548A channels are sampled
 
 ## 9. Measurement Timestamps
 
-Every physical measurement carries its own acquisition timestamp. A measurement timestamp represents the synchronized hub-time estimate corresponding to when the measurement was acquired. It does not represent frame assembly time or Raspberry Pi reception time.
+Every physical measurement carries its own acquisition timestamp. The STM32 records the acquisition instant in raw local time, and the Pi-side ClockSync model converts it to the synchronized `measurement_timestamp_us`. It does not represent frame assembly time or Raspberry Pi reception time.
 
 Minimum sensor record concept:
 
@@ -188,61 +189,21 @@ payload
 
 ## 10. Time Domain
 
-The Raspberry Pi is the system time authority. The STM32 maintains a monotonic local clock and does not reset that clock during synchronization.
+The Raspberry Pi is the system time authority. The STM32 maintains a monotonic local clock, never resets it, and performs no clock math. Canonical time model: `02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` §1.
 
-```text
-hub_time_us = local_time_us + time_offset_us
-time_offset_us = pi_time_us - stm32_local_time_us
-```
-
-Exported sensor and motor timestamps use `hub_time_us`. The raw local monotonic clock remains an internal timing source. The transport timestamp `frame_time_us` must not replace measurement timestamps.
+The transport timestamp `frame_time_us` must not replace measurement timestamps.
 
 ---
 
-## 11. TIME_SYNC
+## 11. Clock-Sync Observations
 
-`TIME_SYNC` is a Raspberry Pi-to-STM32 message with this payload:
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `pi_time_us` | `uint64_t` | Pi time associated with the defined synchronization point. |
-| `sync_seq` | `uint32_t` | Monotonic synchronization sequence. |
-| `flags` | `uint16_t` | Synchronization/control flags. |
-
-When the STM32 processes the message it captures `t_stm32` from its local monotonic clock and calculates:
-
-```text
-time_offset_us = pi_time_us - t_stm32
-```
-
-The STM32 stores:
-
-```text
-time_sync_valid
-time_offset_us
-last_sync_sequence
-last_sync_local_time_us
-```
-
-An update is accepted only after frame, version, payload, and sequence validation. The update must be committed atomically from task context. The previous offset remains valid until a newer accepted update replaces it.
-
-The initial contract treats `pi_time_us` as the Pi time associated with the synchronization transaction. This includes one-way transport uncertainty. A future two-way exchange may add Pi `t1`/`t3` and STM32 `t2` timestamps to estimate round-trip delay and offset more accurately. That is a versioned enhancement, not a requirement for the first implementation.
+Per [Issue #12](../../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md), every applicable response carries `request_received_local_us` through a versioned payload extension. This is the STM32 T2: the raw TIM2 counter captured in the DMA-complete ISR and extended to 64 bits in task context. The request `seq` is the exchange ID. There is no `sync_seq`, and no dedicated `TIME_SYNC` payload carries `pi_time_us`. The full definition, including T1/T4, is in `TIME_SYSTEM_INTERFACE.md` §3.
 
 ---
 
-## 12. Synchronization Validity and Monotonicity
+## 12. Synchronization Validity
 
-The v1 synchronization validity timeout is **5 seconds**. When the timeout expires:
-
-```text
-local monotonic clock continues
-hub-time calculation continues
-time_sync_valid = false
-```
-
-The STM32 must not claim synchronized timestamps while `time_sync_valid` is false. Status/diagnostic messages must expose synchronization validity and, where useful, age since the last accepted update.
-
-The first implementation may step the offset directly. If repeated updates cause undesirable timestamp discontinuities, a later contract revision may define filtered or slewed offset correction. The implementation must keep raw local time distinct from exported synchronized hub time.
+Synchronization becomes invalid **5 seconds** after the last accepted observation (SD-19). ClockSync on the Pi is the single acceptance policy. Diagnostics expose its state through DIAGNOSTIC v2 (`SPI_PAYLOAD_SCHEMA.md`). See `TIME_SYSTEM_INTERFACE.md` §4 and §5.
 
 ---
 
@@ -255,8 +216,8 @@ The Raspberry Pi shall:
 - validate magic, version, length, and CRC32;
 - track sequence numbers;
 - reject stale and duplicate responses;
-- periodically issue `TIME_SYNC`;
-- maintain the authoritative system clock;
+- record T1/T4 for every correlated exchange and feed ClockSync (`TimingSession.transact()` → `ClockSync.record_exchange()`);
+- maintain the authoritative system clock and convert STM32 local timestamps through ClockSync;
 - timestamp measurements received directly through other interfaces;
 - correlate measurements using the common time domain;
 - never use SPI reception time as measurement time.
@@ -281,7 +242,7 @@ A malformed or rejected frame must not modify application state. Recoverable tra
 
 ## 15. Lifecycle Integration
 
-Normal sensor snapshots require the SPI service and sensor dependencies to be operational. `TIME_SYNC` may be accepted whenever the SPI transport is configured and able to receive valid commands, even if normal publication is not `ACTIVE`. Motor commands require CAN availability and must obey the lifecycle safety gate.
+Normal sensor snapshots require the SPI service and sensor dependencies to be operational. Clock-sync observations are produced whenever the SPI transport is configured and exchanging valid messages, even if normal publication is not `ACTIVE`. Motor commands require CAN availability and must obey the lifecycle safety gate.
 
 Lifecycle states and transition rules are canonical in `01_SYSTEM/SYSTEM_LIFECYCLE.md`.
 
@@ -302,7 +263,7 @@ Any incompatible change to field meaning/order, timestamp semantics, framing, CR
 
 **The current 5 MHz value is an integration ceiling, not hardware approval** (SD-01, SD-15).
 
-The following are approved v1.0 decisions and must not be redefined by lower-level documents: Mode 0; fixed 512-byte frame; 490-byte maximum payload; CRC-32/ISO-HDLC parameters; pipelined request/response; five-second synchronization validity; one-way TIME_SYNC transaction-point estimate; direct offset stepping; fixed six-record sensor snapshots; replace-if-new behavior with drop diagnostics.
+The following are approved v1.0 decisions and must not be redefined by lower-level documents: Mode 0; fixed 512-byte frame; 490-byte maximum payload; CRC-32/ISO-HDLC parameters; pipelined request/response; five-second synchronization validity; per-exchange clock-sync observations with Pi-side ClockSync (Issue #12, superseding the one-way TIME_SYNC estimate and direct offset stepping); fixed six-record sensor snapshots; replace-if-new behavior with drop diagnostics.
 
 ---
 
@@ -310,7 +271,7 @@ The following are approved v1.0 decisions and must not be redefined by lower-lev
 
 1. Raspberry Pi is the system time authority.
 2. STM32 local time is monotonic and is never reset by synchronization.
-3. Exported timestamps use local time plus the current accepted offset.
+3. The STM32 exports raw local timestamps and performs no clock math; ClockSync on the Pi converts them.
 4. Measurement timestamps represent acquisition time, not transport time.
 5. `frame_time_us` represents frame assembly time, not measurement time.
 6. A snapshot is internally coherent (§8).
@@ -318,7 +279,7 @@ The following are approved v1.0 decisions and must not be redefined by lower-lev
 8. CRC failure cannot modify application state.
 9. Every frame has a sequence number.
 10. `DATA_READY` is asserted only for a complete available frame whose DMA transfer is armed.
-11. Loss of synchronization is explicitly reported through `time_sync_valid`.
+11. Loss of synchronization is explicitly reported through ClockSync validity (`time_sync_valid` is a derived summary in DIAGNOSTIC v2).
 12. Timestamp correlation uses the shared Pi time domain.
 
 ---

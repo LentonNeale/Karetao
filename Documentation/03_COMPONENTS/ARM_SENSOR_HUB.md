@@ -10,7 +10,8 @@ The Arm Sensor Hub is the STM32-based hardware-facing Karetao component. Karetao
 
 - Acquire six-axis encoder measurements via I2C (AS5600 through TCA9548A multiplexer).
 - Exchange motor command and feedback over CAN to external MKS controller.
-- Synchronize internal time to Raspberry Pi authority via TIME_SYNC protocol.
+- Maintain a monotonic local clock and report request-receipt times (`request_received_local_us`) as clock-sync observations; perform no clock math (Issue #12).
+- Run the count-based Pi link-liveness check (`link_stale`) that gates motion permission (SYS-FAIL-001).
 - Serialize coherent sensor/motor snapshots and publish over SPI with `DATA_READY` signaling.
 - Apply lifecycle state gating (UNCONFIGURED / INACTIVE / ACTIVE / ERROR) to motion commands and publication.
 - Apply system-defined freshness, synchronization validity, and motion safety requirements.

@@ -11,8 +11,9 @@ Authoritative Karetao system timing requirements and timing constraints are reco
 - Normal observation skew: **<5 ms**; dynamic-joint target: **<1 ms** (SD-08).
 - Acquisition timestamps shall be retained (SD-08).
 - SPI initial maximum operating point: **5 MHz**, pending live integration and physical-layer validation (SD-01, SD-15).
-- TIME_SYNC nominal rate: **1 Hz**, configurable to **10 Hz** (SD-19).
-- Synchronization becomes invalid after **5 s** without an accepted update (SD-19).
+- Clock-sync observations: every applicable SPI response (replaces the 1 Hz TIME_SYNC exchange; Issue #12).
+- Synchronization becomes invalid after **5 s** without an accepted observation (SD-19).
+- Pi communication-loss detection: count-based liveness (`N_moving`/`N_idle` open); interim limit **500 ms** (SD-03, Issue #12 item 11).
 - Timestamp error target: **≤ ±1 ms** relative to the shared STM32/Pi time model (SD-18).
 
 ## Timing validation

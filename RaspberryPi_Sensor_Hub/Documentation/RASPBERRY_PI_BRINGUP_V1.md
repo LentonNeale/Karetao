@@ -21,8 +21,8 @@ Karetao system documents this procedure depends on:
 | System requirements (SYS-* identifiers) | `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` |
 | SPI transport, framing, DATA_READY, host responsibilities | `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md` |
 | SPI payloads | `Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md` |
-| Time authority and TIME_SYNC | `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` |
-| Host heartbeat, command and state contract | `Documentation/02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md` |
+| Time authority and clock synchronization | `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` |
+| Host link liveness, command and state contract | `Documentation/02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md` |
 | Lifecycle states, restart and recovery rules | `Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md` |
 | Safety release gates SAFE-001 to SAFE-009 | `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`, `SAFETY_INTEGRATION.md` |
 | Release conditions 1 to 7 | `Documentation/07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md` Part 4 |
@@ -30,7 +30,7 @@ Karetao system documents this procedure depends on:
 | STM32 pin baseline (SPI3, DATA_READY PA8) | `Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md` |
 | Host component role | `Documentation/03_COMPONENTS/RASPBERRY_SENSOR_HUB.md` |
 
-The legacy names `SPI_CONTRACT.md`, `LIFECYCLE_CONTRACT.md` and `SAFETY_RELEASE_CHECKLIST.md` are no longer current. The checklist survives only as a non-normative archive copy under `Documentation/99_ARCHIVE/DECISIONS/`.
+The legacy names `SPI_CONTRACT.md`, `LIFECYCLE_CONTRACT.md` and `SAFETY_RELEASE_CHECKLIST.md` are no longer current. The checklist has been removed; a historical copy is in Git history at `Documentation/99_ARCHIVE/DECISIONS/SAFETY_RELEASE_CHECKLIST.md` (commit `9c637ba`).
 
 **Repository structure:** This document is part of the Karetao repository. The **RaspberryPi_Sensor_Hub** directory contains the component implementation (software source, tests, provisioning), and it references (but does not duplicate) the system contracts in **Documentation/**. When following this guide, clone the entire Karetao repository (Part D.1) so you have access to both the component code and the system authority documents.
 
@@ -42,8 +42,8 @@ System values used in this guide, with their owners:
 | SPI clock initial maximum 5 MHz | SYS-TIM-003 (SD-01, SD-15) | Provisional integration ceiling, not hardware approval |
 | DATA_READY optional, 1 ms polling fallback, Pi is SPI clock master | SYS-SPI-003 (SD-17) | Approved; **physical Pi GPIO assignment is a harness decision, not a system-level one.** GPIO25 assigned and wired in E1, pending electrical validation |
 | SPI cable length 20 to 30 cm | SYS-SPI-004 | Proposed; measurement required |
-| Pi is system time authority; TIME_SYNC 1 Hz nominal, up to 10 Hz; invalid after 5 s | SYS-SYNC-001/002 (SD-18, SD-19) | Approved |
-| Pi heartbeat timeout 500 ms rejects motion | SYS-FAIL-001 (SD-03) | Approved |
+| Pi is system time authority; every SPI exchange is a clock-sync observation fed to Pi-side ClockSync; invalid after 5 s without an accepted observation | SYS-SYNC-001/002 (SD-18, SD-19, Issue #12) | Modified |
+| Pi link loss detected by STM32 count-based liveness (`link_stale`); interim limit 500 ms; rejects motion | SYS-FAIL-001 (SD-03, Issue #12) | Modified |
 | Restart returns to INACTIVE, explicit reactivation, never auto-resume motion | SYS-REC-002 (SD-24) | Approved |
 | Baseline control-loop rate 100 Hz | SYS-TIM-001 (SD-01) | Baseline |
 | Independent E-stop and motor-disable paths are release gates | SYS-SAFE-001 (SD-25), SAFE-001 to SAFE-009 | Open / blocked |
@@ -55,7 +55,7 @@ System values used in this guide, with their owners:
 The Raspberry Pi hosts the **Raspberry Sensor Hub**. It provides:
 
 * SPI master and system time authority (SPI_SYSTEM_INTERFACE §1, §10)
-* Periodic TIME_SYNC issue (SPI_SYSTEM_INTERFACE §13)
+* Record T1/T4 on every correlated exchange and feed ClockSync (SPI_SYSTEM_INTERFACE §13). Until Issue #12 is implemented, the current firmware still uses periodic TIME_SYNC.
 * Heartbeat toward the STM32 (HOST_SYSTEM_INTERFACE)
 * Measurement and estimator history, EKF, ROS 2 execution (SD-09)
 * Host-side diagnostics and component verification evidence
@@ -613,7 +613,7 @@ chronyc sources -v
 Two points that follow from the contracts and are **open component decisions**, to be settled in the host implementation before TIME_SYNC validation:
 
 1. **Which Pi clock feeds `pi_time_us`.** The contract defines `pi_time_us` as Pi time at the synchronization point but does not name a clock. If `CLOCK_REALTIME` is used, an NTP step on the Pi becomes an offset jump at the STM32, which the runtime bound of ±1 s (SD-21) will reject. Either use a monotonic clock as the exported domain or ensure chrony only slews after initial sync (chrony's default `makestep 1 3` steps only during the first three updates).
-2. **Drift budget.** SD-19 requires measuring whether drift between 1 Hz syncs stays inside the ±1 ms target (SD-18). That is an integration measurement, not a provisioning setting.
+2. **Drift budget.** Whether ClockSync's frequency estimate keeps timestamp error inside the ±1 ms target (SD-18) must be measured (Issue #12 Gate B). That is an integration measurement, not a provisioning setting.
 
 Do not begin STM32 TIME_SYNC validation until `chronyc tracking` shows a synchronized source and the clock-source decision above has been recorded.
 
@@ -836,12 +836,12 @@ Complete in order. A failure returns the system to the previous safe stage. Resu
 | F4.4 Thermal / power | No undervoltage or throttling under representative load (`vcgencmd get_throttled` if available) | — |
 | F4.5 SPI electrical | Logic analyser: levels, pin map, CPOL/CPHA = Mode 0, CS, DATA_READY if wired, timing at 1/2/5 MHz, cable length | SYS-SPI-001, SYS-TIM-003, SYS-SPI-004 |
 | F4.6 SPI protocol | Status, snapshot, version, TIME_SYNC frames; CRC; sequence; stale rejection; STM32 reset recovery; host restart recovery | SYS-SPI-001/002/003 |
-| F4.7 Time sync | TIME_SYNC at 1 Hz accepted; validity expires after 5 s without update; implausible offsets rejected; clock-source decision recorded | SYS-SYNC-001 to 005 |
-| F4.8 Fault behaviour | SPI disconnect, TIME_SYNC interruption, malformed and stale frames, STM32 reset, Pi restart, **heartbeat loss (500 ms)**: no unsafe command accepted, no last-command hold | SYS-FAIL-001/002, SYS-REC-001/002 |
+| F4.7 Time sync | ClockSync converges from per-exchange observations (Gate A); validity expires after 5 s without an accepted observation; implausible observations rejected; clock-source decision recorded. Until Issue #12 is implemented, test the current TIME_SYNC path | SYS-SYNC-001 to 005 |
+| F4.8 Fault behaviour | SPI disconnect, TIME_SYNC interruption, malformed and stale frames, STM32 reset, Pi restart, **link loss (`link_stale`, interim 500 ms)**: no unsafe command accepted, no last-command hold | SYS-FAIL-001/002, SYS-REC-001/002 |
 | F4.9 ROS lifecycle | Hardware starts inactive; activation requires healthy transport and valid sync; faults propagate; controllers deactivate on hardware self-deactivate | SYSTEM_LIFECYCLE §2, §5, §9 |
 | F4.10 Motion release | **Not covered by this guide.** Requires release conditions 1 to 7 and SAFE-001 to SAFE-009, independently reviewed | Register Part 4, SAFETY_REQUIREMENTS |
 
-Open item affecting F4.8: the SPI message set (SPI_SYSTEM_INTERFACE §5) does not yet define a heartbeat carrier, and command acknowledgement and freshness semantics remain open (HOST_SYSTEM_INTERFACE). Test heartbeat loss once the carrier is defined; do not invent one here.
+Open items affecting F4.8: under Issue #12, any accepted, valid SPI message counts as liveness, so no separate heartbeat carrier is needed. However, `N_moving`/`N_idle` and the expected-message interval are still open, and command acknowledgement and freshness semantics remain open (HOST_SYSTEM_INTERFACE). Test link loss against the interim 500 ms limit.
 
 ---
 
