@@ -14,7 +14,7 @@ Change code or configuration to satisfy an issue. **The main session plans and r
 
 1. Write the plan: the files to change, the tests to add or update, and the risks. **CHECKPOINT:** the user approves it.
 2. Work on a branch named `<issue#>-<slug>`.
-3. Implement. Keep interfaces that exist in more than one place (see `PROJECT.md`) in lockstep.
+3. Implement. Split the plan into single-language tasks, each naming its files, functions, expected behaviour and tests. Delegate each task to `python-dev`, `c11-dev` or `cpp17-dev` (haiku). Anything they report as `ESCALATE` is done in this session or by a sonnet subagent. Keep interfaces that exist in more than one place (see `PROJECT.md`) in lockstep: change both sides in the same task, here, not through a single-language agent. Review each agent's diff before moving on.
 4. Run the fast local checks from `build.md` before handing over to stage 05.
 5. Summarize the change against each acceptance criterion.
 
