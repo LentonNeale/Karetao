@@ -546,3 +546,24 @@ class TestMainFunction(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestUnknownTaskId(unittest.TestCase):
+    """An unknown task id is reported as an error, not a traceback."""
+
+    def test_unknown_id_returns_error(self):
+        import io, contextlib, tempfile, shutil
+        from helper import main as helper_main
+        tmp = tempfile.mkdtemp()
+        try:
+            demo = Path(__file__).resolve().parents[2] / "gui" / "fixtures" / "demo"
+            shutil.copytree(demo, Path(tmp) / "d")
+            root = Path(tmp) / "d"
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                rc = helper_main(["--root", str(root), "--project", str(root / "icm-project"),
+                                  "--as", "user:user1", "unblock", "H99"])
+            self.assertEqual(rc, 1)
+            self.assertIn("H99 not found", err.getvalue())
+        finally:
+            shutil.rmtree(tmp)

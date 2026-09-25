@@ -371,21 +371,15 @@ def main(argv=None) -> int:
     # Get store
     store = get_store(args.root, args.project)
 
-    # Execute command
-    if args.command == "list":
-        return cmd_list(args, store)
-    elif args.command == "add":
-        return cmd_add(args, store)
-    elif args.command == "start":
-        return cmd_start(args, store)
-    elif args.command == "done":
-        return cmd_done(args, store)
-    elif args.command == "block":
-        return cmd_block(args, store)
-    elif args.command == "unblock":
-        return cmd_unblock(args, store)
-    else:
+    commands = {"list": cmd_list, "add": cmd_add, "start": cmd_start,
+                "done": cmd_done, "block": cmd_block, "unblock": cmd_unblock}
+    if args.command not in commands:
         print("error: unknown command", file=sys.stderr)
+        return 1
+    try:
+        return commands[args.command](args, store)
+    except ValueError as e:  # e.g. an unknown task id
+        print(f"error: {e}", file=sys.stderr)
         return 1
 
 
