@@ -28,5 +28,5 @@ Turn a raw request into a brief that meets the Definition of Ready. **The Client
 
 | Artifact | Location | Format |
 |---|---|---|
-| Task brief | `output/<slug>-brief.md` | Header (`issue`, `stage: 01-intake`, `status`), then the ten Definition of Ready items as headings · Open questions · Gaps (if any) · Revision log |
+| Task brief | `output/<slug>-brief.md` | Exactly `references/brief-template.md`: a plain `key: value` header block, the ten Definition of Ready headings, then Open questions, Gaps and Revision log |
 | Board snapshot | `output/board.md` | Written by the orchestrator whenever it refreshes the board; read-only for the liaison |
