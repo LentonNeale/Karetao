@@ -34,6 +34,7 @@ The main session (the most capable model) plans, decides, reviews every delegate
 | Create or edit issues, board fields, milestones, register rows from an approved spec | `issue-clerk` | sonnet |
 | Consistency and link checks of docs against the authority map | `doc-checker` | sonnet |
 | Builds, tests, evidence capture | `build-runner` | haiku |
+| Small, fully specified code edits from an approved stage-04 plan, one language per task. They escalate interrupt, concurrency, safety, shared-interface and generated-code changes back to you | `python-dev` · `c11-dev` · `cpp17-dev` | haiku |
 | Questions about a subject that has a dossier in `../icm-project/subjects/` (specs, contracts, status, open decisions, file locations). Ask the expert before reading those documents yourself | `subject-expert` | haiku |
 
 Run a single command yourself rather than spawning an agent for it. Give the agent the contract path and the input file paths, not a restated summary.
