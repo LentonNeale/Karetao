@@ -2,6 +2,7 @@
 ICM GUI server using ThreadingHTTPServer.
 """
 
+import urllib.parse
 import argparse
 import html
 import sys
@@ -14,12 +15,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from icmlib import default_root, default_project, load_people, parse_identity
 from stage_status import collect
+import helper as helper_module
+import review
 
 # Import views
 try:
-    from .views import shared_layout, render_queue, render_pipeline, render_artifact
+    from .views import shared_layout, render_queue, render_pipeline, render_artifact, render_helper, render_audit, render_evidence
 except ImportError:
-    from views import shared_layout, render_queue, render_pipeline, render_artifact
+    from views import shared_layout, render_queue, render_pipeline, render_artifact, render_helper, render_audit, render_evidence
 
 
 # Maximum size, in bytes, accepted for a POST body (form data).
@@ -83,7 +86,7 @@ def handle_pipeline(req):
 def handle_artifact(req):
     """GET /artifact?path=... — a single artifact's header, body and reviews."""
     path_arg = req.query.get("path", [""])[0]
-    body, status_code = render_artifact(path_arg, req.root)
+    body, status_code = render_artifact(path_arg, req.root, req.role, req.viewer)
     if status_code == 403:
         return send_html(403, "<h1>403 Forbidden</h1>")
     if body is None:
@@ -110,10 +113,142 @@ ROLE_ALLOWED = {
 # --- end base routes ---
 
 # --- actions (WP8) ---
+
+def handle_action(req):
+    """POST /action — execute a review action via review.main."""
+    action = req.form.get("action", "")
+    path_arg = req.form.get("path", "")
+
+    if not action or not path_arg:
+        return send_html(400, "<h1>400 Bad Request</h1>")
+
+    # Build the command for review.main
+    cmd_args = [
+        "--root", str(req.root),
+        "--project", str(req.project),
+        "--as", req.viewer,
+        action,
+        path_arg,
+    ]
+
+    # Add optional arguments based on the action
+    if action in ("request-changes", "comment", "ask", "answer"):
+        text = req.form.get("text", "")
+        cmd_args.extend(["--text", text])
+    elif action == "set-tier":
+        tier = req.form.get("tier", "")
+        cmd_args.append(tier)
+
+    # Capture stderr from review.main
+    import io
+    old_stderr = sys.stderr
+    sys.stderr = io.StringIO()
+
+    try:
+        result = review.main(cmd_args)
+        stderr_content = sys.stderr.getvalue()
+    finally:
+        sys.stderr = old_stderr
+
+    # Determine the message
+    if result == 0:
+        msg = "Action completed"
+    else:
+        # Extract error message from stderr
+        msg = stderr_content.strip().replace("error: ", "")
+
+    # Redirect back to the artifact page with a message
+    artifact_link = "/artifact?path=" + urllib.parse.quote(path_arg)
+    if msg:
+        artifact_link += "&msg=" + urllib.parse.quote_plus(msg)
+
+    return redirect(artifact_link)
+
+
+POST_ROUTES["/action"] = handle_action
+
 # --- end actions ---
 # --- helper tab (WP9) ---
+
+def handle_helper(req):
+    """GET /helper — the Helper task list page."""
+    store = helper_module.get_store(req.root, req.project)
+    body = render_helper(store, req.role)
+    return send_html(200, shared_layout("Helper", body, req.role, req.viewer, "/helper"))
+
+
+def handle_helper_action(req):
+    """POST /helper-action — handle helper task actions."""
+    action = req.form.get("action")
+    task_id = req.form.get("task_id")
+
+    if not action or not task_id:
+        return send_html(400, "<h1>400 Bad Request</h1>")
+
+    try:
+        argv = ["--root", str(req.root), "--project", str(req.project), "--as", req.viewer]
+
+        if action == "start":
+            argv.extend(["start", task_id])
+        elif action == "done":
+            result = req.form.get("result", "")
+            path = req.form.get("path", "")
+            argv.extend(["done", task_id, "--result", result])
+            if path:
+                argv.extend(["--path", path])
+        elif action == "block":
+            reason = req.form.get("reason", "")
+            argv.extend(["block", task_id, "--reason", reason])
+        elif action == "unblock":
+            argv.extend(["unblock", task_id])
+        else:
+            return send_html(400, "<h1>400 Bad Request</h1>")
+
+        # Call helper.main with the arguments
+        result_code = helper_module.main(argv)
+
+        if result_code == 0:
+            # Success: redirect back to helper page with success message
+            return redirect("/helper?msg=success")
+        else:
+            # Failure: redirect back with error message
+            return redirect("/helper?msg=error")
+    except Exception as e:
+        return redirect("/helper?msg=" + urllib.parse.quote_plus(str(e)))
+
+
+GET_ROUTES["/helper"] = handle_helper
+POST_ROUTES["/helper-action"] = handle_helper_action
+
+ROLE_ALLOWED["/helper"] = {"user", "helper", "agent"}
+ROLE_ALLOWED["/helper-action"] = {"user", "helper", "agent"}
+
 # --- end helper tab ---
 # --- audit/evidence (WP10) ---
+
+def handle_audit(req):
+    """GET /audit — audit feed of agent approvals (users)."""
+    body = render_audit(req.root)
+    if body is None:
+        return send_html(403, "<h1>403 Forbidden</h1>")
+    return send_html(200, shared_layout("Audit", body, req.role, req.viewer, "/audit"))
+
+
+def handle_evidence(req):
+    """GET /evidence?task=... — acceptance criteria and evidence (everyone)."""
+    task_arg = req.query.get("task", [""])[0]
+    body = render_evidence(task_arg, req.root)
+    if body is None:
+        return send_html(404, "<h1>404 Not Found</h1>")
+    return send_html(200, shared_layout("Evidence", body, req.role, req.viewer, "/evidence"))
+
+
+GET_ROUTES["/audit"] = handle_audit
+GET_ROUTES["/evidence"] = handle_evidence
+
+ROLE_ALLOWED["/audit"] = {"user", "agent"}
+ROLE_ALLOWED["/evidence"] = {"user", "helper", "agent"}
+
 # --- end audit/evidence ---
 
 
