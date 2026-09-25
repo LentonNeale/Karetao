@@ -11,6 +11,7 @@ Match the request, then open only the listed contract.
 | Implement an issue | `stages/04-implement/CONTEXT.md` |
 | Build, test or collect evidence | `stages/05-verify/CONTEXT.md` |
 | Finish an issue: acceptance criteria, evidence, close, register | `stages/06-close-out/CONTEXT.md` |
+| "What does the spec say / what's the status of <subject>?" (routine) | If `../icm-project/subjects/<subject>.md` exists, delegate to `subject-expert` with the subject and the questions. Batch related questions into one call |
 | Board review or status report (routine, not a stage) | Run `scripts/board-snapshot.sh`, then summarize against `../icm-project/github.md` |
 | Doc link or consistency sweep (routine) | Run `scripts/link-check.py`; for content, delegate to `doc-checker` |
 
