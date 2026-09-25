@@ -1,26 +1,32 @@
 # 01 — Intake
 
-Turn a raw request into a short task brief that the user agrees with. **Runs in the main session.**
+Turn a raw request into a brief that meets the Definition of Ready. **The Client Liaison runs this stage (haiku, as the main session via `scripts/liaison.sh`).** The orchestrator accepts the brief at the end of the stage.
 
 ## Inputs
 
 | Source | File/Location | Section/Scope | Why |
 |---|---|---|---|
 | User | Conversation | The request | What is wanted |
-| Project | `../../../icm-project/PROJECT.md` | Components | Place the work |
-| Project | `../../../icm-project/authority.md` | Full | Find the owning documents |
-| Tracker | `../../scripts/board-snapshot.sh` output | Open items | Find duplicates and related work |
+| Stage reference | `references/definition-of-ready.md` | Full | The standard to meet |
+| Project | `../../../icm-project/PROJECT.md` | Components | Name the "Where" |
+| Project | `../../../icm-project/authority.md` | Subjects table | Name the owning docs |
+| Tracker | `output/board.md` (written by the orchestrator from `../../scripts/board-snapshot.sh`) | Open items | Spot likely related issues |
 
 ## Process
 
-1. Restate the request in one sentence. Ask only the questions whose answers would change the brief.
-2. Search for an existing issue first (`gh issue list --search "<terms>" --state all`). If one exists, the brief becomes an update to it.
-3. Identify the owning document for each affected subject, using `authority.md`. Name the related register or decision IDs (for example LIVE-xx or SD-xx), if any.
-4. Classify the work: Design, Implementation, Verification or Miscellaneous. Note whether it blocks a release.
-5. Write the brief. **CHECKPOINT:** the user approves or edits it.
+**Liaison:**
+1. Clarify the request conversationally until every Definition of Ready item is satisfied, or until the user says "send it".
+2. Show the full brief. **CHECKPOINT:** the user confirms.
+3. Write `output/<slug>-brief.md` with `status: ready` or `ready-with-gaps`.
+
+**Orchestrator ("take brief <slug>"):**
+4. Read the brief. Search the tracker for duplicates (`gh issue list --search … --state all`) and fill in *Related*.
+5. Resolve the gaps: ask the user only about the items the liaison marked missing or flagged as questions.
+6. Accept the brief (set `status: accepted`) and route it: to 02 for tracked work, or answer directly for pure questions.
 
 ## Outputs
 
 | Artifact | Location | Format |
 |---|---|---|
-| Task brief | `output/<slug>-brief.md` | Header block, then: Problem · Proposed outcome · Owning docs · Related issues/IDs · Category · Open questions |
+| Task brief | `output/<slug>-brief.md` | Header (`issue`, `stage: 01-intake`, `status`), then the ten Definition of Ready items as headings · Open questions · Gaps (if any) · Revision log |
+| Board snapshot | `output/board.md` | Written by the orchestrator whenever it refreshes the board; read-only for the liaison |
