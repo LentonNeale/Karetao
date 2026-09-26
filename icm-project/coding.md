@@ -23,6 +23,6 @@ Read by `python-dev`, `c11-dev` and `cpp17-dev`. The build rules are owned by `A
 
 ## Python (Raspberry Pi host, `RaspberryPi_Sensor_Hub/`)
 
-- Python 3.10+ (CI runs 3.11), **standard library only**. `from __future__ import annotations`, type hints, and a module docstring on the first line.
+- Python 3.12+ (CI runs 3.12; the Pi runs Ubuntu 24.04's python3 3.12), **standard library only**. `from __future__ import annotations`, type hints, and a module docstring on the first line.
 - Code lives in `src/spi/`, tests in `tests/spi/test_*.py` (`unittest`, no pytest-only features), and bench tools in `tools/`.
 - `spi_protocol.py` mirrors the C frame format (a shared interface): escalate format or constant changes.
