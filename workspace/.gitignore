@@ -1,3 +1,0 @@
-stages/*/output/*
-!stages/*/output/.gitkeep
-tests/*/results/

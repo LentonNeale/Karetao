@@ -28,3 +28,10 @@ A component implementation document may explain how a Karetao requirement is imp
 ## Mandatory documentation authority rule
 
 **The Karetao Documentation authority framework is the only project documentation authority framework.** Use `Documentation/**` and its authority model for Karetao system-level documentation and documentation governance.
+
+## Working with the ICM Portal
+
+Requests (from a conversation to a brief, plan, reviewed design, build and verified delivery) run
+through the ICM Portal from `LentonNeale/Karetao_Consulting`. Its Karetao settings are in
+[`portal.toml`](portal.toml), and Karetao's own ICM workspaces, tools and references are in
+[`icm-project/`](icm-project/README.md).

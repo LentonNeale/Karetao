@@ -11,11 +11,9 @@ Karetao is a monorepo for a robotic arm platform:
 - `Documentation/`: the Karetao system-level documentation authority. Start at `Documentation/00_INDEX.md`.
 - `shared/`: placeholder directories (`libs`, `protocols`, `test-vectors`) that are currently empty.
 
-## Working method (ICM)
+## Working method (ICM Portal)
 
-All work in this repo, including audits, builds, questions and tracker changes, runs through the ICM workspace. Its Layer 0 rules and delegation table are imported below and apply to every request. Before starting multi-step work, read `workspace/CONTEXT.md` to route it. Karetao's own settings (GitHub IDs, authority map, build commands) are in `icm-project/`.
-
-@workspace/CLAUDE.md
+Requests are run through the ICM Portal: a local app (in the `LentonNeale/Karetao_Consulting` repo) that takes a request from a Client Liaison conversation to a brief, plan, reviewed design, build, verification and delivery. Start it with `.venv/bin/python -m icm_portal --project ~/Git_repos/Karetao` from that repo. Its settings for Karetao are in `portal.toml`, including the Verify commands, which are the same as CI. Karetao's own ICM workspaces, tools, skills and references are in `icm-project/` (see `icm-project/README.md`); generic ones come from the Portal's shared `icm/`. A Portal build works in a separate worktree and never edits this working copy.
 
 ## Commands
 
