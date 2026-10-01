@@ -1,1 +1,0 @@
-../../workspace/agents/doc-checker.md
