@@ -49,7 +49,7 @@ These are governance/process documents. They are not competing system requiremen
 
 | Section | Purpose |
 |---|---|
-| [`01_SYSTEM/`](01_SYSTEM/) | System requirements, architecture, timing, synchronization, overview, and documentation authority |
+| [`01_SYSTEM/`](01_SYSTEM/) | [Project charter](01_SYSTEM/PROJECT_CHARTER.md) (start here: scope, goals, non-goals, who decides); system requirements, architecture, timing, synchronization, overview, and documentation authority |
 | [`02_INTERFACES/`](02_INTERFACES/) | System-level interface definitions and contracts |
 | [`03_COMPONENTS/`](03_COMPONENTS/) | Karetao system-level component definitions and the component documentation contract |
 | [`04_SAFETY/`](04_SAFETY/) | System safety requirements and related documentation |
