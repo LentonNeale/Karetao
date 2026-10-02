@@ -51,5 +51,8 @@ workspace = "~/Git_repos/Karetao_Consulting/icm/workspaces/client-liaison"
 workspace = "~/Git_repos/Karetao_Consulting/icm/workspaces/request-review"
 
 [build]
-workspace = "~/Git_repos/Karetao_Consulting/icm/workspaces/implement-step"
+workspace = "icm-project/workspaces/implement-step"   # Karetao copy: adds reference rows
 test_workspace = "~/Git_repos/Karetao_Consulting/icm/workspaces/test-changes"
+
+[pre_merge_review]
+workspace = "icm-project/workspaces/pre-merge-review"   # Karetao copy: adds reference rows
