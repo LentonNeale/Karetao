@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "next_id": 5,
+  "stories": [
+    {
+      "id": "B1",
+      "title": "Audit Code against Contracts",
+      "story": "As the project owner I want the Code reviewed against each Contract spec so that I know where the Code does not implement what the Contracts define.",
+      "acceptance": [
+        "Every bus covered by the Contracts (CAN, SPI, HOST, TIME) is checked against the Code",
+        "Each Code divergence from a Contract is recorded as one row in the gap table",
+        "Each row states what the Contract specifies and what the Code does",
+        "The review lists gaps only and makes no fix recommendations",
+        "The review covers the STM32 firmware (Arm_Sensor_Hub/App and Arm_Sensor_Hub/Core), the Raspberry Pi host (RaspberryPi_Sensor_Hub) and the shared libraries (shared/libs); vendor code (Arm_Sensor_Hub/Drivers, Arm_Sensor_Hub/Middlewares) and build output are out of scope"
+      ],
+      "points": 8,
+      "status": "sprint",
+      "sprint": "2026-10-01T20:25:48.710456+00:00",
+      "created": "2026-10-01T20:42:14.811334+00:00",
+      "done_at": null
+    },
+    {
+      "id": "B2",
+      "title": "Audit Documentation against Contracts and Code",
+      "story": "As the project owner I want the Documentation reviewed against the Contracts and the Code so that I know where it describes either one inaccurately or leaves it out.",
+      "acceptance": [
+        "Every bus covered by the Contracts (CAN, SPI, HOST, TIME) is checked against the Documentation",
+        "Each place the Documentation is silent on, or differs from, a Contract or the Code is recorded as one row in the gap table",
+        "Each row states what the Documentation says, or that it is silent",
+        "The review lists gaps only and makes no fix recommendations"
+      ],
+      "points": 5,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-01T20:42:14.811363+00:00",
+      "done_at": null
+    },
+    {
+      "id": "B3",
+      "title": "Write the gap report at Documentation/05_VERIFICATION/gaps.md",
+      "story": "As the project owner I want one structured gap report saved in the project so that it can be referenced in later sprints and used to plan alignment before physical testing of the buses between the sensors, STM32 and Raspberry Pi.",
+      "acceptance": [
+        "The report exists at Documentation/05_VERIFICATION/gaps.md",
+        "The report is a table with the columns Contract spec, Code and Docs",
+        "Each row is one gap where the Contract, Code and Docs diverge",
+        "The report contains no fix recommendations and no priority order",
+        "The report covers the CAN, SPI, HOST and TIME buses"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-01T20:42:14.811374+00:00",
+      "done_at": null
+    },
+    {
+      "id": "B4",
+      "title": "Requester approves the gap report",
+      "story": "As the project owner I want to approve the gap report before the next sprint starts so that planning is based on gaps I have accepted.",
+      "acceptance": [
+        "The requester has been given the finished gap report to review",
+        "The requester has recorded approval or requested changes",
+        "The next sprint is not started until the report is approved"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-01T20:42:14.811381+00:00",
+      "done_at": null
+    }
+  ]
+}
