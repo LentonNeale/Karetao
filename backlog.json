@@ -14,8 +14,8 @@
         "The review covers the STM32 firmware (Arm_Sensor_Hub/App and Arm_Sensor_Hub/Core), the Raspberry Pi host (RaspberryPi_Sensor_Hub) and the shared libraries (shared/libs); vendor code (Arm_Sensor_Hub/Drivers, Arm_Sensor_Hub/Middlewares) and build output are out of scope"
       ],
       "points": 8,
-      "status": "sprint",
-      "sprint": "2026-10-01T20:25:48.710456+00:00",
+      "status": "dropped",
+      "sprint": null,
       "created": "2026-10-01T20:42:14.811334+00:00",
       "done_at": null
     },
@@ -30,7 +30,7 @@
         "The review lists gaps only and makes no fix recommendations"
       ],
       "points": 5,
-      "status": "open",
+      "status": "dropped",
       "sprint": null,
       "created": "2026-10-01T20:42:14.811363+00:00",
       "done_at": null
@@ -47,7 +47,7 @@
         "The report covers the CAN, SPI, HOST and TIME buses"
       ],
       "points": 3,
-      "status": "open",
+      "status": "dropped",
       "sprint": null,
       "created": "2026-10-01T20:42:14.811374+00:00",
       "done_at": null
@@ -62,7 +62,7 @@
         "The next sprint is not started until the report is approved"
       ],
       "points": 1,
-      "status": "open",
+      "status": "dropped",
       "sprint": null,
       "created": "2026-10-01T20:42:14.811381+00:00",
       "done_at": null
