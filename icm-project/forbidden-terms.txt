@@ -1,0 +1,28 @@
+# Karetao: terms that must never appear in the shared ICM workspace (LentonNeale/Karetao_Consulting).
+# One term per line, whole-word and case-insensitive. Lines starting with ! are allowed phrases.
+# Run before any subtree push or PR to the workspace repo:
+#   python3 workspace/scripts/check-project-facts.py
+
+# The workspace's own repository and product names are allowed
+!Karetao Consulting
+!Karetao_Consulting
+!karetao-portal
+
+# Project identity
+Karetao
+LentonNeale/Karetao
+robotic arm
+
+# Components and paths
+Arm_Sensor_Hub
+RaspberryPi_Sensor_Hub
+02_INTERFACES
+00_INDEX
+
+# Hardware and code-level names
+STM32F405
+spi_protocol
+spi_payload_layout
+request_received_local_us
+ClockSync
+TimeService
