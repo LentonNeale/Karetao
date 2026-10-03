@@ -1,6 +1,6 @@
 # Karetao
 
-Monorepo for the Karetao robotic arm platform: STM32 control/comms firmware, Raspberry Pi host-side integration, ROS 2 components, and shared project scaffolding.
+Monorepo for the Karetao robotic arm platform: STM32 control/comms firmware, Raspberry Pi host-side integration, and shared project scaffolding. The project charter at [`Documentation/01_SYSTEM/PROJECT_CHARTER.md`](Documentation/01_SYSTEM/PROJECT_CHARTER.md) is the scope authority, decided by Lenton Neale.
 
 ## Repository Layout
 

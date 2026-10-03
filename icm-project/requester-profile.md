@@ -12,4 +12,5 @@ How requests for Karetao are usually made, for the Client Liaison. Edit freely; 
   Datasheet, Derived or Provisional).
 - **Authority:** `Documentation/**` is the system authority (start at `Documentation/00_INDEX.md`);
   a request that would change a requirement, interface or safety rule goes there first.
+- **Current work:** the documentation alignment plan at `Documentation/CHARTER_ALIGNMENT_PLAN.md`, run as agile sprints; stories are in `backlog.json`.
 - **Style:** plain language; short questions, a few at a time.
