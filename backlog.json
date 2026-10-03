@@ -629,8 +629,8 @@
         "Plan removed in first code-alignment run"
       ],
       "points": 1,
-      "status": "open",
-      "sprint": null,
+      "status": "sprint",
+      "sprint": "2026-10-03T18:46:15.192391+00:00",
       "created": "2026-10-03T00:00:00+00:00",
       "done_at": null,
       "package": "WP1"
