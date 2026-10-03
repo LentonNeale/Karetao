@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "next_id": {
+    "package": 7,
+    "decision": 1
+  },
+  "packages": [
+    {
+      "id": "WP1",
+      "title": "Documentation aligned with the charter",
+      "type": "documentation",
+      "entry": "requirements",
+      "target": "requirements",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "Scope: the term scan finds EKF, ROS 2, MoveIt, PL/SIL, CTO, system decision authority, differential end effector and trajectory planning only in the allowed contexts (plan section 3.1)",
+        "Numbers: every number in a normative document is a contract constant or a PRM-* row with a basis; SYSTEM_REQUIREMENTS.md holds no numbers (3.2)",
+        "Requirements: a baseline of about 15 to 20 SYS-* rows (17 accepted 2026-10-03), each from a charter goal, with an acceptance criterion and a matrix row; retired IDs listed with successors (3.3)",
+        "Interfaces: nothing Stages 1 to 4 need is TBD, not frozen or proposed; anything open is scoped to a later stage (3.4)",
+        "Trail: every live register item maps to one open GitHub issue; milestones are stages; closed-as-not-planned issues cite the non-goal (3.5; GitHub changes held for Lenton Neale)",
+        "Size: documentation about documentation at most 250 lines; the register at most 150 lines; no section README stubs; For_Lenton retired (3.6)",
+        "Links: every relative link in the three documentation trees resolves; docs/project and 99_ARCHIVE appear only in the index provenance line (3.7)",
+        "Lockstep: every wire-format change in a document has an issue for the C side, the Python side and their tests, and says not yet implemented until it is (3.8)",
+        "Sign-off: Lenton Neale walks the list and records the date in ARCHITECTURE_DECISIONS.md; the PASS at this Requirements gate is that sign-off and tags baseline/requirements/v1 (3.9)",
+        "Drafted outside the Portal on branch docs/charter-alignment (sprints 0 to 6, 2026-10-03); the Portal tracks the sign-off from here"
+      ],
+      "status": "open",
+      "created": "2026-10-03T17:48:59.658967+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP2",
+      "title": "Stage 1: fitted encoders",
+      "type": "feature",
+      "entry": "design",
+      "target": "verification",
+      "methodology": "waterfall",
+      "affects": [],
+      "acceptance": [
+        "NOT_FITTED on the wire (validity bit 6) implemented in spi_payload_layout.h, spi_protocol.c, spi_protocol.py and both test suites (SYS-ENC-002)",
+        "Encoder-fitted flag in the app_init.c commissioning table; the sensor task skips unfitted axes without raising a fault",
+        "Commissioning table in SYSTEM_CONFIGURATION.md section 2.1 filled by Lenton Neale: joint names, which axes have an encoder; app_init.c matches it (SYS-ENC-003)",
+        "One evidence record per fitted axis (EVIDENCE_RECORD_FORMAT.md, VERSION identity) accepted in SYSTEM_VERIFICATION_MATRIX.md (SYS-ENC-001)",
+        "Register item LIVE-17 and its GitHub issues closed"
+      ],
+      "status": "open",
+      "created": "2026-10-03T17:48:59.658991+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP3",
+      "title": "Stage 2: motor positions and coherent timestamps",
+      "type": "feature",
+      "entry": "design",
+      "target": "verification",
+      "methodology": "waterfall",
+      "affects": [],
+      "acceptance": [
+        "All commissioned motors registered in app_init.c and polled; every motor record in the snapshot (SYS-MOT-001)",
+        "Clock sync per Issue #12: ISR raw capture, request_received_local_us, Pi-side ClockSync, TIME_SYNC removed (SYS-SYNC-001, SYS-TS-001; GitHub #42)",
+        "DIAGNOSTIC v2 and GET_DIAGNOSTIC implemented for fault visibility (SAFE-05)",
+        "Bench evidence at rest and during motion accepted in the matrix for SYS-MOT-001, SYS-MOT-002 and SYS-TS-001",
+        "Register items LIVE-18 and LIVE-19 closed"
+      ],
+      "status": "open",
+      "created": "2026-10-03T17:48:59.659003+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP4",
+      "title": "Stage 3: links measured",
+      "type": "investigation",
+      "entry": "bringup",
+      "target": "verification",
+      "methodology": "bench",
+      "affects": [],
+      "acceptance": [
+        "Measured with an evidence record each: SPI clock and cable, CAN bitrate and bus load, sync skew and timestamp conversion error, poll periods, per-axis latency, DATA_READY GPIO on the Pi (LIVE-22)",
+        "PARAMETER_REGISTER.md rows move from Provisional to Measured with the record linked; no value changes basis without evidence",
+        "CAN bitrate decided from the measurement: PRM-CAN-02 (as generated) kept or PRM-CAN-03 applied, recorded in ARCHITECTURE_DECISIONS.md",
+        "Firmware and Pi parameters centralised in one header and one config that mirror the register",
+        "Every evidence record carries the firmware identity from the VERSION message; timing-harness outputs filed as evidence"
+      ],
+      "status": "open",
+      "created": "2026-10-03T17:48:59.659012+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP5",
+      "title": "Stage 4: gated motion X, Y, Z",
+      "type": "feature",
+      "entry": "design",
+      "target": "verification",
+      "methodology": "waterfall",
+      "affects": [],
+      "acceptance": [
+        "SET_MOTOR_COMMAND path implemented: SPI decode, gate, MKS command on CAN, ACK or NACK with the gate reason, in C, Python and tests (SYS-CMD-001)",
+        "motion_permission.c simplified to SYS-GATE-001 with the count-based link_stale liveness check (SYS-LINK-001)",
+        "Initial movement records for joints X, Y and Z written and dated by Lenton Neale",
+        "Matrix rows Joint X, Y and Z verified motion reach SYSTEM_VERIFIED: gated command ACKed with motion visible in the snapshot, stop on link loss observed",
+        "SAFE-01 to SAFE-05 evidence accepted; register items LIVE-20 and LIVE-21 closed"
+      ],
+      "status": "open",
+      "created": "2026-10-03T17:48:59.659020+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP6",
+      "title": "Stage 5: remaining joints",
+      "type": "feature",
+      "entry": "intake",
+      "target": "verification",
+      "methodology": "waterfall",
+      "affects": [],
+      "acceptance": [
+        "Hardware for joints 4, 5 and 6 confirmed and recorded in the commissioning table (names, encoder fitted, motor, CAN ID)",
+        "Each of the three joints verified as for X, Y and Z: movement record, gated command, stop on link loss",
+        "Matrix rows for joints 4 to 6 reach SYSTEM_VERIFIED"
+      ],
+      "status": "open",
+      "created": "2026-10-03T17:48:59.659028+00:00",
+      "closed": null
+    }
+  ],
+  "decisions": []
+}

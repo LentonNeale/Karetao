@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 37,
+  "next_id": 40,
   "stories": [
     {
       "id": "B1",
@@ -79,10 +79,12 @@
         "CAN rows show both 1 Mbps Provisional target and 875 kbps as-generated Derived value"
       ],
       "points": 5,
-      "status": "backlog",
-      "sprint": 1,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B6",
@@ -95,10 +97,12 @@
         "grep check matches no numbers in SYSTEM_REQUIREMENTS.md"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 1,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B7",
@@ -110,10 +114,12 @@
         "Contract constants are kept in interface documents"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 1,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B8",
@@ -125,10 +131,12 @@
         "Verified against source at build time"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 1,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B9",
@@ -141,10 +149,12 @@
         "Each row has an observable acceptance criterion and no numbers"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 2,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B10",
@@ -157,10 +167,12 @@
         "C/Python divergence recorded as one issue"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 2,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B11",
@@ -173,10 +185,12 @@
         "Section states app_init.c tables must match; ARM_SENSOR_HUB.md drops its copies and points here"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 2,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B12",
@@ -187,10 +201,12 @@
         "EVIDENCE_RECORD_FORMAT.md created per D-9"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 2,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B13",
@@ -203,10 +219,12 @@
         "Milestone Stage 1 assigned; issue #48 re-scoped or closed"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 2,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B14",
@@ -219,10 +237,12 @@
         "Retired IDs listed with successors"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 3,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B15",
@@ -235,10 +255,12 @@
         "875 kbps note points at PRM-CAN-01/02; six commissioned motors referenced"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 3,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B16",
@@ -251,10 +273,12 @@
         "TIME_SYNC validation and characterisation kept as dated as-built evidence"
       ],
       "points": 5,
-      "status": "backlog",
-      "sprint": 3,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B17",
@@ -267,10 +291,12 @@
         "TIME_SYNC update wording changed to ClockSync"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 3,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B18",
@@ -282,10 +308,12 @@
         "Issues for #42, #45 re-pointed; issues #12, #33-#36 closed as not planned"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 3,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B19",
@@ -298,10 +326,12 @@
         "RASPBERRY_SENSOR_HUB.md rewritten under 25 lines"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 3,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B20",
@@ -313,10 +343,12 @@
         "SD-20 scope recorded; motion_permission.c simplification is a code issue"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 4,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B21",
@@ -330,10 +362,12 @@
         "Lockstep issue created"
       ],
       "points": 5,
-      "status": "backlog",
-      "sprint": 4,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B22",
@@ -347,10 +381,12 @@
         "SAFETY_ARCHITECTURE.md and SAFETY_INTEGRATION.md merged and removed"
       ],
       "points": 5,
-      "status": "backlog",
-      "sprint": 4,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B23",
@@ -363,10 +399,12 @@
         "INTEGRATION_GATES.md merged into matrix and removed"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 4,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B24",
@@ -379,10 +417,12 @@
         "LIVE-01 family re-scoped or closed; #14, #31, #46, #50 re-scoped or closed"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 4,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B25",
@@ -395,10 +435,12 @@
         "SYS-MECH-001 and SD-26 moved to Deferred table with hardware condition"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 4,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B26",
@@ -411,10 +453,12 @@
         "Section 4 rewritten as Before energised motion at hobby scope"
       ],
       "points": 5,
-      "status": "backlog",
-      "sprint": 5,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B27",
@@ -426,10 +470,12 @@
         "Retired and deferred table with successors or reasons"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 5,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B28",
@@ -442,10 +488,12 @@
         "Every row has code module and test or none yet issue"
       ],
       "points": 3,
-      "status": "backlog",
-      "sprint": 5,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B29",
@@ -457,10 +505,12 @@
         "Labels unchanged; ISSUE_CONTRACT.md notes estimation as dormant"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 5,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B30",
@@ -472,10 +522,12 @@
         "File removed; CLAUDE.md line updated"
       ],
       "points": 1,
-      "status": "backlog",
-      "sprint": 5,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B31",
@@ -487,10 +539,12 @@
         "Ordered by charter goal"
       ],
       "points": 1,
-      "status": "backlog",
-      "sprint": 5,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B32",
@@ -502,10 +556,12 @@
         "Seven files removed after deletion check"
       ],
       "points": 5,
-      "status": "backlog",
-      "sprint": 6,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B33",
@@ -518,10 +574,12 @@
         "No inbound link broken"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 6,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B34",
@@ -534,10 +592,12 @@
         "EKF mention in I2C analysis removed; MksServo README paths fixed"
       ],
       "points": 5,
-      "status": "backlog",
-      "sprint": 6,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B35",
@@ -551,10 +611,12 @@
         "Added to portal.toml verify commands"
       ],
       "points": 2,
-      "status": "backlog",
-      "sprint": 6,
+      "status": "done",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
       "id": "B36",
@@ -567,10 +629,64 @@
         "Plan removed in first code-alignment run"
       ],
       "points": 1,
-      "status": "backlog",
-      "sprint": 6,
+      "status": "open",
+      "sprint": null,
       "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B37",
+      "title": "S7.1 Walk the definition of done",
+      "story": "As the maintainer I want each item of CHARTER_ALIGNMENT_PLAN.md section 3 checked against the drafted documents so that sign-off is a confirmation, not a search.",
+      "acceptance": [
+        "A new section 14 'Definition-of-done status (2026-10-04)' in CHARTER_ALIGNMENT_PLAN.md: one row per section 3 item 1 to 8 with Holds or Does not hold and the evidence (the command run and its result, or the file and its line count)",
+        "The term scan from Appendix B and icm-project/tools/doc_check/doc_check.py are run and their output is quoted or summarised in the row",
+        "Sizes are measured with wc -l and quoted: documentation about documentation (00_INDEX.md, DOCUMENTATION_RULES.md) at most 250 lines; the decisions register at most 150 lines",
+        "Items that depend on GitHub (3.5 issues and milestones, 3.8 issue numbers) are marked 'Blocked: GitHub changes held for Lenton Neale' with what the held script would do; nothing is invented",
+        "No document outside CHARTER_ALIGNMENT_PLAN.md is edited by this story"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-03T17:49:38.669487+00:00",
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B38",
+      "title": "S7.2 Fix what the walk finds",
+      "story": "As the maintainer I want the section 3 items that do not hold fixed in the same sprint so that the draft is ready for sign-off.",
+      "acceptance": [
+        "Every 'Does not hold' row from S7.1 is either fixed and its row updated to Holds naming the fix, or listed under 'Left for Lenton Neale' with the reason",
+        "No code file is changed (Arm_Sensor_Hub, RaspberryPi_Sensor_Hub, shared)",
+        "No file is deleted without the DOCUMENTATION_RULES.md check (git history, unique content, inbound links) recorded in the commit message",
+        "doc_check.py runs clean and Verify passes",
+        "Caveats travel with the text they qualify: when a passage is shortened its 'not hardware approval', 'no rating claimed' or 'not a measurement' wording is kept"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-03T17:49:38.669502+00:00",
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B39",
+      "title": "S7.3 The plan names how the Portal tracks this work",
+      "story": "As the maintainer I want CHARTER_ALIGNMENT_PLAN.md, backlog.json and lifecycle.json to agree so that the trail from plan to Portal is one trail.",
+      "acceptance": [
+        "Section 5 of the plan says the work is work package WP1 in lifecycle.json and that the PASS at the Requirements gate is the sign-off step of section 3.9",
+        "The plan's status line names this sprint (S7) and says sprints 0 to 6 were drafted outside the Portal on docs/charter-alignment",
+        "Section 11 (or a short new section) lists the code-alignment Stages 1 to 5 as work packages WP2 to WP6 with one line each",
+        "Nothing else in the plan changes"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-03T17:49:38.669507+00:00",
+      "done_at": null,
+      "package": "WP1"
     }
   ]
 }

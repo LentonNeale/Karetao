@@ -14,6 +14,29 @@ worktrees_dir = "~/icm-portal/worktrees/karetao"   # builds happen here, never i
 [methodology]
 default = "agile"   # charter alignment plan runs as agile sprints (Backlog, Sprint plan, Design, Build, Retro)
 
+# Work packages above the runs (Project tab: Work, Lifecycle, Map). The profile's Requirements gate is the
+# charter-alignment sign-off (CHARTER_ALIGNMENT_PLAN.md section 3); a PASS there tags baseline/requirements/v1.
+[lifecycle]
+profile = "mechatronics"   # Intake, Requirements*, Architecture*, Design, Implementation, Bring-up, Verification*, Validation, Release* (* = gate)
+file = "lifecycle.json"
+
+# The project files each baseline covers; a gate's files_committed check and the Baselines list use them.
+[lifecycle.files]
+requirements = [
+    "Documentation/01_SYSTEM/PROJECT_CHARTER.md",
+    "Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md",
+    "Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md",
+    "Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md",
+]
+architecture = [
+    "Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md",
+    "Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md",
+    "Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md",
+    "Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md",
+    "Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md",
+    "Documentation/02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md",
+]
+
 [commands]
 # What a Build's Verify runs, from the build worktree's root. These mirror CI and the project's
 # definition of done (a firmware change is done when the Debug build passes).
