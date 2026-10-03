@@ -647,8 +647,8 @@
         "No document outside CHARTER_ALIGNMENT_PLAN.md is edited by this story"
       ],
       "points": 3,
-      "status": "open",
-      "sprint": null,
+      "status": "sprint",
+      "sprint": "2026-10-03T18:08:39.663584+00:00",
       "created": "2026-10-03T17:49:38.669487+00:00",
       "done_at": null,
       "package": "WP1"
@@ -665,8 +665,8 @@
         "Caveats travel with the text they qualify: when a passage is shortened its 'not hardware approval', 'no rating claimed' or 'not a measurement' wording is kept"
       ],
       "points": 3,
-      "status": "open",
-      "sprint": null,
+      "status": "sprint",
+      "sprint": "2026-10-03T18:08:39.663584+00:00",
       "created": "2026-10-03T17:49:38.669502+00:00",
       "done_at": null,
       "package": "WP1"
@@ -682,8 +682,8 @@
         "Nothing else in the plan changes"
       ],
       "points": 2,
-      "status": "open",
-      "sprint": null,
+      "status": "sprint",
+      "sprint": "2026-10-03T18:08:39.663584+00:00",
       "created": "2026-10-03T17:49:38.669507+00:00",
       "done_at": null,
       "package": "WP1"
