@@ -172,7 +172,7 @@ Current code passes raw sensor acquisition time without applying offset. The tim
 
 ---
 
-## Integration Blockers
+## Open items (as built)
 
 Before TIME_SYNC can be accepted as operational:
 
@@ -182,18 +182,6 @@ Before TIME_SYNC can be accepted as operational:
 4. **Gap 4 (offset export):** Define payload extension or future v2 schema to carry accepted offset for host verification.
 5. **Gap 5 (Pi TIME_SYNC sender):** Implement time_sync() method in SpiDevice and TIME_SYNC payload encoder in spi_protocol.py.
 6. **Conflict (motion inhibit):** Audit motion-permission authority and verify all motion requests check time_sync_valid status before execution. See KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md §3.2.
-
----
-
-## Remaining Validation Tasks
-
-Even after implementation gaps are closed, before production release:
-
-1. **Round-trip time estimation:** v1 uses one-way estimate; validate achieved ±1 ms accuracy target (SD-18).
-2. **Drift between updates:** Instrument per-axis timestamp evolution during normal operation; validate no accumulation over 5-second sync intervals.
-3. **Loss-of-sync behavior:** Confirm motion is actually inhibited when time_sync_valid becomes false; verify no stale commands execute.
-4. **Clock-step transients:** Measure timestamp discontinuities when a new synchronization updates the offset; validate acceptable for EKF and motion control.
-5. **Synchronization latency:** Measure Pi→STM32 TIME_SYNC transaction time + processing latency; compare to transport uncertainty budget.
 
 ---
 

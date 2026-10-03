@@ -1,29 +1,18 @@
-# CAN Integration Evidence and Open Gates
+# CAN integration evidence
 
-**Status:** Integration gates and evidence collection in progress
+**Status:** Evidence collection in progress; no hardware measurement yet
 
 ---
 
-## C-2 Conflict: CAN Bitrate
+## Bitrate: target versus generated configuration
 
-### Requirement
+Target PRM-CAN-01, generated PRM-CAN-02, candidate PRM-CAN-03 (values in `PARAMETER_REGISTER.md`). 
+Generated configuration (`Arm_Sensor_Hub.ioc` and `MX_CAN1_Init()`):
 
-SYS-CAN-001 and CAN_SYSTEM_INTERFACE.md both state: **1 Mbps nominal for v1**.
+- 875 kbps: prescaler 16, BS1 1 TQ, BS2 1 TQ, SJW 1 TQ.
+- Sample point 66.7%; APB1 clock 42 MHz.
 
-### Current Implementation
-
-- `Arm_Sensor_Hub.ioc` and generated `MX_CAN1_Init()` configure **875 kbps**.
-- Configuration: prescaler 16, BS1 1 TQ, BS2 1 TQ, SJW 1 TQ.
-- Sample point: 66.7%.
-- APB1 clock: 42 MHz.
-
-### Issue
-
-The generated configuration does not meet the 1 Mbps requirement. This is an **implementation gap** (not a documentation error).
-
-### Candidate Resolution
-
-A candidate 1 Mbps configuration exists (from `CAN_BIT_TIMING_EVIDENCE.md`):
+A candidate configuration for the target bitrate exists (from `CAN_BIT_TIMING_EVIDENCE.md`):
 
 | Setting | Candidate value |
 | --- | ---: |
@@ -34,22 +23,16 @@ A candidate 1 Mbps configuration exists (from `CAN_BIT_TIMING_EVIDENCE.md`):
 | SJW | 1 TQ |
 | Sample point | 85.7% |
 
-This is a **reproducible calculation, not an approved configuration**. Approval requires:
+This is a **reproducible calculation, not an approved configuration**. Adopting it requires:
 - CubeMX integration (update `.ioc` and re-generate);
 - STM32 bxCAN controller validation (error handling, bus-off recovery, retransmission policy);
 - Physical-layer validation (signal integrity, bit stuffing, worst-case load, error rates, startup/stall/fault behavior).
-
-### Integration Gate
-
-This conflict blocks CAN integration approval until either:
-1. The 875 kbps configuration is accepted as the new system baseline (requires SYS-CAN-001 revision), OR
-2. The candidate 1 Mbps configuration is validated and integrated (requires evidence below).
 
 ---
 
 ## CAN Bitrate Validation Evidence
 
-**Reference:** `docs/project/firmware/CAN_BIT_TIMING_EVIDENCE.md`  
+**Reference:** the former `docs/project/firmware/CAN_BIT_TIMING_EVIDENCE.md` (git history)  
 **Status:** Engineering calculation; not hardware validation  
 **Date recorded:** As of 2026-09-20
 
@@ -74,7 +57,7 @@ This conflict blocks CAN integration approval until either:
    - Measured sample point, SJW margin, retransmission behavior
    - Logic-analyzer or CAN-analyzer evidence of actual bitrate under load
 
-### Integration Blockers (From Evidence)
+### Open items before the Stage 3 measurement
 
 1. Exact MKS controller model, firmware, command/response lengths, feedback rate, required polling/command traffic.
 2. CAN transceiver part, supply/standby behavior, common-mode range, signal levels.
@@ -82,24 +65,16 @@ This conflict blocks CAN integration approval until either:
 4. Oscillator tolerance, measured sample point/SJW margin, retransmission policy, bxCAN bus-off recovery behavior.
 5. Logic-analyzer or CAN-analyzer evidence of actual bitrate, error counters, arbitration latency, worst-case load, stability through startup/stalls/faults.
 
-**None of these blockers are currently satisfied.**
+**None of these items is currently satisfied.**
 
 ---
 
-## CAN Verification Requirements
+## Verification
 
-Before the CAN subsystem can be released to production, verify:
-
-1. **Configuration alignment:** Current or approved bitrate matches SYS-CAN-001 (1 Mbps) or updated requirement.
-2. **MKS controller:** Exact model, firmware, command/response timing, and feedback semantics documented.
-3. **Physical layer:** Transceiver, cable, termination, topology, and grounding validated against CAN standard and application load.
-4. **Bitrate accuracy:** Measured (not calculated) bitrate, sample point, SJW margin, and error behavior on target hardware.
-5. **Error recovery:** bxCAN bus-off detection, recovery timing, escalation policy (3 events in 60 s → ERROR state), and reactivation behavior verified under fault injection.
-6. **Load testing:** Worst-case traffic (8 motors, 100 Hz commands + polling + error retries) tested with concurrent SPI and sensor acquisition; no frame loss or timeout.
-7. **Diagnostics:** All required counters (TX/RX success/failure, queue drops, bus-off events, poll health) confirmed present and correct.
+Rows SYS-MOT-001, SYS-MOT-002 and the CAN interface row in `SYSTEM_VERIFICATION_MATRIX.md` carry the verification status; measurements are recorded per `EVIDENCE_RECORD_FORMAT.md` (Stage 3, `PARAMETER_REGISTER.md`, Measurement stages).
 
 ---
 
 ## Provenance
 
-Reconciled from `docs/project/firmware/CAN_BIT_TIMING_EVIDENCE.md`. This is **evidence material, not a system requirement**. The evidence documents an engineering calculation and provisional bus-load estimate, not hardware validation. The candidate 1 Mbps configuration is recorded but not approved. The C-2 conflict (1 Mbps required, 875 kbps implemented) is documented for integration decision-making.
+Reconciled from `docs/project/firmware/CAN_BIT_TIMING_EVIDENCE.md`. This is **evidence material, not a system requirement**. The evidence documents an engineering calculation and provisional bus-load estimate, not hardware validation. The candidate 1 Mbps configuration is recorded but not approved. The bitrate difference between target and generated configuration is recorded for the Stage 3 measurement.

@@ -6,6 +6,8 @@ as the current contract in effect, not frozen. Items explicitly marked
 else has been discussed and settled in this conversation. This document
 collates recommendations already made; it does not introduce new ones.
 
+**Charter note (2026-10-03):** the high-rate estimator named below as the consumer of synchronized timestamps is a charter non-goal; ClockSync remains the model, and its consumers are the snapshot decoder and evidence tools (PROJECT_CHARTER.md).
+
 Structured against the original ten Issue #12 items, plus one item
 (liveness/motion-safety timeout) that emerged from discussion beyond the
 original ten.
