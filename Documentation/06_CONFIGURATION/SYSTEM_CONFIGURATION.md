@@ -4,16 +4,13 @@
 
 This document is the authoritative Karetao destination for system-level controlled configuration. Component-specific build/toolchain, driver, and implementation configuration remains component authority.
 
+Tunable and physical values are referenced by PRM ID; their working values and bases are in [`PARAMETER_REGISTER.md`](PARAMETER_REGISTER.md).
+
 ---
 
 ## 1. Physical Interface Configuration
 
-- **CAN nominal rate:** **1 Mbps** for v1, standard 11-bit IDs (SD-05).
-- **SPI initial maximum:** **5 MHz**, pending target-system validation (SD-01, SD-15).
-- **SPI framing:** 512-byte frame, maximum 490-byte payload, Mode 0, little-endian, CRC-32/ISO-HDLC (SD-15).
-- **Clock sync:** observation on every applicable SPI exchange; invalid after 5 s without an accepted observation (SD-19, Issue #12).
-- **Pi link liveness:** count-based (`N_moving` < `N_idle`, values open); interim detection limit 500 ms (SYS-FAIL-001).
-- **`counter_extension_gap_us`:** fixed 500 ms TIM2 wrap-extension guard, to be reviewed after hardware characterization (Issue #12 item 11).
+Physical and tunable values (CAN bit rate, SPI clock ceiling, clock-sync validity window, Pi link liveness, counter extension gap) are held in [`PARAMETER_REGISTER.md`](PARAMETER_REGISTER.md), each with a basis. The former list maps to the register as follows: CAN rate to PRM-CAN-01 (standard 11-bit IDs, SD-05); SPI maximum to PRM-SPI-01 (SD-01, SD-15); SPI framing (512-byte frame, maximum 490-byte payload, Mode 0, little-endian, CRC-32/ISO-HDLC) stays a contract constant in [`SPI_SYSTEM_INTERFACE.md`](../02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md); clock-sync validity to PRM-TS-03 (SD-19, Issue #12); Pi link liveness to PRM-LINK-01 and PRM-LINK-02 (SYS-FAIL-001); `counter_extension_gap_us` to PRM-TS-04 (Issue #12 item 11).
 
 ---
 
@@ -35,8 +32,8 @@ The mapping model defines a one-to-one relationship between:
 - Supports logical joints 0–5, AS5600 sensors 0–5, motor indices 0–7, standard 11-bit CAN IDs.
 - Direction and transmission-ratio scaling for each joint.
 
-**Schema v1 limitations:**
-- **Does not represent differential, coupled, or multi-motor joints.** Those topologies require a new schema version and explicit semantics; they must not be encoded as multiple v1 records for one logical joint (SD-26, SYS-MECH-001).
+**Schema v1 limitations (deferred by the charter until the hardware exists):**
+- **Does not represent differential, coupled, or multi-motor joints (deferred by the charter).** Those topologies require a new schema version and explicit semantics; they must not be encoded as multiple v1 records for one logical joint (SD-26, SYS-MECH-001).
 
 **Validation and activation:**
 - Configuration is validated before activation.
@@ -45,9 +42,24 @@ The mapping model defines a one-to-one relationship between:
 - SensorTask uses the validated record's logical joint and AS5600 IDs to keep latest-value records at stable positions.
 - Future MotorService uses the matching logical joint, motor index, CAN ID, direction, offset, and transmission ratio when translating logical commands and feedback.
 
-**Current status:**
-- Single-entry mapping reflects existing bring-up registration only.
-- Full commissioning of the complete physical mapping is required before energized-motion release.
+### 2.1 Commissioning table (as built, 2026-09-17; recorded 2026-10-03)
+
+This table is the only statement of which axes carry an encoder, which TCA9548A channel each uses and which MKS motor each maps to (SYS-ENC-003). The tables in `Arm_Sensor_Hub/App/Src/app_init.c` implement it and must match it; a mismatch is a defect in whichever side was changed without the other.
+
+| Axis (logical ID) | Joint name | Encoder fitted | Mux channel | Motor index | CAN ID | MKS model | MKS firmware | Direction | Zero offset | Ratio | Basis |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | unknown | unknown | 2 | 0 | 0x001 | SERVO42 (CAN_SERVICE_MKS_SERVO42) | unknown | +1 | 0 | 1/1 | as built (app_init.c) |
+| 1 | unknown | unknown | 3 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
+| 2 | unknown | unknown | 4 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
+| 3 | unknown | unknown | 5 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
+| 4 | unknown | unknown | 6 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
+| 5 | unknown | unknown | 7 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
+
+Logical axis N maps to mux channel N+2. Channel SD0 carries the bench sensor and is excluded; SD1 is unpopulated.
+
+Cells marked unknown are facts only the maintainer can supply; they are filled in the Design stage of the sprint that needs them. Until an axis's Encoder fitted cell is set, the firmware treats the axis as fitted (current behaviour) and an absent encoder reads as a communication error; SYS-ENC-002 changes that once implemented.
+
+Full commissioning is required before gated motion on an axis (charter goal 4).
 
 ---
 
@@ -82,6 +94,8 @@ The calibration model is versioned and integrity-protected.
 - Do not select an older or corrupted fallback record when candidate validation fails.
 - `Calibration_ActiveVersion` reports the selected record, schema version, and generation.
 
+**Evidence required before gated motion** (matrix row SYS-CAL-001): versioning, CRC, redundancy, power-loss handling and the host copy.
+
 **Redundancy:**
 - The system stores redundant copies in STM32 flash slots.
 - A host-side source copy is maintained and synchronized.
@@ -94,18 +108,18 @@ The calibration model is versioned and integrity-protected.
 - **Host/API authoritative joint representation:** Calibrated radians (SD-12).
 - **STM32 internal time domain:** Monotonic local time in microseconds only; the STM32 holds no offset (Issue #12).
 - **Timestamp acquisition:** Measurement timestamps captured immediately after successful sensor read/decode, in STM32 local time, then converted to Pi time by ClockSync.
-- **Synchronization quality:** Timestamps marked `SYNCHRONIZED` while `ClockSync.is_valid()` (last accepted observation less than 5 seconds old); otherwise marked `UNSYNCHRONIZED`.
+- **Synchronization quality:** Timestamps marked `SYNCHRONIZED` while `ClockSync.is_valid()` (last accepted observation within PRM-TS-03); otherwise marked `UNSYNCHRONIZED`.
 
 ---
 
 ## 5. Joint Angle Numeric Representation
 
 - **Canonical unit:** radians.
-- **Normal external decimal precision:** **4 decimal places** (`0.0001 rad`, approximately `0.00573°`).
-- **AS5600 nominal resolution:** 12-bit, 4096 codes/revolution, approximately `0.001534 rad` per code.
+- **Normal external decimal precision:** PRM-REP-01.
+- **AS5600 nominal resolution:** PRM-ACQ-06.
 - **Raw representation:** Raw AS5600 counts remain available diagnostically.
 - **Internal calculation precision:** Firmware/host calculations may retain greater floating-point precision where required for filtering, interpolation, or derivative calculations.
-- **Interpretation:** The four-decimal choice is a software representation requirement. It must not be interpreted as a claim that the physical joint angle is accurate to `0.0001 rad`.
+- **Interpretation:** The four-decimal choice is a software representation requirement. It must not be interpreted as a claim that the physical joint angle is accurate to the precision in PRM-REP-01.
 - **Wire-format constraint:** The current processed-millidegree wire field must not be silently reinterpreted as radians. A versioned schema change and documented conversion are required before the wire representation changes, as specified by SD-12.
 - **Supporting engineering reference:** `Arm_Sensor_Hub/Documentation/AS5600_PRECISION_AND_ACCURACY.md`.
 
@@ -113,10 +127,10 @@ The calibration model is versioned and integrity-protected.
 
 Concrete STM32 build/toolchain settings, driver settings, Raspberry provisioning, and component-specific configuration are not system configuration authority and remain in the component repositories.
 
-**Provisional values:** Values marked provisional or validation-dependent (5 MHz SPI, 1 Mbps CAN, ±1 ms timestamp error, 500 Hz EKF) must not be represented as final release configuration until the corresponding integration evidence is accepted.
+**Provisional values:** Values are Provisional until the register links evidence; see the register's basis column. They must not be represented as final release configuration, and they are not restated here.
 
 ---
 
 ## Provenance
 
-Reconciled from `docs/project/firmware/JOINT_MAPPING_CONTRACT.md` (joint/sensor/motor mapping schema, validation, and current status) and `docs/project/firmware/CALIBRATION_CONTRACT.md` (calibration record model, ownership, validation, redundancy, and integration work). All caveats preserved verbatim: schema v1 cannot represent differential end effectors (SYS-MECH-001); redundant selection requires modulo-32-bit ordering; calibration is offline-computed, never on-device; commissioning validation required before motion release.
+Reconciled from `docs/project/firmware/JOINT_MAPPING_CONTRACT.md` (joint/sensor/motor mapping schema, validation, and current status) and `docs/project/firmware/CALIBRATION_CONTRACT.md` (calibration record model, ownership, validation, redundancy, and integration work). All caveats preserved verbatim: schema v1 cannot represent differential end effectors (SYS-MECH-001); redundant selection requires modulo-32-bit ordering; calibration is offline-computed, never on-device; evidence required before gated motion (matrix row SYS-CAL-001).

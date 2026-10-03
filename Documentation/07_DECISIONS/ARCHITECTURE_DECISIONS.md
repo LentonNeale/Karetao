@@ -1,5 +1,18 @@
 # Architecture Decisions
 
+This is the live decision log for architecture-level decisions. The full decision list is in the **[Karetao Decisions, Questions, and Issues Register](KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md)** (Architecture Decisions section).
+
+## Motion gate (SYS-GATE-001)
+
+**Status:** Decided 2026-10-03, Lenton Neale (applied per CHARTER_ALIGNMENT_PLAN.md D-3; to be confirmed at sign-off).
+
+**Decision:** `MOTION_PERMITTED = lifecycle ACTIVE ∧ CAN ACTIVE ∧ ¬link_stale ∧ ¬global_motion_inhibit ∧ motor_ready`.
+
+- ClockSync validity, required-sensor validity, calibration validity and motor-feedback freshness are not gate inputs for single gated commands. They remain diagnostics and may be added by a later decision.
+- Single gated commands are not time-dependent motion. This resolves the SD-20 scope question: no time-dependent motion exists in the current scope.
+- The proposed SYS-MOTION-001..003 are replaced by SYS-GATE-001 ([`SYSTEM_REQUIREMENTS.md`](../01_SYSTEM/SYSTEM_REQUIREMENTS.md)).
+- `motion_permission.c` today evaluates a superset (heartbeat, time sync, sensors, calibration, feedback). Simplifying it to this set is a code issue ([LIVE-20]).
+
 ## Clock synchronization (Issue #12)
 
 **Status:** DECIDED (2026-09-24). This is a living decision record, and some parameters are open.
@@ -12,26 +25,21 @@ Full record: [`ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md`](ISSUE_12_CLOCK_SYNC
 
 Open: `N_moving`/`N_idle`, the expected-message-interval source, the motion-state input, counter-extension-gap recovery, and the DIAGNOSTIC v2 field layout.
 
-## Proposed motion-permission decision
+## Documentation conflicts resolved during the 2026-09 refactor
 
-**Status:** PROPOSED — not yet approved.
+- **C-1:** DATA_READY armed-then-assert is authoritative.
+- **C-3:** 512 bytes is the fixed transaction length and 490 bytes the maximum payload.
 
-A system-level normal-motion permission gate is proposed above individual service readiness. The proposal aggregates CAN readiness, required I2C/sensor readiness, Raspberry Pi communication health, time synchronization validity, required timestamp/data freshness, system lifecycle/fault readiness, and an explicit global motion-inhibit state.
+Both are from the former `05_REFACTORING_LEDGER.md` (see git history).
 
-The proposed gate is:
+## Charter qualifications of approved decisions (2026-10-03)
 
-MOTION_PERMITTED = CAN_ACTIVE AND REQUIRED_I2C_ACTIVE AND REQUIRED_SENSOR_DATA_VALID AND PI_COMMUNICATION_HEALTHY (NOT link_stale) AND TIME_SYNC_VALID AND REQUIRED_TIMESTAMP_FRESHNESS AND SYSTEM_OPERATIONAL AND NO_ACTIVE_MOTION_INHIBIT
+- **SD-01:** the EKF clause is withdrawn; rates are PRM values ([`PARAMETER_REGISTER.md`](../06_CONFIGURATION/PARAMETER_REGISTER.md)).
+- **SD-09:** the Pi owns measurement history; the estimator wording is dropped.
+- **SD-20:** scope resolved as in the motion-gate decision above.
+- **SD-25:** kept; no PL/SIL rating is claimed.
+- **SD-26:** deferred until the hardware exists.
 
-This proposal is intended to resolve the existing open motion-permission authority issue under SD-02/SD-23. It does not alter the approved SD-01–SD-25 decisions until accepted by the system decision authority.
+## Sign-off
 
-Open parameters include the final owner/API, exact required sensor set, freshness thresholds, global inhibit sources/clear semantics, and the boundary between controlled stop, motor disable, and independent safety functions.
-
-Architecture-level decisions are maintained in the **[Karetao Decisions, Questions, and Issues Register](KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md)** under the **Architecture Decisions** section.
-
-This is a placeholder document created during the documentation refactoring. All substantive content is in the central register to maintain a single source of truth for all project decisions.
-
-For specific architecture decisions, refer to:
-- `KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md` § Architecture Decisions (§6)
-- System-level architecture: `01_SYSTEM/SYSTEM_ARCHITECTURE.md`
-- System lifecycle: `01_SYSTEM/SYSTEM_LIFECYCLE.md`
-- System requirements: `01_SYSTEM/SYSTEM_REQUIREMENTS.md`
+Pending: documentation aligned with charter — to be recorded by Lenton Neale.
