@@ -67,7 +67,7 @@ The standard label set is deliberately small.
 | `safety` | `#DC2626` | Safety mechanisms, boundaries, hazards, controls, or safety evidence. |
 | `timing` | `#D97706` | TIME_SYNC, clocks, scheduling, latency, freshness, or temporal validity. |
 | `communications` | `#0891B2` | CAN, SPI, transport, protocols, messaging, or communication interfaces. |
-| `estimation` | `#059669` | State estimation, EKF, sensor fusion, observability, or related estimation logic. |
+| `estimation` | `#059669` | Dormant since 2026-10-03: state estimation is a charter non-goal (Documentation/01_SYSTEM/PROJECT_CHARTER.md). Kept so old issues keep their label; do not apply to new issues. |
 | `mechanical` | `#CA8A04` | Mechanical interfaces, kinematics, end-effector mapping, or physical-system models. |
 | `configuration` | `#64748B` | Calibration, parameters, configuration data, persistence, versioning, or validity. |
 
@@ -82,7 +82,7 @@ Examples:
 - Safety architecture decision → `design` + `safety`
 - CAN implementation → `implementation` + `communications`
 - TIME_SYNC verification → `verification` + `timing`
-- EKF design → `design` + `estimation`
+- Link measurement → `verification` + `timing`
 - Calibration implementation and testing → `implementation` + `configuration` + `verification`
 - Mechanical mapping design → `design` + `mechanical`
 
@@ -123,7 +123,7 @@ Use only when there is a meaningful planning target. It is not an engineering re
 
 ### Milestones
 
-Use native GitHub Milestones for major engineering objectives or release groupings. Do not duplicate milestones in labels or custom Project fields.
+Use native GitHub Milestones for major engineering objectives or release groupings. Do not duplicate milestones in labels or custom Project fields. Milestones are stages named after charter goals (Stage 1 Fitted encoders … Stage 5 Remaining joints), not dates.
 
 ## Adding a New Label
 

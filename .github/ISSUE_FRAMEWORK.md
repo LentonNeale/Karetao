@@ -172,6 +172,8 @@ Include relevant:
 - pull requests;
 - external technical references where appropriate.
 
+Cite the SYS-* row (Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md) or the stage the issue serves.
+
 Use stable repository paths or issue/PR references where possible.
 
 ---
@@ -260,7 +262,7 @@ Examples:
 - Motion safety → `design` + `safety`
 - CAN implementation → `implementation` + `communications`
 - TIME_SYNC verification → `verification` + `timing`
-- EKF design → `design` + `estimation`
+- Link measurement → `verification` + `timing`
 - Mechanical mapping → `design` + `mechanical`
 - Calibration implementation → `implementation` + `configuration`
 
@@ -324,7 +326,7 @@ Where an issue is part of an established project workstream, preserve the existi
 Examples:
 
 - `[LIVE-01]`
-- `[LIVE-14]`
+- `[LIVE-20]`
 - `[SD-01]`
 
 Identifiers belong in the title and/or description as appropriate.
