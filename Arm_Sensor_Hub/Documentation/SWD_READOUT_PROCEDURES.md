@@ -189,7 +189,7 @@ Expected results:
 
 **Using OpenOCD scripting:**
 
-Create a script `dump_sync_data.ocd`:
+Create an OpenOCD script, for example `dump_sync_data.ocd` (it is not in the repository):
 ```tcl
 init
 targets

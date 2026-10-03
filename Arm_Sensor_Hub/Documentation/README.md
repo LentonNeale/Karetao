@@ -19,13 +19,13 @@ Karetao owns system-level requirements and contracts. This component references 
 - System role: `Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md`
 - System requirements: `Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md` (SYS-* identifiers)
 - System interfaces:
-  - I2C: `Documentation/02_INTERFACES/` (system interface defined; HAL implementation component-owned)
+  - I2C: there is no I2C system interface document; the sensor path is described in `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md` and the channel map in `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md` §2.1 (HAL implementation component-owned)
   - CAN: `Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md` (system observable behavior; CanService implementation component-owned)
   - SPI: `Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md` (system contract; SpiSlaveService internals component-owned)
   - TIME: `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` (system synchronization; TimeService implementation component-owned)
 - System lifecycle: `Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md` (canonical states; service-specific contracts component-owned)
 - System architecture: `Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md` (system-level flow; component flow component-owned)
-- Configuration: `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md` (SYS-* constraints; component-specific settings component-owned)
+- Configuration: `Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md` (SYS-* constraints; component-specific settings component-owned); numeric values: `Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md` (PRM-* IDs)
 - Verification: `Documentation/05_VERIFICATION/` (system-level verification; component evidence component-owned)
 
 **This component's implementation authority:**
@@ -43,7 +43,7 @@ This directory does **not** define system requirements or redefine Karetao syste
 
 **External authority:**
 
-- MKS motor controller protocol and firmware: `docs/project/firmware/CAN_SERVICE_CONTRACT.md` legacy source (now in Karetao CAN_SYSTEM_INTERFACE.md)
+- MKS motor controller protocol and firmware: `Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md` (system contract); MKS protocol: `icm-project/references/mks-servo42d-57d-can/`
 - AS5600 rotary encoder: datasheet and register map
 - TCA9548A I2C multiplexer: datasheet
 - STM32F405 HAL and peripherals: ST reference manual and CubeMX-generated code
@@ -65,7 +65,7 @@ Component verification (unit tests, functional tests on target hardware) provide
 
 ## Documentation Structure
 
-This documentation directory follows the Karetao component documentation model:
+This documentation directory follows the Karetao component documentation model (`Documentation/DOCUMENTATION_RULES.md`):
 
 - **System interface compliance:** How this component implements the Karetao system contracts
 - **Internal architecture:** Service APIs, data structures, execution model

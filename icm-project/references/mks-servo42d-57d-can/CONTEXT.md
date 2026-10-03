@@ -17,7 +17,7 @@ Makerbase's CAN user manual for the MKS SERVO42D/57D closed-loop stepper drivers
 | Local copy | `~/.icm/sources/mks-servo42d-57d-can/MKS SERVO42&57D_CAN User Manual V1.0.9.pdf`, 3,044,183 bytes, sha256 `2d16ff8e1184ffa50c997280ac05cd5ab47bdf4632ef5397efae233e0107078f` (fetched with `fetch_source`; `source.json` beside it) |
 
 The project cites this same version (V1.0.9) in
-`Documentation/02_INTERFACES/CAN/MKS_SERVO42D_57D_SYNCHRONISATION.md`: no version mismatch.
+`multi-motor-synchronisation.md` (this folder; moved from Documentation/02_INTERFACES/CAN/ on 2026-10-03): no version mismatch.
 Page numbers in notes are PDF pages, equal to the printed page numbers.
 
 ## Files

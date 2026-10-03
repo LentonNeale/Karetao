@@ -1,0 +1,80 @@
+# Allowed contexts for the term scan in doc_check.py.
+# Each entry: path (relative to repo root, glob allowed), optional heading (hits allowed under the
+# nearest preceding markdown heading containing this text, case-insensitive), optional terms
+# (subset of terms allowed there, case-insensitive, glob allowed, spaces ignored; default all).
+
+[[allowed]]
+path = "Documentation/01_SYSTEM/PROJECT_CHARTER.md"
+
+[[allowed]]
+path = "Documentation/01_SYSTEM/SYSTEM_OVERVIEW.md"
+heading = "Future, not now"
+
+[[allowed]]   # SD charter column and closed items
+path = "Documentation/07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md"
+
+[[allowed]]   # dated decision record
+path = "Documentation/07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md"
+
+[[allowed]]
+path = "Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md"
+heading = "Charter qualifications"
+
+[[allowed]]
+path = "Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md"
+heading = "Retired, merged and deferred identifiers"
+
+[[allowed]]
+path = "Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md"
+terms = ["PL/SIL", "PL or SIL"]
+
+[[allowed]]   # dated as-built evidence
+path = "Documentation/05_VERIFICATION/TIME_SYNC_*.md"
+
+[[allowed]]
+path = "Documentation/CHARTER_ALIGNMENT_PLAN.md"
+
+[[allowed]]
+path = "Documentation/03_COMPONENTS/RASPBERRY_SENSOR_HUB.md"
+heading = "Future"
+
+[[allowed]]
+path = "RaspberryPi_Sensor_Hub/Documentation/README.md"
+heading = "Future"
+
+[[allowed]]   # provisioning guide with optional ROS 2 parts
+path = "RaspberryPi_Sensor_Hub/Documentation/RASPBERRY_PI_BRINGUP_V1.md"
+
+[[allowed]]   # states the rule
+path = "CLAUDE.md"
+terms = ["guess", "assum*"]
+
+[[allowed]]
+path = "Documentation/DOCUMENTATION_RULES.md"
+terms = ["guess", "assum*"]
+
+[[allowed]]   # states the rule and the withdrawn EKF line
+path = "Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md"
+terms = ["guess", "assum*", "estimator"]
+
+[[allowed]]
+path = "Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md"
+terms = ["ROS 2"]
+heading = "inspired by"
+
+[[allowed]]   # datasheet-derived analysis: modelling inputs are called assumptions
+path = "Arm_Sensor_Hub/Documentation/I2C_SCAN_TIMING_ANALYSIS.md"
+terms = ["assum*"]
+
+[[allowed]]   # toolchain notes
+path = "Arm_Sensor_Hub/Documentation/development.md"
+terms = ["assum*"]
+
+[[allowed]]   # names SD-26 as the example of a non-normative item
+path = "CLAUDE.md"
+terms = ["differential"]
+
+[[allowed]]   # schema v1 limitation, deferred by the charter
+path = "Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md"
+heading = "deferred"
+terms = ["differential"]

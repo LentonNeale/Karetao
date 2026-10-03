@@ -12,7 +12,7 @@ context_soft_limit = 60000
 worktrees_dir = "~/icm-portal/worktrees/karetao"   # builds happen here, never in this working copy
 
 [methodology]
-default = "waterfall"   # requirements-led and verification-heavy, so Waterfall fits best of the four styles
+default = "agile"   # charter alignment plan runs as agile sprints (Backlog, Sprint plan, Design, Build, Retro)
 
 [commands]
 # What a Build's Verify runs, from the build worktree's root. These mirror CI and the project's
@@ -21,6 +21,7 @@ verify = [
     "sh -c 'cd Arm_Sensor_Hub && cmake --preset HostTests && cmake --build --preset HostTests && ctest --preset HostTests --output-on-failure'",
     "sh -c 'cd Arm_Sensor_Hub && cmake --preset Debug && cmake --build --preset Debug'",
     "python3 -m unittest discover -s RaspberryPi_Sensor_Hub/tests/spi -p test_*.py",
+    "python3 icm-project/tools/doc_check/doc_check.py",
 ]
 verify_timeout = 900
 # What an implement step may run by itself (prefix match).

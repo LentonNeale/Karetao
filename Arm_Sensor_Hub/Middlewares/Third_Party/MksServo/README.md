@@ -1,6 +1,6 @@
 # MksServo — MKS Servo CAN protocol library (C++17, embedded)
 
-Pure protocol/codec library for MKS Servo42/57 CAN bus servos. Ported from the Python reference in `src/devices/mksservo/` + `src/protocol/`.
+Pure protocol/codec library for MKS Servo42/57 CAN bus servos. Ported from a Python reference implementation that is not in this repository; the MKS protocol documents are in `icm-project/references/mks-servo42d-57d-can/`.
 
 ## What it does
 - Encodes MKS command frames (`[cmd][payload][checksum8]`).
@@ -18,11 +18,11 @@ No CAN TX/RX, no HAL/bxCAN, no FreeRTOS/CMSIS, no queues/tasks, no scheduling, n
 - Errors returned as `Status` enum + out-params (no exceptions cross the API).
 
 ## Layout
-- `include/mksservo/` — C++ headers (`can_frame`, `status`, `enums`, `command`, `protocol_core`, `encoder`, `decoder`, `device_config`).
+- `include/mksservo/` — C++ headers (`can_frame`, `status`, `enums`, `command`, `protocol_core`, `encoder`, `decoder`, `device_config`; all `.hpp`).
 - `include/mks_api.h` — C-compatible (`extern "C"`) boundary for the C11 application layer.
-- `src/` — compiled implementation; `mks_api.cpp` is the only C/C++ seam.
+- `src/` — compiled implementation (`command.cpp`, `decoder.cpp`, `encoder.cpp`, `protocol_core.cpp`, `mks_api.cpp`); `mks_api.cpp` is the only C/C++ seam.
 - `adapters/stm32_bxcan.hpp` — optional example mapping `CanFrame` → `HAL_CAN_AddTxMessage` (not part of the lib target).
-- `tests/host/` — host-side (x86) unit + golden-vector + fuzz tests.
+- `CMakeLists.txt` — static library target. There is no `tests/host/` directory in this library; the application host tests are in `Arm_Sensor_Hub/tests/host/`.
 
 ## Integration (intended architecture)
 ```
@@ -31,5 +31,5 @@ Application (C11) → Motor Service (C11) → mks_api.h (C boundary) → MksServ
 ```
 
 ## Reference (source of truth)
-- `src/devices/mksservo/` (command codes, enums, per-group builders, decoder)
-- `src/protocol/` (`core.py`, `responses.py`, `validation.py`, `message_types.py`)
+- MKS protocol documents: `icm-project/references/mks-servo42d-57d-can/` (command codes, enums, response formats)
+- The C++ sources above (`include/mksservo/enums.hpp`, `command.hpp`, `decoder.hpp`, `protocol_core.hpp`) are the implementation of record; the Python reference named in earlier revisions is not in this repository

@@ -4,9 +4,8 @@ This directory contains the Raspberry Pi Sensor Hub component implementation doc
 
 - Host-side integration and host application architecture
 - SPI transport implementation (spidev, protocol encoding/decoding)
-- Measurement history and estimator integration
 - System command and state interfaces
-- ROS 2 integration
+- Future, not now: ROS 2 integration and any estimator are charter non-goals (`Documentation/01_SYSTEM/PROJECT_CHARTER.md`)
 - Host-side build configuration and provisioning
 - Host-side diagnostics and testing
 
@@ -30,13 +29,11 @@ Karetao owns system-level requirements and contracts. This component references 
 
 This directory owns:
 - SPI transport driver and protocol encoder/decoder
-- Measurement history buffer and estimator integration
 - System command interface and execution
-- ROS 2 node architecture and integration
 - Host-side lifecycle coordinator
 - Provisioning and deployment procedures
 - Host-side diagnostics and monitoring
-- Build system and dependencies (Python, ROS packages)
+- Build system and dependencies (Python)
 
 This directory does **not** define system requirements or redefine Karetao system contracts.
 
@@ -46,8 +43,6 @@ This directory does **not** define system requirements or redefine Karetao syste
 - Raspberry Pi 5 hardware: BCM2712 SoC, GPIO, pinout
 - Raspberry Pi OS provisioning: cloud-init, package management
 - PREEMPT_RT kernel patches: real-time scheduling extensions
-- ROS 2 Jazzy: middleware, sensor_msgs, control_msgs
-- Estimator/controller algorithms: downstream system documentation
 
 ## Verification Traceability
 
@@ -61,7 +56,7 @@ Component-level verification evidence (host-side tests, integration tests)
 Integration with Karetao system verification
 ```
 
-Component verification (host protocol tests, integration testing with STM32, ROS 2 integration testing) provides evidence that this component implements its assigned responsibilities. It does not by itself constitute Karetao system-level verification. System verification is owned by Karetao and recorded in `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`.
+Component verification (host protocol tests, integration testing with STM32) provides evidence that this component implements its assigned responsibilities. It does not by itself constitute Karetao system-level verification. System verification is owned by Karetao and recorded in `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`.
 
 ## SPI Interface Pin Mapping
 
@@ -104,14 +99,14 @@ Each run writes `<run_id>_transactions.csv` (per transaction), `<run_id>_blocks.
 
 **`transfer_ns` and `round_trip_ns` are not the same measurement and must not be compared as if they were.** `transfer_ns` is wire time for one 512-byte transfer. Because the transaction model is pipelined (`SPI_SYSTEM_INTERFACE.md` §4), the reply to a request is staged only after that request has been clocked in, so it arrives during a later transfer; `round_trip_ns` is reconstructed from the correlation field each response carries (`response_to_seq`, or `request_seq` on ACK/NACK) and therefore spans at least two transfers. A row whose `correlated_seq` is empty had no matching outstanding request, and its `round_trip_ns` is blank rather than zero.
 
-Runs are only admissible as integration-gate evidence when `metadata.json` reports `dirty_build: false`; a dirty firmware build means the reported git hash does not identify the source that produced the numbers. Check `throttled` and `cpu_temp_c` in the block records before trusting tail latencies, since a throttled Pi produces misleading p99s.
+Runs are only admissible as evidence (`Documentation/05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md`) when `metadata.json` reports `dirty_build: false`; a dirty firmware build means the reported git hash does not identify the source that produced the numbers. Check `throttled` and `cpu_temp_c` in the block records before trusting tail latencies, since a throttled Pi produces misleading p99s.
 
 ## Documentation Structure
 
-This documentation directory follows the Karetao component documentation model:
+This documentation directory follows the Karetao component documentation model (`Documentation/DOCUMENTATION_RULES.md`):
 
 - **System interface compliance:** How this component implements the Karetao system contracts
-- **Host-side architecture:** SPI driver, estimator, command interface, ROS integration
+- **Host-side architecture:** snapshot decoding, ClockSync, single gated commands, evidence tools
 - **Provisioning and deployment:** Pi image setup, software installation, configuration
 - **Build and test:** Python packages, dependencies, test infrastructure
 - **Component-level evidence:** Integration test results, protocol validation, timing measurements

@@ -319,10 +319,11 @@ $1 = {
 
 The host test suite (`service_test_main.c`) includes assertions on the timing mirror:
 
-- **`TestSpiSlaveServiceRequestHandling()`** (TIME_SYNC path) — verifies:
-  - All four timestamps are non-zero after a successful transaction
-  - Timestamps are in expected order: `dma_complete_raw < process_start_us < response_staged_us < data_ready_set_us`
+- **`TestSpiSlaveServiceCore()`** (TIME_SYNC path, part of the service smoke tests, `service_smoke_tests`) — verifies:
+  - `response_staged_us` and `data_ready_set_us` are captured on the host path
+  - `dma_complete_raw` and `process_start_us` stay zero on the host path, because the DMA callback and `SpiSlaveService_Process()` are not called there
   - `request_type` and `request_seq` match the last processed request
+  - The ordering across all four timestamps is not asserted on the host; check it on target over SWD
 
 Run tests with:
 ```bash
@@ -353,7 +354,7 @@ See [TIME_SYNC_VALIDATION.md](../../Documentation/05_VERIFICATION/TIME_SYNC_VALI
 
 ## References
 
-- Time Service Contract: `TIME_SERVICE_SYNC_INSTRUMENTATION.md` (this document)
+- Time Service Contract: `TIME_SYNC_INSTRUMENTATION.md` (this document)
 - Time Service Implementation: `Arm_Sensor_Hub/App/Src/time_service.c`
 - Time Service Interface: `Arm_Sensor_Hub/App/Inc/time_service.h`
 - SPI Protocol: `Arm_Sensor_Hub/Documentation/development.md`
