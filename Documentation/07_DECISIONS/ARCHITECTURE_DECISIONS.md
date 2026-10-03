@@ -43,3 +43,21 @@ Both are from the former `05_REFACTORING_LEDGER.md` (see git history).
 ## Sign-off
 
 Pending: documentation aligned with charter — to be recorded by Lenton Neale.
+
+Decisions applied from `CHARTER_ALIGNMENT_PLAN.md` §6 as recommended, each awaiting confirmation here:
+
+| ID | Decision | Applied in | Confirmed |
+|---|---|---|---|
+| D-1 | Plan location; Portal default methodology agile | `00_INDEX.md`, `portal.toml` | — |
+| D-2 | Keep the Issue #12 clock-sync design as the target | `TIME_SYSTEM_INTERFACE.md`, `SYSTEM_SYNCHRONIZATION.md` | — |
+| D-3 | Motion gate SYS-GATE-001 (above) | this file, `SYSTEM_REQUIREMENTS.md` | — |
+| D-4 | Safety behaviours SAFE-01..05; PL/SIL gates withdrawn | `04_SAFETY/SAFETY_REQUIREMENTS.md` | — |
+| D-5 | Research notes moved to `icm-project/` | git renames 2026-10-03 | — |
+| D-6 | Governance collapsed into the index and `DOCUMENTATION_RULES.md` | `00_INDEX.md`, `DOCUMENTATION_RULES.md` | — |
+| D-7 | `SYS-<AREA>-<nnn>` kept; old IDs retired, not renumbered | `SYSTEM_REQUIREMENTS.md` retired table | — |
+| D-8 | SD charter annotations (SD-01, 09, 20, 25, 26) | above; register §1 | — |
+| D-9 | Evidence record format | `05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md` | — |
+| D-10 | NOT_FITTED as validity bit 6; status byte stays the raw AS5600 register | `SPI_PAYLOAD_SCHEMA.md` | — |
+| D-11 | Milestones are Stages 1–5 | register §3; held GitHub script | — |
+
+Also decided 2026-10-03 (Lenton Neale): the baseline keeps 17 requirement rows; PRM-CAN-07 adopts the code's doubling sequence; PRM-ACQ-01 is a 20 Hz working value bounded by the measured sweep.
