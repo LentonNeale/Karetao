@@ -1,6 +1,6 @@
 # Charter alignment plan
 
-Status: Executed 2026-10-03 on branch `docs/charter-alignment` (Sprints 0–6, documentation stories); sign-off S6.5 pending. Decisions D-1..D-11 were applied as recommended and are marked "confirm at sign-off". GitHub changes (S2.5, S3.5, S4.5, S5.4, S5.6) are drafted in a held script, not executed. Decisions after execution (2026-10-03): keep 17 requirement rows; PRM-CAN-07 adopts the code's doubling sequence; PRM-ACQ-01 demoted to a 20 Hz working value bounded by the measured sweep. provenance lines in individual documents still name `docs/project` and are allowed by the check tool as provenance.
+Status: Sprint S7 (sign-off readiness) runs in the ICM Portal; sprints 0 to 6 were drafted outside the Portal on `docs/charter-alignment` (Sprints 0–6, documentation stories); sign-off S6.5 pending. Decisions D-1..D-11 were applied as recommended and are marked "confirm at sign-off". GitHub changes (S2.5, S3.5, S4.5, S5.4, S5.6) are drafted in a held script, not executed. Decisions after execution (2026-10-03): keep 17 requirement rows; PRM-CAN-07 adopts the code's doubling sequence; PRM-ACQ-01 demoted to a 20 Hz working value bounded by the measured sweep. provenance lines in individual documents still name `docs/project` and are allowed by the check tool as provenance.
 Owner: Lenton Neale (decides); drafted for the Documentation run
 Role: Governance/process document. It defines no requirement and has no authority over any system document. It is the input for the documentation pruning run the charter announces, and it is executed as ICM Portal runs; nothing here is done by editing `main` directly.
 Charter: [`01_SYSTEM/PROJECT_CHARTER.md`](01_SYSTEM/PROJECT_CHARTER.md) (Agreed 2026-10-03)
@@ -95,6 +95,7 @@ The documentation is aligned and ready for code work when all of the following h
 - Sprint size is capped at about 20 points so one review sitting covers the diff. Lenton's review time is the constraint, not writing time.
 - Order is re-planned at each Sprint plan. Fixed dependencies: Sprint 0 first; Sprint 1 before Sprints 2–4; Sprints 5 and 6 after 2–4.
 - Fallback: if the agile flow is awkward in the Portal, a sprint can run as a waterfall run with the same story list; the sprint boundaries do not change.
+- Tracking: this work is work package WP1 in `lifecycle.json`; the PASS at its Requirements gate is the sign-off step of §3.9.
 
 ## 6. Decisions required from Lenton
 
@@ -388,6 +389,14 @@ Created in S5.6, ordered by charter goal. These are not part of this plan's defi
 9. Centralise firmware and Pi parameters in one header and one config, mirroring the register (Goals 3 and 5).
 10. Evidence tooling: `VERSION` identity in every evidence record; timing-harness outputs filed as evidence (Goal 3).
 
+Work packages (`lifecycle.json`):
+
+- WP2 Stage 1: fitted encoders (items 1–2)
+- WP3 Stage 2: motor positions and coherent timestamps (items 3–5)
+- WP4 Stage 3: links measured (items 8–10)
+- WP5 Stage 4: gated motion X, Y, Z (items 6–7)
+- WP6 Stage 5: remaining joints
+
 ## 12. Risks
 
 | Risk | Handling |
@@ -405,3 +414,29 @@ Created in S5.6, ordered by charter goal. These are not part of this plan's defi
 1. Read this plan and the charter; answer D-1 (where the plan lives, agile default).
 2. Open the Portal, start an agile run titled "Sprint 0 — Wire the charter in", and paste stories S0.1–S0.4 as the backlog.
 3. At the Retro, re-plan Sprint 1 from §7 and adjust points from what Sprint 0 cost.
+
+## 14. Definition-of-done status (2026-10-04)
+
+The walk was made on the Portal branch `portal/2026-10-04-sign-off-readiness-the-charter-alignment`, not on `main`; §3 asks for the items to hold on `main`, so the merge is still to come. Commands were run from the repo root. "The decisions register" in 3.6 is read as `KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md`.
+
+| Item | Status | Evidence |
+|---|---|---|
+| 3.1 Scope | Holds | The §10 term scan returns many hits, all in allowed contexts: the charter, the overview's "Future, not now" note, the register, the Issue #12 record, retired-identifier and withdrawn lines, the safety list of withdrawn SAFE-001, this plan, and the Pi bring-up guide's optional ROS 2 parts. Hits in `CLAUDE.md`, `DOCUMENTATION_RULES.md` and the register state the rule or the non-goal. `python3 icm-project/tools/doc_check/doc_check.py` prints "doc_check: clean". The sorting of raw hits into allowed contexts follows `icm-project/tools/doc_check/allowed.toml`, not a hand count. |
+| 3.2 Numbers | Holds | The §10 numbers grep on `SYSTEM_REQUIREMENTS.md` prints nothing. `doc_check` (prm check) finds every `PRM-*` reference defined in the register. A full audit of every number in every normative document has no tool; only these two checks were run. |
+| 3.3 Requirements | Holds | `grep -c '^| SYS-'` gives 40 rows in `SYSTEM_REQUIREMENTS.md` (17 baseline rows, SYS-ENC-001 to SYS-SYNC-001, plus 23 rows in the retired table) and 17 in `SYSTEM_VERIFICATION_MATRIX.md`. Every baseline row has a source and an acceptance sentence; every matrix row names a code module, a test or "none yet" with an issue, and the evidence required. |
+| 3.4 Interfaces | Does not hold | `grep -rniE 'TBD\|not frozen\|proposed' Documentation/02_INTERFACES` finds one hit: `SPI_SYSTEM_INTERFACE.md:104`, the `GET_DIAGNOSTIC` message value is "TBD". It is not one of the items §3 names (NOT_FITTED, six motor records, clock-sync extension, `SET_MOTOR_COMMAND`, ACK/NACK), but it is not scoped to a later stage either; `SPI_PAYLOAD_SCHEMA.md:264` lists it as open and backlog item 5 (§11) has no stage. Lenton to scope it to a stage or assign the value. |
+| 3.5 Trail | Blocked: GitHub changes held for Lenton Neale | The held script is not in this repository's history: `git log --all --name-only --oneline -- '*github*' '*.sh'` finds only the ICM workspace scripts, the issue contract and framework, and CI files. The intended changes, per §7 S2.5, S3.5, S4.5, S5.4 and S5.6, are: new LIVE-17 to LIVE-22 issues; M1 to M7 renamed or closed into Stages 1 to 5; the EKF and PL/SIL issues closed as not planned citing the charter non-goal; one issue per §11 divergence. Nothing has been checked against GitHub. |
+| 3.6 Size | Holds | `wc -l`: `00_INDEX.md` 59 and `DOCUMENTATION_RULES.md` 45, total 104 (limit 250); the register 86 (limit 150). No `README.md` or `For_Lenton` file exists under `Documentation/`. |
+| 3.7 Links | Does not hold | Links: `doc_check` is clean. Stale paths: the §10 stale-path grep returns 17 lines, not one: the index provenance line, 5 lines in this plan, and 11 provenance lines elsewhere (`SYSTEM_ARCHITECTURE.md:99`, `CAN_SYSTEM_INTERFACE.md:149`, `SPI_SYSTEM_INTERFACE.md:291`, `SPI_PAYLOAD_SCHEMA.md:271`, `TIME_SYSTEM_INTERFACE.md:129`, `SYSTEM_CONFIGURATION.md:136`, `ARM_SENSOR_HUB.md:79`, `CAN_INTEGRATION_EVIDENCE.md:35` and `:80`, `RASPBERRY_PI_BRINGUP_V1.md:32` and `:916`). All are provenance or history statements and `doc_check` allows them (header of this plan); §3 item 7 as written does not. Lenton to accept them or ask for them to be cut. |
+| 3.8 Lockstep | Blocked: GitHub changes held for Lenton Neale | Holds now: `SPI_PAYLOAD_SCHEMA.md:92` says "not yet implemented on either side" and names the lockstep issue by title, "[LIVE-17] Implement NOT_FITTED sensor status (C, Python, tests)"; the matrix and requirements rows say "not yet implemented" for SYS-ENC-002, SYS-CMD-001 and SYS-SYNC-001. Blocked: the issues are not yet created (see 3.5), so no row can cite an issue number from GitHub. |
+
+3.9 Sign-off: Lenton Neale's step; not walked here.
+
+### 14.1 Left for Lenton Neale
+
+No row was changed to Holds in this pass: each of the four open rows needs a decision or an action outside the documents, and no fix agreed with Lenton Neale for them is recorded. No file other than this plan was edited.
+
+- **3.4 Interfaces** (`GET_DIAGNOSTIC` value "TBD" at `SPI_SYSTEM_INTERFACE.md:104`, listed as open at `SPI_PAYLOAD_SCHEMA.md:264`). Reason: choosing a value or a stage is a scope and interface decision. Recommendation: scope it to a named later stage in both files and in backlog item 5 (§11), leaving the value unassigned until that stage; this clears the grep without inventing a value.
+- **3.5 Trail** (GitHub changes). Reason: the held script is not in this repository's history and nothing here can change GitHub. Recommendation: run the changes listed in the row (LIVE-17 to LIVE-22, M1 to M7 renamed or closed, EKF and PL/SIL closed as not planned, one issue per §11 divergence), then record the issue numbers.
+- **3.7 Links** (17 stale-path grep lines, all provenance or history statements). Reason: cutting them is a deletion that needs the `DOCUMENTATION_RULES.md` check, and accepting them changes what §3 item 7 means. Recommendation: accept them, and reword §3 item 7 to exclude provenance lines that `doc_check` allows, since they record where content came from.
+- **3.8 Lockstep** (no issue numbers to cite). Reason: it depends on 3.5. Recommendation: after the issues exist, add their numbers to `SPI_PAYLOAD_SCHEMA.md:92` and the matrix and requirements rows for SYS-ENC-002, SYS-CMD-001 and SYS-SYNC-001.
