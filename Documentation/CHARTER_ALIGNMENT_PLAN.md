@@ -440,3 +440,28 @@ No row was changed to Holds in this pass: each of the four open rows needs a dec
 - **3.5 Trail** (GitHub changes). Reason: the held script is not in this repository's history and nothing here can change GitHub. Recommendation: run the changes listed in the row (LIVE-17 to LIVE-22, M1 to M7 renamed or closed, EKF and PL/SIL closed as not planned, one issue per §11 divergence), then record the issue numbers.
 - **3.7 Links** (17 stale-path grep lines, all provenance or history statements). Reason: cutting them is a deletion that needs the `DOCUMENTATION_RULES.md` check, and accepting them changes what §3 item 7 means. Recommendation: accept them, and reword §3 item 7 to exclude provenance lines that `doc_check` allows, since they record where content came from.
 - **3.8 Lockstep** (no issue numbers to cite). Reason: it depends on 3.5. Recommendation: after the issues exist, add their numbers to `SPI_PAYLOAD_SCHEMA.md:92` and the matrix and requirements rows for SYS-ENC-002, SYS-CMD-001 and SYS-SYNC-001.
+
+## 15. Layered review (agreed 2026-10-04)
+
+The documentation is reviewed again from the top down, one layer per Portal agile run. Each layer is reviewed read-only against the layers above it, as merged on `main`. A run never edits a layer above its own; a fault found there becomes a story for that layer. WP1 covers L0 and L1 and closes at its Requirements gate. WP7 (`lifecycle.json`) covers L2 to L5 and closes at the Architecture gate, which tags `baseline/architecture/v1`. The GitHub trail (§3 items 5 and 8) is its own short run after L5.
+
+| Layer | Documents | Reviewed against |
+|---|---|---|
+| L0 Scope | `PROJECT_CHARTER.md`, `00_INDEX.md`, `DOCUMENTATION_RULES.md` | Lenton Neale |
+| L1 Requirements | `SYSTEM_OVERVIEW.md`, `SYSTEM_REQUIREMENTS.md`, `SAFETY_REQUIREMENTS.md`, `PARAMETER_REGISTER.md` | L0 |
+| L2 Architecture and interfaces | `SYSTEM_ARCHITECTURE.md`, `SYSTEM_LIFECYCLE.md`, `SYSTEM_SYNCHRONIZATION.md`, `02_INTERFACES/**`, `ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md` | L1, L0 |
+| L3 System components and configuration | `03_COMPONENTS/*`, `SYSTEM_CONFIGURATION.md` | L2, L1 |
+| L4 Component implementation | `Arm_Sensor_Hub/Documentation/*`, `RaspberryPi_Sensor_Hub/Documentation/*`, `CLAUDE.md` | L3, L2 interfaces |
+| L5 Verification | `05_VERIFICATION/*` | L1 for the rows, L4 for module and test names |
+
+`ARCHITECTURE_DECISIONS.md` and the register are updated in whichever run raises an item. They are not a layer of their own.
+
+A layer review classes each finding as one of the following:
+- **contradicts** the layer above
+- **exceeds** the charter or the scope of the layer above
+- **redefines** something instead of referencing it
+- **orphan**: has no parent in the layers above
+- **gap**: a parent item that this layer does not serve
+- **unbased number**: has no `PRM-*` row or contract constant
+
+A layer merges only when every contradicts, exceeds or redefines finding has a ruling from Lenton Neale. If a layer is over about 20 points, it is split into runs: L2 into SPI and TIME, then CAN, HOST and architecture; L4 into Arm, then Pi.

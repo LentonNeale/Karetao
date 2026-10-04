@@ -619,23 +619,6 @@
       "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
     },
     {
-      "id": "B36",
-      "title": "S6.5 Sign-off",
-      "story": "As the maintainer I want the alignment plan signed off so that documentation work is marked complete.",
-      "acceptance": [
-        "Lenton walks section 3 definition of done",
-        "Date recorded in ARCHITECTURE_DECISIONS.md",
-        "Plan status line becomes Done with date",
-        "Plan removed in first code-alignment run"
-      ],
-      "points": 1,
-      "status": "sprint",
-      "sprint": "2026-10-03T18:46:15.192391+00:00",
-      "created": "2026-10-03T00:00:00+00:00",
-      "done_at": null,
-      "package": "WP1"
-    },
-    {
       "id": "B37",
       "title": "S7.1 Walk the definition of done",
       "story": "As the maintainer I want each item of CHARTER_ALIGNMENT_PLAN.md section 3 checked against the drafted documents so that sign-off is a confirmation, not a search.",
