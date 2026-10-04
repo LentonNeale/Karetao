@@ -40,10 +40,12 @@ architecture = [
 [commands]
 # What a Build's Verify runs, from the build worktree's root. These mirror CI and the project's
 # definition of done (a firmware change is done when the Debug build passes).
+# Each firmware and Pi command carries the same path filter as its CI workflow, so a change that
+# touches neither (a documentation review, say) records it as not applicable rather than PASS.
 verify = [
-    "sh -c 'cd Arm_Sensor_Hub && cmake --preset HostTests && cmake --build --preset HostTests && ctest --preset HostTests --output-on-failure'",
-    "sh -c 'cd Arm_Sensor_Hub && cmake --preset Debug && cmake --build --preset Debug'",
-    "python3 -m unittest discover -s RaspberryPi_Sensor_Hub/tests/spi -p test_*.py",
+    { run = "sh -c 'cd Arm_Sensor_Hub && cmake --preset HostTests && cmake --build --preset HostTests && ctest --preset HostTests --output-on-failure'", paths = ["Arm_Sensor_Hub/**", "shared/**"] },
+    { run = "sh -c 'cd Arm_Sensor_Hub && cmake --preset Debug && cmake --build --preset Debug'", paths = ["Arm_Sensor_Hub/**", "shared/**"] },
+    { run = "python3 -m unittest discover -s RaspberryPi_Sensor_Hub/tests/spi -p test_*.py", paths = ["RaspberryPi_Sensor_Hub/**", "shared/**"] },
     "python3 icm-project/tools/doc_check/doc_check.py",
 ]
 verify_timeout = 900
@@ -59,6 +61,8 @@ allowed = [
     "grep *",
     "git log *",
     "git diff *",
+    # Read a run's JSON record (design.json, state.json) without python -c.
+    "jq *",
 ]
 
 [codemap]
