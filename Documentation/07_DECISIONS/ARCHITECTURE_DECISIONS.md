@@ -4,7 +4,7 @@ This is the live decision log for architecture-level decisions. The full decisio
 
 ## Motion gate (SYS-GATE-001)
 
-**Status:** Decided 2026-10-03, Lenton Neale (applied per CHARTER_ALIGNMENT_PLAN.md D-3; to be confirmed at sign-off).
+**Status:** Decided 2026-10-03, Lenton Neale (applied per CHARTER_ALIGNMENT_PLAN.md D-3; confirmed at sign-off 2026-10-04).
 
 **Decision:** `MOTION_PERMITTED = lifecycle ACTIVE ∧ CAN ACTIVE ∧ ¬link_stale ∧ ¬global_motion_inhibit ∧ motor_ready`.
 
@@ -42,22 +42,29 @@ Both are from the former `05_REFACTORING_LEDGER.md` (see git history).
 
 ## Sign-off
 
-Pending: documentation aligned with charter — to be recorded by Lenton Neale.
+Documentation aligned with charter, 2026-10-04 — Lenton Neale.
 
-Decisions applied from `CHARTER_ALIGNMENT_PLAN.md` §6 as recommended, each awaiting confirmation here:
+Accepted exceptions (`CHARTER_ALIGNMENT_PLAN.md` §14):
+
+- **3.4:** the `GET_DIAGNOSTIC` message value stays open and is scoped to a later stage.
+- **3.5:** the GitHub changes are held for a later run.
+- **3.7:** provenance lines that `doc_check` allows are accepted.
+- **3.8:** issue numbers are cited once the issues exist.
+
+Decisions applied from `CHARTER_ALIGNMENT_PLAN.md` §6 as recommended, each confirmed at sign-off:
 
 | ID | Decision | Applied in | Confirmed |
 |---|---|---|---|
-| D-1 | Plan location; Portal default methodology agile | `00_INDEX.md`, `portal.toml` | — |
-| D-2 | Keep the Issue #12 clock-sync design as the target | `TIME_SYSTEM_INTERFACE.md`, `SYSTEM_SYNCHRONIZATION.md` | — |
-| D-3 | Motion gate SYS-GATE-001 (above) | this file, `SYSTEM_REQUIREMENTS.md` | — |
-| D-4 | Safety behaviours SAFE-01..05; PL/SIL gates withdrawn | `04_SAFETY/SAFETY_REQUIREMENTS.md` | — |
-| D-5 | Research notes moved to `icm-project/` | git renames 2026-10-03 | — |
-| D-6 | Governance collapsed into the index and `DOCUMENTATION_RULES.md` | `00_INDEX.md`, `DOCUMENTATION_RULES.md` | — |
-| D-7 | `SYS-<AREA>-<nnn>` kept; old IDs retired, not renumbered | `SYSTEM_REQUIREMENTS.md` retired table | — |
-| D-8 | SD charter annotations (SD-01, 09, 20, 25, 26) | above; register §1 | — |
-| D-9 | Evidence record format | `05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md` | — |
-| D-10 | NOT_FITTED as validity bit 6; status byte stays the raw AS5600 register | `SPI_PAYLOAD_SCHEMA.md` | — |
-| D-11 | Milestones are Stages 1–5 | register §3; held GitHub script | — |
+| D-1 | Plan location; Portal default methodology agile | `00_INDEX.md`, `portal.toml` | 2026-10-04 |
+| D-2 | Keep the Issue #12 clock-sync design as the target | `TIME_SYSTEM_INTERFACE.md`, `SYSTEM_SYNCHRONIZATION.md` | 2026-10-04 |
+| D-3 | Motion gate SYS-GATE-001 (above) | this file, `SYSTEM_REQUIREMENTS.md` | 2026-10-04 |
+| D-4 | Safety behaviours SAFE-01..05; PL/SIL gates withdrawn | `04_SAFETY/SAFETY_REQUIREMENTS.md` | 2026-10-04 |
+| D-5 | Research notes moved to `icm-project/` | git renames 2026-10-03 | 2026-10-04 |
+| D-6 | Governance collapsed into the index and `DOCUMENTATION_RULES.md` | `00_INDEX.md`, `DOCUMENTATION_RULES.md` | 2026-10-04 |
+| D-7 | `SYS-<AREA>-<nnn>` kept; old IDs retired, not renumbered | `SYSTEM_REQUIREMENTS.md` retired table | 2026-10-04 |
+| D-8 | SD charter annotations (SD-01, 09, 20, 25, 26) | above; register §1 | 2026-10-04 |
+| D-9 | Evidence record format | `05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md` | 2026-10-04 |
+| D-10 | NOT_FITTED as validity bit 6; status byte stays the raw AS5600 register | `SPI_PAYLOAD_SCHEMA.md` | 2026-10-04 |
+| D-11 | Milestones are Stages 1–5 | register §3; held GitHub script | 2026-10-04 |
 
 Also decided 2026-10-03 (Lenton Neale): the baseline keeps 17 requirement rows; PRM-CAN-07 adopts the code's doubling sequence; PRM-ACQ-01 is a 20 Hz working value bounded by the measured sweep.
