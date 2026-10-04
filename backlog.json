@@ -682,8 +682,8 @@
         "No finding is treated as decided without a ruling"
       ],
       "points": 2,
-      "status": "open",
-      "sprint": null,
+      "status": "sprint",
+      "sprint": "2026-10-03T23:58:14.170973+00:00",
       "created": "2026-10-04T00:00:00+00:00",
       "done_at": null,
       "package": "WP1"
