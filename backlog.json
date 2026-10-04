@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 40,
+  "next_id": 44,
   "stories": [
     {
       "id": "B1",
@@ -669,6 +669,75 @@
       "sprint": "2026-10-03T18:08:39.663584+00:00",
       "created": "2026-10-03T17:49:38.669507+00:00",
       "done_at": "2026-10-03T18:27:41.474170+00:00",
+      "package": "WP1"
+    },
+    {
+      "id": "B40",
+      "title": "S8.1 L0 scope review",
+      "story": "As the maintainer I want the scope layer (L0) reviewed so that every lower layer is checked against a scope I have confirmed.",
+      "acceptance": [
+        "PROJECT_CHARTER.md, 00_INDEX.md and DOCUMENTATION_RULES.md are reviewed read-only; no file is edited by this story",
+        "Each finding is one row classed as contradicts, exceeds, redefines, orphan, gap or unbased number (CHARTER_ALIGNMENT_PLAN.md section 15), with file and line",
+        "L0 is reviewed against Lenton Neale: each finding is put to him in the Design stage and his ruling is recorded against it",
+        "No finding is treated as decided without a ruling"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-04T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B41",
+      "title": "S8.2 L1 requirements review",
+      "story": "As the maintainer I want the requirements layer (L1) reviewed against L0 so that the requirements baseline follows only from the confirmed scope.",
+      "acceptance": [
+        "SYSTEM_OVERVIEW.md, SYSTEM_REQUIREMENTS.md, SAFETY_REQUIREMENTS.md and PARAMETER_REGISTER.md are reviewed read-only against L0 as merged",
+        "Each finding is one row classed as contradicts, exceeds, redefines, orphan, gap or unbased number, with file and line and the L0 text it is checked against",
+        "Every SYS-* baseline row and SAFE-* behaviour traces to a charter goal, or is reported as an orphan",
+        "Every charter goal is served by at least one requirement, or is reported as a gap"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-04T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B42",
+      "title": "S8.3 Fix the L0 and L1 findings",
+      "story": "As the maintainer I want the findings I have ruled on fixed in the same sprint so that L0 and L1 are ready for the Requirements gate.",
+      "acceptance": [
+        "Every contradicts, exceeds or redefines finding from S8.1 and S8.2 has a ruling from Lenton Neale and is either fixed or recorded as accepted with the reason",
+        "Only L1 files are edited, and L0 files only where Lenton Neale ruled a change; no L2 to L5 file and no code file is changed",
+        "A fault found in L2 to L5 becomes a WP7 story, not an edit",
+        "No file is deleted without the DOCUMENTATION_RULES.md check recorded in the commit message",
+        "doc_check.py runs clean and Verify passes"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-04T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B43",
+      "title": "S8.4 Prepare the sign-off",
+      "story": "As the maintainer I want the sign-off drafted for me to confirm so that the Requirements gate PASS is a confirmation, not a search.",
+      "acceptance": [
+        "The Sign-off section of ARCHITECTURE_DECISIONS.md holds a draft entry with the date left for Lenton Neale to confirm",
+        "Each of D-1 to D-11 shows Lenton Neale's confirmation or change from the Design stage; none is marked confirmed without it",
+        "The ruling on plan item 3.7 (provenance lines) is recorded",
+        "Plan items 3.4, 3.5 and 3.8 are noted as moved to WP7 and the GitHub run after L5 (section 15), not left open in WP1"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-04T00:00:00+00:00",
+      "done_at": null,
       "package": "WP1"
     }
   ]
