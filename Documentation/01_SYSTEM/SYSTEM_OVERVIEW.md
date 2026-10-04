@@ -1,56 +1,43 @@
 # System Overview
 
-Karetao is a six-axis robotic arm control system integrating hardware-facing sensor acquisition (STM32 Arm Sensor Hub) with host-side estimation, control, and planning (Raspberry Pi Sensor Hub) via deterministic synchronization and bounded real-time interfaces.
+Scope authority is the [project charter](PROJECT_CHARTER.md).
 
 ## Purpose
 
-The system collects synchronized sensor measurements from six joint encoders and motor feedback through a CAN interface, timestamps them in a shared time domain with the host, and exposes coherent snapshots over an SPI interface to support real-time estimation and control loops on a Raspberry Pi host.
+Karetao is a hobby-level robotic arm platform, built and maintained by one person. It aims for good engineering practice (traceability, recorded decisions, evidence before done) at a size one person can keep up.
 
-## Core Responsibilities
+## The three parts
 
-- **Arm Sensor Hub (STM32):**
-  - Collect encoder values from six AS5600 encoders (I2C via TCA9548A multiplexer).
-  - Integrate motor feedback from MKS CAN controller.
-  - Timestamp measurements in a monotonic local time domain and synchronize to Pi time authority.
-  - Serialize coherent snapshots and send over SPI with integrity protection.
-  - Gate motion commands based on lifecycle state, synchronization validity, and CAN health.
+- **STM32F405 Arm Sensor Hub:** reads AS5600 encoders through a TCA9548A I2C mux, polls the MKS servos over CAN, and serves snapshots to the Pi over SPI as slave.
+- **MKS SERVO42D/57D motors:** closed-loop steppers on the CAN bus.
+- **Raspberry Pi host:** SPI master and system time authority. It owns the Pi-side ClockSync model, sends single gated commands, and runs the evidence tools.
 
-- **Raspberry Sensor Hub (Pi):**
-  - Serve as system time authority.
-  - Manage system startup, lifecycle, and recovery.
-  - Maintain host estimation, EKF loop, and control algorithms.
-  - Command motors through the STM32/CAN interface.
-  - Collect and process sensor history.
+## Interfaces
 
-- **ROS 2 / Control Layer:**
-  - Motion planning, trajectory execution, and higher-level control.
-  - Integration with host operating system.
+- **SPI:** fixed frames, CRC-32, and a DATA_READY line. See [SPI](../02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md) and [payload schema](../02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md).
+- **CAN:** the MKS protocol. See [CAN](../02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md).
+- **Clock sync:** every SPI exchange is an observation, and the Pi does the conversion. The target design is Issue #12. See [TIME](../02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md).
+- **Lifecycle:** UNCONFIGURED, INACTIVE, ACTIVE, ERROR.
+- **Host:** see [HOST](../02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md). All interface documents are listed in [00_INDEX.md](../00_INDEX.md).
 
-## Key Interfaces
+## Current status (as built, 2026-10-03)
 
-- **SPI:** 512-byte fixed frames at 5 MHz max (integration ceiling, pending validation), carrying snapshots, diagnostics, and responses.
-- **CAN:** 1 Mbps nominal (integration ceiling pending physical validation), MKS motor controller protocol, polling and commanded feedback.
-- **Clock synchronization:** every SPI exchange is a clock-sync observation; the Pi-side ClockSync model converts STM32 local timestamps to Pi time (Issue #12).
-- **Lifecycle:** Four-state machine (UNCONFIGURED, INACTIVE, ACTIVE, ERROR) controlling readiness and motion safety.
+Exists in code:
+- SPI framing on both sides, with tests.
+- STM32 SPI3 DMA path with DATA_READY.
+- Six-axis encoder sweep (measured about 46 ms on 2026-09-17).
+- CAN service polling scaffold, with one motor registered.
+- Calibration record and joint-mapping models.
+- Lifecycle and health monitor.
+- A motion-permission module.
 
-## Current Status
+Not yet:
+- The Issue #12 clock-sync redesign (the code still runs the older one-way TIME_SYNC).
+- The DIAGNOSTIC message.
+- The SET_MOTOR_COMMAND path.
+- Six motors registered.
+- A "not fitted" sensor state.
 
-**What is established and working:**
-- Contract structure and authority model.
-- Snapshot payload constants and field definitions.
-- Host-side SPI protocol validation and decoding.
-- Lifecycle vocabulary and state machine.
-- Time synchronization model (one-way transaction-point estimate).
-- STM32 SPI3 DMA arm/complete/error/stall/re-arm software path.
-- Raspberry Pi Linux `spidev` backend and fixed-frame decoder.
-- Build and CI coverage (Debug/Release).
+## Future, not now
 
-**What remains under integration and validation:**
-- Live Raspberry Pi ↔ STM32 SPI transaction acceptance.
-- Physical SPI acceptance: 5 MHz clock, DMA timing, NSS, DATA_READY electrical, signal integrity.
-- Sustained SPI transaction validation and error recovery.
-- CAN physical layer validation: bitrate acceptance, bus-off recovery, error handling under load.
-- Complete TIME_SYNC end-to-end validation.
-- Calibration persistence and integrity validation.
-- Motor controller model/firmware and command semantics.
-- Independent safety validation and machine risk assessment for energized-motion release.
+These are charter non-goals for now and are named only here: ROS 2 integration, a state estimator, the differential end effector, and trajectory or motion planning.

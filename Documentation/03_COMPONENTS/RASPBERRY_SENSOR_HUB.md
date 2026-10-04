@@ -2,16 +2,18 @@
 
 ## System role
 
-The Raspberry Sensor Hub is the host-side Karetao integration component. Karetao defines its system role, requirements, external interfaces and integration obligations; the Raspberry Sensor Hub repository remains authoritative for implementation details.
+The Raspberry Sensor Hub is the host-side Karetao component. Karetao defines its system role, requirements, external interfaces and integration obligations; the Raspberry Sensor Hub repository remains authoritative for implementation details.
 
 ## System responsibilities
 
-- Maintain the host-side integration boundary to the Arm Sensor Hub.
-- Own measurement/estimator history as specified by the system model.
-- Provide heartbeat and command/state integration.
-- Manage the controlled calibration/configuration path.
-- Participate in lifecycle, synchronization, fault and recovery handling.
-- Provide component evidence required for Karetao system integration verification.
+- SPI master and system time authority.
+- Owner of the ClockSync model and timestamp conversion (Issue #12 target; not yet implemented).
+- Snapshot decoding and validation (`spi_protocol.py`).
+- Sender of single gated commands (SET_MOTOR_COMMAND, frozen in Sprint 4).
+- Host-side source copy of calibration records (SYS-CAL).
+- Evidence tools (`spi_timing_harness.py`, `spi_link_probe.py`, `measurement_report.py`) producing records per [EVIDENCE_RECORD_FORMAT.md](../05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md).
+
+Future, not now: ROS 2 integration and any estimator ([PROJECT_CHARTER.md](../01_SYSTEM/PROJECT_CHARTER.md) non-goals).
 
 ## Authority boundary
 

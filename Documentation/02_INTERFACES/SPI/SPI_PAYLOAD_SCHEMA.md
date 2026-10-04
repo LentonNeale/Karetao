@@ -82,7 +82,14 @@ Motor record size: 24 bytes. Unused payload bytes must be zero. `payload_length`
 - bit 3: magnet too weak;
 - bit 4: magnet too strong;
 - bit 5: timestamp synchronized;
-- bits 6-15: reserved.
+- bit 6: not fitted (the axis has no encoder in the commissioning table; bit 0 is clear);
+- bits 7-15: reserved.
+
+**Sensor `status` byte (as built, recorded 2026-10-03):** the raw AS5600 STATUS register of the sample (MD magnet detected = bit 5, ML magnet too weak = bit 4, MH magnet too strong = bit 3; other bits zero). It is diagnostic; the normative validity of a record is carried by `validity_flags`. A record that has never held a sample carries 0.
+
+**NOT_FITTED (added 2026-10-03, D-10):** an axis without an encoder in the commissioning table (SYSTEM_CONFIGURATION.md §2.1) is serialised at its stable logical ID with validity bit 6 set, bit 0 clear, bits 1-4 clear, `status` 0, and zero in `raw_angle`, `processed_angle_mdeg`, `magnitude` and `agc`; `measurement_timestamp_us` is the time the record was last refreshed. It is never a communication error and never a fault (SYS-ENC-002). This addition is compatible with schema v1 because bit 6 was reserved; `schema_version` stays 1. A decoder that predates it treats the record as not valid, which is acceptable.
+
+**Implementation status:** not yet implemented on either side (2026-10-03); tracked as the lockstep issue '[LIVE-17] Implement NOT_FITTED sensor status (C, Python, tests)'. The firmware freshness state (`Sensor_Freshness`: INVALID, FRESH, STALE in `sensor_latest_value.h`) is not on the wire today; whether to serialise it is a separate, versioned schema decision and is not part of LIVE-17.
 
 ---
 
@@ -189,7 +196,46 @@ NACK status codes must include invalid message, invalid length, CRC failure, inv
 
 ### GET and Command Requests
 
-`GET_SNAPSHOT`, `GET_STATUS`, and `GET_VERSION` contain a one-byte `schema_version` and reserved bytes set to zero. `GET_VERSION` is answered with a `VERSION` (`0x04`) frame; `GET_SNAPSHOT` is answered with `SNAPSHOT` when one is staged, and the remaining requests are answered with `ACK`/`NACK`. `SET_MOTOR_COMMAND` is not frozen until the Motor Service contract exists; it must not be implemented from this draft alone.
+`GET_SNAPSHOT`, `GET_STATUS`, and `GET_VERSION` contain a one-byte `schema_version` and reserved bytes set to zero. `GET_VERSION` is answered with a `VERSION` (`0x04`) frame; `GET_SNAPSHOT` is answered with `SNAPSHOT` when one is staged, and the remaining requests are answered with `ACK`/`NACK`.
+
+### SET_MOTOR_COMMAND (`0x13`) — frozen 2026-10-03 for single gated commands
+
+One command for one motor. Trajectories are not part of this message (charter non-goal).
+
+| Offset | Size | Field |
+| ---: | ---: | --- |
+| 0 | 1 | `schema_version` (1) |
+| 1 | 1 | `motor_index` |
+| 2 | 1 | `command` |
+| 3 | 1 | `reserved` (must be zero) |
+| 4 | 4 | `value` (int32, little-endian) |
+| 8 | 4 | `reserved_2` (must be zero) |
+
+Total payload: 12 bytes.
+
+| `command` | Name | `value` |
+| ---: | --- | --- |
+| 0x01 | ENABLE | unused, zero |
+| 0x02 | DISABLE | unused, zero |
+| 0x03 | STOP | unused, zero; controlled stop |
+| 0x04 | MOVE_TO_POSITION | target joint position in processed millidegrees, the same unit as the snapshot's `processed_angle_mdeg` |
+| 0x05 | MOVE_AT_VELOCITY | signed velocity in the unit of the MKS speed command (see [`icm-project/references/mks-servo42d-57d-can/`](../../../icm-project/references/mks-servo42d-57d-can/)). **Provisional:** the unit is fixed when LIVE-20 is implemented. |
+
+**Response:** ACK when the motion gate (SYS-GATE-001) accepts the command and it is queued to CAN. Otherwise NACK with `status_code` = INVALID_STATE and `detail_code` = the gate reason:
+
+| `detail_code` | Gate reason |
+| ---: | --- |
+| 0 | ALLOWED |
+| 1 | LIFECYCLE_NOT_ACTIVE |
+| 2 | PREREQUISITE_INVALID |
+| 3 | PREREQUISITE_LATCHED |
+| 4 | MOTOR_NOT_READY |
+
+These are the `MotionPermission_Reason` values in `motion_permission.h` as of 2026-10-03 and must stay in lockstep with it. ACK means accepted, not executed; completion is observed in the snapshot motor record.
+
+**Mapping to MKS:** each command maps to one MKS CAN command, named by reference to the manual extract in `icm-project/references/mks-servo42d-57d-can/` and not restated here: ENABLE to the enable command, DISABLE to the disable command, STOP to the stop command, MOVE_TO_POSITION to the absolute position command, and MOVE_AT_VELOCITY to the speed command.
+
+**Implementation status:** not implemented on either side (2026-10-03); tracked as the lockstep issue '[LIVE-20] Implement SET_MOTOR_COMMAND path (C, Python, tests)'.
 
 ---
 
@@ -216,6 +262,7 @@ The outer `protocol_version`, CRC-32/ISO-HDLC parameters, and payload `schema_ve
 - Whether future records use a tagged extension mechanism.
 - Wire placement and version number of the `request_received_local_us` extension (Issue #12 item 1).
 - `GET_DIAGNOSTIC` message value and field-by-field DIAGNOSTIC v2 layout (Issue #12 item 8).
+- MOVE_AT_VELOCITY unit (Provisional until LIVE-20).
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 5,
+  "next_id": 45,
   "stories": [
     {
       "id": "B1",
@@ -66,6 +66,706 @@
       "sprint": null,
       "created": "2026-10-01T20:42:14.811381+00:00",
       "done_at": null
+    },
+    {
+      "id": "B5",
+      "title": "S1.1 Create the parameter register",
+      "story": "As the maintainer I want every number to have one home and a basis so that the requirements stop carrying numbers.",
+      "acceptance": [
+        "PARAMETER_REGISTER.md created with columns ID, parameter, working value, unit, basis, source, date, used by",
+        "Rules block states Provisional is a working value and never a requirement",
+        "Seeded from Appendix A",
+        "Only one row is Measured (the 46 ms sweep) unless new evidence is linked",
+        "CAN rows show both 1 Mbps Provisional target and 875 kbps as-generated Derived value"
+      ],
+      "points": 5,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B6",
+      "title": "S1.2 Numbers out of the requirements",
+      "story": "As the maintainer I want requirements to reference parameters instead of embedding numbers so that the parameter register is the single source of truth.",
+      "acceptance": [
+        "Every number in SYSTEM_REQUIREMENTS.md replaced by PRM reference",
+        "SYSTEM_TIMING.md removed after inbound-link check",
+        "SYSTEM_SYNCHRONIZATION.md keeps rules and references PRM-TS",
+        "grep check matches no numbers in SYSTEM_REQUIREMENTS.md"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B7",
+      "title": "S1.3 Configuration and interfaces reference the register",
+      "story": "As the maintainer I want every tunable number in interfaces to reference the parameter register so that each number appears only once.",
+      "acceptance": [
+        "SYSTEM_CONFIGURATION.md sections 1 and 6 become pointers to the register",
+        "SPI, CAN, TIME and HOST interface documents replace tunable numbers with PRM IDs",
+        "Contract constants are kept in interface documents"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B8",
+      "title": "S1.4 Firmware defaults recorded",
+      "story": "As the maintainer I want firmware defaults recorded in the parameter register so that the code backlog can centralise them later.",
+      "acceptance": [
+        "Register rows added for firmware defaults (sensor poll period, CAN poll period, host-stall timeout, TX retry limit, counter_extension_gap_us, legacy drift bounds)",
+        "Each row names the symbol and file",
+        "Verified against source at build time"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B9",
+      "title": "S2.1 Encoder requirements",
+      "story": "As the maintainer I want the full trail for reading fitted encoders to exist so that an unfitted axis is a state, not a fault.",
+      "acceptance": [
+        "SYS-ENC-001: hub reads every encoder recorded as fitted with timestamp and validity",
+        "SYS-ENC-002: unfitted axis published as NOT_FITTED, not a fault, inhibits nothing",
+        "SYS-ENC-003: commissioning table is the only statement of fitted encoders and is versioned",
+        "Each row has an observable acceptance criterion and no numbers"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B10",
+      "title": "S2.2 NOT_FITTED on the wire",
+      "story": "As the maintainer I want unfitted sensors marked on the wire so that the Pi can handle them correctly.",
+      "acceptance": [
+        "SPI_PAYLOAD_SCHEMA.md defines sensor status enumeration including NOT_FITTED",
+        "Validity bit 6 set for not fitted",
+        "SPI_SYSTEM_INTERFACE.md section 8 says six records always, unfitted axes carry NOT_FITTED",
+        "C/Python divergence recorded as one issue"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B11",
+      "title": "S2.3 Commissioning table",
+      "story": "As the maintainer I want the commissioning table in one place so that app_init.c tables are kept in sync with it.",
+      "acceptance": [
+        "SYSTEM_CONFIGURATION.md section 2 holds as-built table from app_init.c",
+        "Columns: axis, joint name, encoder fitted, mux channel, motor index, CAN ID, MKS model and firmware, direction, ratio, basis",
+        "Unknown cells say 'unknown' until filled",
+        "Section states app_init.c tables must match; ARM_SENSOR_HUB.md drops its copies and points here"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B12",
+      "title": "S2.4 Verification rows and evidence format",
+      "story": "As the maintainer I want verification rows and evidence format defined so that bench runs can be recorded consistently.",
+      "acceptance": [
+        "Matrix rows for SYS-ENC-001/002/003 created",
+        "EVIDENCE_RECORD_FORMAT.md created per D-9"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B13",
+      "title": "S2.5 Work tracking",
+      "story": "As the maintainer I want register and GitHub to reflect the new fitted-encoder work so that tracking is complete.",
+      "acceptance": [
+        "Register section 0 gains LIVE-17 Fitted-encoder reading",
+        "Issues [LIVE-17] Implement NOT_FITTED sensor status (C, Python, tests) created",
+        "Issue [LIVE-17] Verify fitted encoders read on the bench created",
+        "Milestone Stage 1 assigned; issue #48 re-scoped or closed"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B14",
+      "title": "S3.1 Motor and timestamp requirements",
+      "story": "As the maintainer I want motor and timestamp requirements written so that the CAN and time trails are at hobby scope and the EKF is gone.",
+      "acceptance": [
+        "SYS-MOT-001: snapshot carries shaft position of every commissioned motor with timestamp and validity",
+        "SYS-MOT-002: feedback timeout and escalation defined with numbers in PRM-MOT",
+        "SYS-TS-001: every record carries acquisition timestamp in STM32 local time, Pi converts, skew derivable",
+        "Retired IDs listed with successors"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B15",
+      "title": "S3.2 CAN interface trim",
+      "story": "As the maintainer I want the CAN interface trimmed and scoped so that it is under 150 lines and clear.",
+      "acceptance": [
+        "CAN_SYSTEM_INTERFACE.md under 150 lines",
+        "Keeps bus semantics, lifecycle gate, bus-off policy, latest-value freshness, diagnostics",
+        "Numbers moved to PRM-CAN references",
+        "875 kbps note points at PRM-CAN-01/02; six commissioned motors referenced"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B16",
+      "title": "S3.3 Time and sync alignment",
+      "story": "As the maintainer I want time and sync trimmed and aligned to the Issue #12 design so that EKF is removed from them.",
+      "acceptance": [
+        "EKF removed from TIME_SYSTEM_INTERFACE.md, gate wording changed to PRM reference",
+        "SYSTEM_SYNCHRONIZATION.md: EKF removed, gate wording deferred to D-3",
+        "SPI_SYSTEM_INTERFACE.md sections 10-12 keep model; TIME_SYNC marked deprecated",
+        "TIME_SYNC validation and characterisation kept as dated as-built evidence"
+      ],
+      "points": 5,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B17",
+      "title": "S3.4 Lifecycle trim",
+      "story": "As the maintainer I want lifecycle trimmed to under 180 lines so that it is clear and focused.",
+      "acceptance": [
+        "SYSTEM_LIFECYCLE.md under 180 lines",
+        "Fault levels kept with no-rating note",
+        "5 seconds moved to PRM-TS-03",
+        "TIME_SYNC update wording changed to ClockSync"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B18",
+      "title": "S3.5 Verification and tracking",
+      "story": "As the maintainer I want verification rows and tracking for motors and timestamps so that the work is visible.",
+      "acceptance": [
+        "Matrix rows SYS-MOT-001/002 and SYS-TS-001 created",
+        "Register section 0: LIVE-18 Six motor positions, LIVE-19 Clock-sync implementation added",
+        "Issues for #42, #45 re-pointed; issues #12, #33-#36 closed as not planned"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B19",
+      "title": "S3.6 Architecture at charter scope",
+      "story": "As the maintainer I want the system and component architecture rewritten at charter scope so that ROS 2 and the estimator layer are removed.",
+      "acceptance": [
+        "SYSTEM_ARCHITECTURE.md under 100 lines",
+        "ROS 2 layer removed; estimator layer removed",
+        "Safety behaviours mentioned; motion-authority bullet points at D-3",
+        "RASPBERRY_SENSOR_HUB.md rewritten under 25 lines"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B20",
+      "title": "S4.1 Motion gate decided",
+      "story": "As the maintainer I want the motion gate decided and recorded so that scope is clear for gated motion work.",
+      "acceptance": [
+        "D-3 decision recorded in ARCHITECTURE_DECISIONS.md with date and name",
+        "SYS-GATE-001 approved; SYS-MOTION-001..003 listed as replaced",
+        "SD-20 scope recorded; motion_permission.c simplification is a code issue"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B21",
+      "title": "S4.2 Single gated command on the wire",
+      "story": "As the maintainer I want the single gated command frozen and documented so that the Pi can send motion commands.",
+      "acceptance": [
+        "SET_MOTOR_COMMAND (0x13) frozen for single-command case",
+        "Schema fields: schema_version, motor_index, command, value, reserved",
+        "Gate check returns ACK (accepted and queued) or NACK (reason code)",
+        "SYS-CMD-001 reworded to define this",
+        "Lockstep issue created"
+      ],
+      "points": 5,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B22",
+      "title": "S4.3 Safety at attended-operation scope",
+      "story": "As the maintainer I want safety documented at attended-operation scope so that it says what is designed and tested without claiming a rating.",
+      "acceptance": [
+        "One SAFETY_REQUIREMENTS.md document, under 60 lines",
+        "No-rating statement from charter",
+        "Behaviours table SAFE-01..0n with requirements, evidence required, and matrix row",
+        "Withdrawn list (SAFE-001, 008, 009) recorded",
+        "SAFETY_ARCHITECTURE.md and SAFETY_INTEGRATION.md merged and removed"
+      ],
+      "points": 5,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B23",
+      "title": "S4.4 Verification for X, Y and Z",
+      "story": "As the maintainer I want verification rows for X, Y and Z joints so that motion can be verified on the bench.",
+      "acceptance": [
+        "Matrix rows per joint: X verified motion, Y, Z",
+        "Evidence: initial movement record, command passed through gate, stop on link loss observed",
+        "Rows for other three joints marked NOT STARTED",
+        "INTEGRATION_GATES.md merged into matrix and removed"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B24",
+      "title": "S4.5 Tracking",
+      "story": "As the maintainer I want register and GitHub tracking updated so that motion and safety work is visible.",
+      "acceptance": [
+        "Register section 0: LIVE-20 Gated motion X/Y/Z, LIVE-21 Attended-operation safety behaviours",
+        "Issues for SET_MOTOR_COMMAND, gate simplification, X/Y/Z verification created",
+        "Milestone Stage 4 assigned",
+        "LIVE-01 family re-scoped or closed; #14, #31, #46, #50 re-scoped or closed"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B25",
+      "title": "S4.6 Calibration, configuration, deferred items",
+      "story": "As the maintainer I want calibration, configuration and deferred items clarified so that scope boundaries are clear.",
+      "acceptance": [
+        "SYS-CAL-001/002 merged into one row",
+        "SYSTEM_CONFIGURATION.md section 3 keeps calibration model",
+        "Release conditions moved to evidence required",
+        "SYS-MECH-001 and SD-26 moved to Deferred table with hardware condition"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B26",
+      "title": "S5.1 Register rebuilt",
+      "story": "As the maintainer I want the register rebuilt to under 150 lines so that it is concise and focused on live work.",
+      "acceptance": [
+        "Section 0 live items: LIVE-17..21 plus LIVE-22 Measure links, LIVE-08 calibration, LIVE-09 verification",
+        "SD table kept with Charter column per D-8",
+        "Sections 2, 3 and 5 removed with pointer to last commit",
+        "Section 4 rewritten as Before energised motion at hobby scope"
+      ],
+      "points": 5,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B27",
+      "title": "S5.2 Requirements baseline final",
+      "story": "As the maintainer I want the final requirements baseline of under 15 rows so that the system is clear.",
+      "acceptance": [
+        "About 15 rows: ENC-001/002/003, MOT-001/002, TS-001, LINK-001/002, CAN-001, MAP-001, CAL-001, IF-001, SPI-001, CMD-001, GATE-001, REC-001",
+        "Pointer to SAFE-*",
+        "Retired and deferred table with successors or reasons"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B28",
+      "title": "S5.3 Matrix as the trail",
+      "story": "As the maintainer I want the verification matrix to be the complete trail so that requirement, code and test are linked.",
+      "acceptance": [
+        "Columns: requirement, code module, test, evidence record, status, accepted by, date",
+        "Code and test columns filled from the repository",
+        "VERIFICATION_STRATEGY.md under 25 lines",
+        "Every row has code module and test or none yet issue"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B29",
+      "title": "S5.4 GitHub milestones and issues",
+      "story": "As the maintainer I want GitHub milestones and issues aligned so that work tracking matches the documentation.",
+      "acceptance": [
+        "M1-M7 renamed to Stages 1-5 (renamed or closed, not deleted)",
+        "Every open issue re-titled under LIVE-17+ or closed as not planned",
+        "Labels unchanged; ISSUE_CONTRACT.md notes estimation as dormant"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B30",
+      "title": "S5.5 For_Lenton retired",
+      "story": "As the maintainer I want For_Lenton retired so that the register is the only tracking document.",
+      "acceptance": [
+        "Each item checked against register section 0",
+        "Unique live items moved to register, rest dropped",
+        "File removed; CLAUDE.md line updated"
+      ],
+      "points": 1,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B31",
+      "title": "S5.6 Code-alignment backlog seeded",
+      "story": "As the maintainer I want the code-alignment backlog seeded so that documentation changes become code work.",
+      "acceptance": [
+        "One issue per divergence in plan section 11",
+        "Each cites its SYS-* row and lockstep rule",
+        "Ordered by charter goal"
+      ],
+      "points": 1,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B32",
+      "title": "S6.1 Governance collapse",
+      "story": "As the maintainer I want governance documentation collapsed so that the framework is small enough for one person.",
+      "acceptance": [
+        "00_INDEX.md under 100 lines: map, one paragraph per domain, status vocabulary, who decides, how to change or remove, one provenance line",
+        "DOCUMENTATION_RULES.md under 80 lines: authority by subject, component boundary, verification boundary, Provisional rule, lockstep rule, deletion rule",
+        "Seven files removed after deletion check"
+      ],
+      "points": 5,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B33",
+      "title": "S6.2 Research notes relocated",
+      "story": "As the maintainer I want research notes moved out of Documentation so that the main tree is clean.",
+      "acceptance": [
+        "DISTRIBUTED_MKS_MOTION_CONTROL_RESEARCH.md moved to icm-project/research/",
+        "MKS_SERVO42D_57D_SYNCHRONISATION.md moved to icm-project/references/mks-servo42d-57d-can/",
+        "Index paragraph about research notes removed",
+        "No inbound link broken"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B34",
+      "title": "S6.3 Component docs",
+      "story": "As the maintainer I want component docs fixed so that stale references are removed and parts are marked optional.",
+      "acceptance": [
+        "Pi README.md: ROS 2 and estimator lines become future note",
+        "Pi BRINGUP: Part D (ROS 2) and PREEMPT_RT marked optional or moved to appendix",
+        "Arm docs: stale references fixed in README, I2C analysis, SWD procedures, TIME_SYNC_INSTRUMENTATION",
+        "EKF mention in I2C analysis removed; MksServo README paths fixed"
+      ],
+      "points": 5,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B35",
+      "title": "S6.4 Documentation check tool",
+      "story": "As the maintainer I want a documentation check tool so that alignment is verified automatically.",
+      "acceptance": [
+        "icm-project/tools/doc_check created (standard-library Python)",
+        "Term scan with allowed contexts from plan Appendix B",
+        "Relative-link resolver over three trees",
+        "Numeric check on SYSTEM_REQUIREMENTS.md; PRM reference validation",
+        "Added to portal.toml verify commands"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-03T00:00:00+00:00",
+      "done_at": "2026-10-03T03:06:04+00:00",
+      "package": "WP1",
+      "done_in": "docs/charter-alignment (drafted outside the Portal, 2026-10-03; sign-off pending)"
+    },
+    {
+      "id": "B37",
+      "title": "S7.1 Walk the definition of done",
+      "story": "As the maintainer I want each item of CHARTER_ALIGNMENT_PLAN.md section 3 checked against the drafted documents so that sign-off is a confirmation, not a search.",
+      "acceptance": [
+        "A new section 14 'Definition-of-done status (2026-10-04)' in CHARTER_ALIGNMENT_PLAN.md: one row per section 3 item 1 to 8 with Holds or Does not hold and the evidence (the command run and its result, or the file and its line count)",
+        "The term scan from Appendix B and icm-project/tools/doc_check/doc_check.py are run and their output is quoted or summarised in the row",
+        "Sizes are measured with wc -l and quoted: documentation about documentation (00_INDEX.md, DOCUMENTATION_RULES.md) at most 250 lines; the decisions register at most 150 lines",
+        "Items that depend on GitHub (3.5 issues and milestones, 3.8 issue numbers) are marked 'Blocked: GitHub changes held for Lenton Neale' with what the held script would do; nothing is invented",
+        "No document outside CHARTER_ALIGNMENT_PLAN.md is edited by this story"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": "2026-10-03T18:08:39.663584+00:00",
+      "created": "2026-10-03T17:49:38.669487+00:00",
+      "done_at": "2026-10-03T18:27:41.474153+00:00",
+      "package": "WP1"
+    },
+    {
+      "id": "B38",
+      "title": "S7.2 Fix what the walk finds",
+      "story": "As the maintainer I want the section 3 items that do not hold fixed in the same sprint so that the draft is ready for sign-off.",
+      "acceptance": [
+        "Every 'Does not hold' row from S7.1 is either fixed and its row updated to Holds naming the fix, or listed under 'Left for Lenton Neale' with the reason",
+        "No code file is changed (Arm_Sensor_Hub, RaspberryPi_Sensor_Hub, shared)",
+        "No file is deleted without the DOCUMENTATION_RULES.md check (git history, unique content, inbound links) recorded in the commit message",
+        "doc_check.py runs clean and Verify passes",
+        "Caveats travel with the text they qualify: when a passage is shortened its 'not hardware approval', 'no rating claimed' or 'not a measurement' wording is kept"
+      ],
+      "points": 3,
+      "status": "done",
+      "sprint": "2026-10-03T18:08:39.663584+00:00",
+      "created": "2026-10-03T17:49:38.669502+00:00",
+      "done_at": "2026-10-03T18:27:41.474166+00:00",
+      "package": "WP1"
+    },
+    {
+      "id": "B39",
+      "title": "S7.3 The plan names how the Portal tracks this work",
+      "story": "As the maintainer I want CHARTER_ALIGNMENT_PLAN.md, backlog.json and lifecycle.json to agree so that the trail from plan to Portal is one trail.",
+      "acceptance": [
+        "Section 5 of the plan says the work is work package WP1 in lifecycle.json and that the PASS at the Requirements gate is the sign-off step of section 3.9",
+        "The plan's status line names this sprint (S7) and says sprints 0 to 6 were drafted outside the Portal on docs/charter-alignment",
+        "Section 11 (or a short new section) lists the code-alignment Stages 1 to 5 as work packages WP2 to WP6 with one line each",
+        "Nothing else in the plan changes"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": "2026-10-03T18:08:39.663584+00:00",
+      "created": "2026-10-03T17:49:38.669507+00:00",
+      "done_at": "2026-10-03T18:27:41.474170+00:00",
+      "package": "WP1"
+    },
+    {
+      "id": "B40",
+      "title": "S8.1 L0 scope review",
+      "story": "As the maintainer I want the scope layer (L0) reviewed so that every lower layer is checked against a scope I have confirmed.",
+      "acceptance": [
+        "PROJECT_CHARTER.md, 00_INDEX.md and DOCUMENTATION_RULES.md are reviewed read-only; no file is edited by this story",
+        "Each finding is one row classed as contradicts, exceeds, redefines, orphan, gap or unbased number (CHARTER_ALIGNMENT_PLAN.md section 15), with file and line",
+        "L0 is reviewed against Lenton Neale: each finding is put to him in the Design stage and his ruling is recorded against it",
+        "No finding is treated as decided without a ruling"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": "2026-10-03T23:58:14.170973+00:00",
+      "created": "2026-10-04T00:00:00+00:00",
+      "done_at": "2026-10-04T02:17:30.109948+00:00",
+      "package": "WP1"
+    },
+    {
+      "id": "B41",
+      "title": "S8.2 L1 requirements review",
+      "story": "As the maintainer I want the requirements layer (L1) reviewed against L0 so that the requirements baseline follows only from the confirmed scope.",
+      "acceptance": [
+        "SYSTEM_OVERVIEW.md, SYSTEM_REQUIREMENTS.md, SAFETY_REQUIREMENTS.md and PARAMETER_REGISTER.md are reviewed read-only against L0 as merged",
+        "Each finding is one row classed as contradicts, exceeds, redefines, orphan, gap or unbased number, with file and line and the L0 text it is checked against",
+        "Every SYS-* baseline row and SAFE-* behaviour traces to a charter goal, or is reported as an orphan",
+        "Every charter goal is served by at least one requirement, or is reported as a gap",
+        "Carried from S8.1 F5 (Portal run 2026-10-04-l0-scope-confirmed-by-lenton-neale, design.md P6): 'Replaced' at SYSTEM_REQUIREMENTS.md:59 is not in the 00_INDEX.md requirement statuses; it is raised as a finding with a proposed mapping to Withdrawn or Retired",
+        "L1 is checked against the S8.1 rulings F1 to F7 as well as the L0 text, since the L0 edits from those rulings land in S8.3"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-04T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B42",
+      "title": "S8.3 Fix the L0 and L1 findings",
+      "story": "As the maintainer I want the findings I have ruled on fixed in the same sprint so that L0 and L1 are ready for the Requirements gate.",
+      "acceptance": [
+        "Every contradicts, exceeds or redefines finding from S8.1 and S8.2 has a ruling from Lenton Neale and is either fixed or recorded as accepted with the reason",
+        "Only L1 files are edited, and L0 files only where Lenton Neale ruled a change; no L2 to L5 file and no code file is changed",
+        "A fault found in L2 to L5 becomes a WP7 story, not an edit",
+        "No file is deleted without the DOCUMENTATION_RULES.md check recorded in the commit message",
+        "doc_check.py runs clean and Verify passes",
+        "S8.1 rulings (Portal run 2026-10-04-l0-scope-confirmed-by-lenton-neale, design.md P2 to P8, all accepted by Lenton Neale on 2026-10-04) are applied to L0:",
+        "F1 contradicts: PROJECT_CHARTER.md:27 reads 'No numeric requirement; requirements cite PRM-* values, each with a stated basis.'",
+        "F2 unbased number: DOCUMENTATION_RULES.md:20 adds 'Counts, dates, identifiers and versions are not parameters'; PROJECT_CHARTER.md:23 reads 'No high-rate state estimator; the EKF is dropped.'",
+        "F3 contradicts: PROJECT_CHARTER.md:31 adds 'except where annotated against this charter in ARCHITECTURE_DECISIONS.md' to the SD-01 to SD-25 sentence",
+        "F4 gap: DOCUMENTATION_RULES.md:30 reads 'The charter overrides all. Otherwise the owning authority's statement wins; between statements of the same owner the newer wins unless it is still proposed. Name the subject and never guess.'",
+        "F5 gap: the 00_INDEX.md status table gains a row 'Documents: Agreed, As-built'",
+        "F6 exceeds: DOCUMENTATION_RULES.md:26 reads '... says \"not yet implemented (issue #n, or its contract title until created)\"'",
+        "F7 redefines: no L0 change; the CLAUDE.md 'estimate' ban is carried to WP7 as an L4 story",
+        "Each ruling F1 to F7 is entered in ARCHITECTURE_DECISIONS.md with its date and Lenton Neale as the ruler, so the record is in the repository and not only in the Portal run folder (CHARTER_ALIGNMENT_PLAN.md section 15 allows the run that raises an item to update it)"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-04T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B43",
+      "title": "S8.4 Prepare the sign-off",
+      "story": "As the maintainer I want the sign-off drafted for me to confirm so that the Requirements gate PASS is a confirmation, not a search.",
+      "acceptance": [
+        "The Sign-off section of ARCHITECTURE_DECISIONS.md holds a draft entry with the date left for Lenton Neale to confirm",
+        "Each of D-1 to D-11 shows Lenton Neale's confirmation or change from the Design stage; none is marked confirmed without it",
+        "The ruling on plan item 3.7 (provenance lines) is recorded",
+        "Plan items 3.4, 3.5 and 3.8 are noted as moved to WP7 and the GitHub run after L5 (section 15), not left open in WP1"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-04T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP1"
+    },
+    {
+      "id": "B44",
+      "title": "L4 carry-over: CLAUDE.md 'estimate' ban",
+      "story": "As the maintainer I want CLAUDE.md's word rule to match DOCUMENTATION_RULES.md so that the L4 review does not hold agents to a stricter rule than L0.",
+      "acceptance": [
+        "CLAUDE.md bans 'guess', 'assumed' and 'estimate', but DOCUMENTATION_RULES.md:22 bans only 'guess' and 'assumed', and PROJECT_CHARTER.md:15 defines Provisional as 'an engineering estimate' (S8.1 F7, Portal run 2026-10-04-l0-scope-confirmed-by-lenton-neale, design.md P8)",
+        "The L4 review raises this as an exceeds finding against L0 and puts it to Lenton Neale for a ruling",
+        "Only CLAUDE.md is edited, and only if Lenton Neale rules a change"
+      ],
+      "points": 1,
+      "status": "sprint",
+      "sprint": "2026-10-04T00:12:21.841270+00:00",
+      "created": "2026-10-04T02:17:30.109976+00:00",
+      "done_at": null,
+      "package": "WP7"
     }
   ]
 }

@@ -348,31 +348,7 @@ The TIME_SYNC_CHARACTERISATION_EVIDENCE.md audit identified 5 implementation gap
 
 ---
 
-## Next Steps: Task 11 (SWD Instrumentation)
-
-Task 11 will add software debugging (SWD) instrumentation to verify:
-
-1. **TIM2 counter value and prescaler:** Confirm STM32 local clock runs at 1.0120 MHz (TIM2 prescaler = 83 at 84 MHz core)
-2. **Actual accepted offset:** Mirror `time_offset_us` register to debug output to verify Pi and STM32 agree
-3. **Timestamp application:** Verify STM32 applies offset to measurement timestamps before export
-4. **Synchronization state transitions:** Trace acceptance and rejection of TIME_SYNC updates in real time
-
-These measurements will complete the as-built validation of SYS-SYNC-001, -002 and -004 after the implementation gaps are closed.
-
----
-
-## SWD Readout Integration
-
-To complete the measurement loop and transition from "verified by probe" to "validated on hardware":
-
-1. Build firmware with DEBUG=1: `make DEBUG=1`
-2. Flash to STM32 and attach SWD debugger (ST-Link V2)
-3. Run Pi probe: `python -m tools.spi_time_sync_probe --output probe_log.csv`
-4. Halt firmware via OpenOCD and extract debug mirrors (see [Arm_Sensor_Hub/Documentation/SWD_READOUT_PROCEDURES.md](../../Arm_Sensor_Hub/Documentation/SWD_READOUT_PROCEDURES.md))
-5. Correlate: For each probe measurement, read STM32 local_capture_us and verify offset = pi_time_us - local_capture_us
-6. Report: Document any discrepancies > 100 µs as potential gaps
-
-This closes the measurement loop and provides authoritative proof that TIME_SYNC offset calculation is correct on actual hardware.
+For SWD readout procedures see [Arm_Sensor_Hub/Documentation/SWD_READOUT_PROCEDURES.md](../../Arm_Sensor_Hub/Documentation/SWD_READOUT_PROCEDURES.md).
 
 ---
 

@@ -1,166 +1,59 @@
 # Karetao Documentation
 
-This directory defines the **Karetao system documentation framework**.
+## Start here
 
-The framework establishes Karetao as the authority for system-level documentation while defining the boundary between system documentation, component implementation documentation, external documentation, and verification evidence.
+1. [`01_SYSTEM/PROJECT_CHARTER.md`](01_SYSTEM/PROJECT_CHARTER.md): scope, goals, non-goals and who decides.
+2. This map.
 
- > **Framework status:** Complete. The Karetao system documentation is authoritative in `Documentation/**`.
+Rules for keeping these documents consistent: [`DOCUMENTATION_RULES.md`](DOCUMENTATION_RULES.md).
 
-## Mandatory authority notice
+## Map
 
-**Use the Karetao Documentation authority framework as the only project documentation authority framework.** For Karetao system-level documentation and documentation governance, the authoritative framework is `Documentation/**` as defined by `01_SYSTEM/DOCUMENTATION_AUTHORITY_MODEL.md`.
+| Section | What it holds | Key files |
+|---|---|---|
+| `01_SYSTEM/` | Scope, requirements, architecture, lifecycle, synchronization | [`PROJECT_CHARTER`](01_SYSTEM/PROJECT_CHARTER.md), [`SYSTEM_OVERVIEW`](01_SYSTEM/SYSTEM_OVERVIEW.md), [`SYSTEM_REQUIREMENTS`](01_SYSTEM/SYSTEM_REQUIREMENTS.md), [`SYSTEM_ARCHITECTURE`](01_SYSTEM/SYSTEM_ARCHITECTURE.md), [`SYSTEM_LIFECYCLE`](01_SYSTEM/SYSTEM_LIFECYCLE.md), [`SYSTEM_SYNCHRONIZATION`](01_SYSTEM/SYSTEM_SYNCHRONIZATION.md) |
+| `02_INTERFACES/` | System-level interface contracts | [`SPI_SYSTEM_INTERFACE`](02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md), [`SPI_PAYLOAD_SCHEMA`](02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md), [`CAN_SYSTEM_INTERFACE`](02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md), [`TIME_SYSTEM_INTERFACE`](02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md), [`HOST_SYSTEM_INTERFACE`](02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md) |
+| `03_COMPONENTS/` | System-level definition of each component | [`ARM_SENSOR_HUB`](03_COMPONENTS/ARM_SENSOR_HUB.md), [`RASPBERRY_SENSOR_HUB`](03_COMPONENTS/RASPBERRY_SENSOR_HUB.md) |
+| `04_SAFETY/` | System safety behaviours | [`SAFETY_REQUIREMENTS`](04_SAFETY/SAFETY_REQUIREMENTS.md) |
+| `05_VERIFICATION/` | Verification status, strategy, evidence | [`SYSTEM_VERIFICATION_MATRIX`](05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md), [`VERIFICATION_STRATEGY`](05_VERIFICATION/VERIFICATION_STRATEGY.md), [`EVIDENCE_RECORD_FORMAT`](05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md), [`CAN_INTEGRATION_EVIDENCE`](05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md), [`TIME_SYNC_VALIDATION`](05_VERIFICATION/TIME_SYNC_VALIDATION.md), [`TIME_SYNC_CHARACTERISATION_EVIDENCE`](05_VERIFICATION/TIME_SYNC_CHARACTERISATION_EVIDENCE.md) |
+| `06_CONFIGURATION/` | Every numeric value with its basis; configuration | [`PARAMETER_REGISTER`](06_CONFIGURATION/PARAMETER_REGISTER.md), [`SYSTEM_CONFIGURATION`](06_CONFIGURATION/SYSTEM_CONFIGURATION.md) |
+| `07_DECISIONS/` | Decision records | [`ARCHITECTURE_DECISIONS`](07_DECISIONS/ARCHITECTURE_DECISIONS.md), [`ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS`](07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md), [`KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER`](07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md) |
 
-## Authority
+Component implementation documents are in `Arm_Sensor_Hub/Documentation/` and `RaspberryPi_Sensor_Hub/Documentation/`. Vendor references are in `icm-project/references/`.
 
-[`DOCUMENTATION_AUTHORITY_MODEL.md`](01_SYSTEM/DOCUMENTATION_AUTHORITY_MODEL.md) is the normative authority model.
+## Authority in one paragraph per domain
 
-The framework uses separate authority domains. Authority is determined by subject ownership, not by a universal top-down hierarchy:
+**Karetao system documents** (`Documentation/**`) own system requirements, interfaces, safety behaviours, configuration and parameters, and verification status. Authority follows the subject, not the folder.
 
-```text
-Karetao
-    owns Karetao system requirements and system-level definitions
+**Component documents** (`Arm_Sensor_Hub/Documentation/`, `RaspberryPi_Sensor_Hub/Documentation/`) own implementation. They may explain how a system requirement is met, and they never redefine it or keep a competing copy.
 
-Arm_Sensor_Hub
-    owns Arm Sensor Hub implementation documentation
+**Vendor documents** are external authority for the equipment and protocols they define. They are kept as reference folders in `icm-project/references/` and are not rewritten as project specifications.
 
-Raspberry_Sensor_Hub
-    owns Raspberry Sensor Hub implementation documentation
+**Verification evidence** records what was run and observed. It never becomes a requirement. `SYSTEM_VERIFIED` is set only in `SYSTEM_VERIFICATION_MATRIX.md`, by Lenton Neale. Component test results do not establish it.
 
-Vendor/external documentation
-    owns externally defined equipment/protocol behaviour
+## Status vocabulary
 
-Verification records
-    provide evidence
-```
-
-A document's physical location does not by itself make it authoritative. Authority is determined by the subject owned by the relevant repository, external authority, or verification process.
-
-## Framework governance
-
-The following root-level documents govern the documentation framework itself rather than defining Karetao system behaviour:
-
-- `05_REFACTORING_RULES.md` — rules governing the future documentation migration and reconciliation.
-- `05_REFACTORING_PLAN.md` — the proposed plan applying those rules to the remaining `docs/project/**` migration.
-- `06_IMPLEMENTATION_CHECKLIST.md` — checklist for implementing and reviewing the documentation framework.
-
-These are governance/process documents. They are not competing system requirements and do not override or replace authoritative system-level documentation.
-
-## Documentation structure
-
-| Section | Purpose |
+| Applies to | Values |
 |---|---|
-| [`01_SYSTEM/`](01_SYSTEM/) | [Project charter](01_SYSTEM/PROJECT_CHARTER.md) (start here: scope, goals, non-goals, who decides); system requirements, architecture, timing, synchronization, overview, and documentation authority |
-| [`02_INTERFACES/`](02_INTERFACES/) | System-level interface definitions and contracts |
-| [`03_COMPONENTS/`](03_COMPONENTS/) | Karetao system-level component definitions and the component documentation contract |
-| [`04_SAFETY/`](04_SAFETY/) | System safety requirements and related documentation |
-| [`05_VERIFICATION/`](05_VERIFICATION/) | System-level verification requirements, plans, matrices, and evidence references |
-| [`06_CONFIGURATION/`](06_CONFIGURATION/) | System-level configuration requirements and controlled configuration information |
-| [`07_DECISIONS/`](07_DECISIONS/) | Authoritative system decisions and decision records |
+| Requirements | Approved, Retired, Deferred, Withdrawn |
+| Parameters | Measured, Datasheet, Derived, Provisional |
+| Verification | OPEN, COMPONENT_EVIDENCE, SYSTEM_VERIFIED |
 
-The framework deliberately retains these top-level sections without introducing additional documentation categories.
+Items still marked proposed or open are not normative.
 
-## Distributed motion-control research
+## Who decides
 
-[`01_SYSTEM/DISTRIBUTED_MKS_MOTION_CONTROL_RESEARCH.md`](01_SYSTEM/DISTRIBUTED_MKS_MOTION_CONTROL_RESEARCH.md) records the non-normative research/design direction for six-axis MKS CAN motion control, including timestamped feedback, synchronized actuation, CAN arbitration/jitter, and timing experiments. It does not override the authoritative system timing, synchronization, CAN interface, safety, verification, or external MKS documentation.
+Lenton Neale decides scope, priorities, requirement approval and verification acceptance (see the charter).
 
-## Motion-permission documentation path
+## Changing or removing a document
 
-The current motion-permission proposal is distributed according to the Karetao authority model: the decision proposal is tracked in `07_DECISIONS/ARCHITECTURE_DECISIONS.md`; system requirements, architecture, lifecycle/synchronization, CAN/host interfaces, safety, and verification records carry only the corresponding proposed/non-normative traceability until the system decision authority approves it.
+Follow [`DOCUMENTATION_RULES.md`](DOCUMENTATION_RULES.md): check git history, unique content and inbound links first, and record the removal in the provenance line below.
 
-## System authority
+## Governance
 
-Karetao is authoritative for:
+- [`DOCUMENTATION_RULES.md`](DOCUMENTATION_RULES.md): the rules for these documents.
+- [`CHARTER_ALIGNMENT_PLAN.md`](CHARTER_ALIGNMENT_PLAN.md): status of the alignment of these documents with the charter.
 
-- system requirements;
-- system architecture;
-- system-level interfaces;
-- system timing and synchronization;
-- system safety requirements;
-- system-level configuration requirements;
-- system verification requirements;
-- system integration requirements;
-- system-level component roles and responsibilities.
+## Provenance
 
-The component repositories do not redefine these system requirements.
-
-## Component ownership boundary
-
-[`03_COMPONENTS/COMPONENT_DOCUMENTATION_MODEL.md`](03_COMPONENTS/COMPONENT_DOCUMENTATION_MODEL.md) defines the integration contract.
-
-The Karetao repository owns the system-level definition of components, including:
-
-- [`ARM_SENSOR_HUB.md`](03_COMPONENTS/ARM_SENSOR_HUB.md);
-- [`RASPBERRY_SENSOR_HUB.md`](03_COMPONENTS/RASPBERRY_SENSOR_HUB.md).
-
-The component repositories own implementation documentation.
-
-For example:
-
-```text
-Karetao
-└── 02_INTERFACES/
-        └── CAN_SYSTEM_INTERFACE.md
-              │
-              │ defines system requirement
-              ▼
-Arm_Sensor_Hub
-└── Documentation/
-        └── CAN implementation documentation
-              │
-              │ implements
-              ▼
-External controller/protocol
-```
-
-The same boundary applies conceptually to CAN, SPI, HOST, TIME, and future system interfaces.
-
-## Verification boundary
-
-System verification follows:
-
-```text
-Karetao system requirement
-        ↓
-Responsible component(s)
-        ↓
-Component implementation
-        ↓
-Component verification evidence
-        ↓
-Integration evidence
-        ↓
-Karetao system verification
-```
-
-Component verification does not automatically constitute system verification.
-
-[`05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`](05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md) is the authoritative location for Karetao system-level verification status.
-
-`SYSTEM_VERIFIED` means that the result has been accepted at the Karetao system level. Component repositories may document component-level verification evidence, but component verification alone does not establish `SYSTEM_VERIFIED`.
-
-## Archive boundary
-
-Historical and superseded material (superseded specifications, historical decisions, sprint reports, conversations, obsolete planning material) is not kept in the working tree. It is recoverable from Git history; the former `Documentation/99_ARCHIVE/` was last present at commit `9c637ba`.
-
-Historical content retrieved from Git history is non-normative and must never override current authoritative documentation.
-
-## Refactoring sequence
-
-The framework is intentionally established before documentation migration.
-
-The intended sequence is:
-
-1. Establish Karetao authority model.
-2. Establish component documentation model.
-3. Review and approve the framework.
-4. Inventory existing documentation.
-5. Classify documents.
-6. Determine authority of each document and significant statement.
-7. Refactor Karetao system documentation.
-8. Refactor component documentation.
-9. Establish cross-repository references.
-10. Archive superseded material.
-11. Remove genuinely redundant material.
-12. Verify links and authority boundaries.
-
-**The Phase 2 authority audit has approved the transition into subject-based documentation refactoring.** Existing Karetao system content is being reconciled into the authority domains below. Component implementation authority remains in the component repositories.
+The former `docs/project` tree, `99_ARCHIVE/` (last at commit `9c637ba`), the documentation authority model, component documentation model, refactoring rules, plan and ledger, and the implementation checklist were removed from the working tree (2026-09-25 and 2026-10-03) and live in git history; the research notes moved to `icm-project/`.

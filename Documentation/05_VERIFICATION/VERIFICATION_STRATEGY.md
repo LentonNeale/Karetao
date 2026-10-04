@@ -2,33 +2,24 @@
 
 ## Authority
 
-This document defines the Karetao system verification strategy. Component repositories define and execute component-level verification; Karetao determines whether integrated evidence establishes system verification.
+This document defines how Karetao verification is recorded. `SYSTEM_VERIFICATION_MATRIX.md` holds the status; component repositories hold component tests; Lenton Neale accepts.
 
-## Verification chain
+## Chain
 
-System requirement -> responsible component(s) -> component implementation -> component verification -> integration verification -> Karetao system verification.
+Requirement (`SYSTEM_REQUIREMENTS.md`) -> code module -> test (host test, Pi test or bench procedure) -> evidence record -> matrix row -> accepted by Lenton Neale.
+Every matrix row names its code module and its test, or says "none yet (issue: LIVE-xx)".
 
-Each stage must retain evidence appropriate to its scope.
+## Status vocabulary
 
-## Verification classes
+| Status | Meaning |
+|---|---|
+| OPEN | No accepted evidence at the scope the requirement states, or not implemented |
+| COMPONENT_EVIDENCE | A component test or host-test run passes; not enough to close the row |
+| SYSTEM_VERIFIED | An evidence record shows the requirement on the real rig and Lenton Neale has accepted it, with date |
 
-| Class | Purpose | Does it establish SYSTEM_VERIFIED? |
-|---|---|---|
-| Component verification | Demonstrates implementation behaviour within component scope | No |
-| Hardware verification | Demonstrates behaviour against target hardware | No, not by itself |
-| Integration verification | Demonstrates interaction between system components | Only when accepted against the relevant system requirement |
-| System verification | Demonstrates accepted integrated system behaviour | Yes, when formally accepted |
+## Rules
 
-## Required system verification areas
-
-At minimum, the system verification process must address timing and synchronization; Raspberry heartbeat and communication-loss response; motor feedback freshness and escalation; CAN interface, load and bus-off recovery; joint/state mapping; SPI framing, CRC, ownership, timing and physical-layer behaviour; host command/state interface; calibration and controlled configuration; fault/recovery and motion gating; and independent safety mechanisms.
-
-## Acceptance rule
-
-SYSTEM_VERIFIED shall only be assigned after the relevant integrated evidence is accepted through the Karetao system verification process.
-
-Component VERIFIED or HARDWARE_VERIFIED status must not be copied into the system verification matrix as system acceptance.
-
-## Provenance
-
-Reconciled from the framework verification model, the audited documentation classification, and the existing system verification matrix.
+- Component or host-test evidence never sets SYSTEM_VERIFIED, however many tests pass.
+- Dirty-build rule: a record whose `VERSION` `build_flags` dirty bit (bit 0) is set is filed but cannot satisfy a row.
+- Records are not edited after acceptance; a new run is a new record.
+- Record format: `EVIDENCE_RECORD_FORMAT.md`.

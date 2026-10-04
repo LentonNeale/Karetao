@@ -9,6 +9,8 @@
 
 This document defines the Karetao system-level SPI contract: externally visible framing, transaction ownership, timing, and data semantics. Component repositories own SPI driver/service implementation details (DMA mechanics, HAL integration, buffer pool internals, task scheduling).
 
+Tunable and physical values are referenced by PRM ID; their working values and bases are in [`PARAMETER_REGISTER.md`](../../06_CONFIGURATION/PARAMETER_REGISTER.md).
+
 ---
 
 ## 1. Roles and Physical Interface
@@ -30,7 +32,7 @@ Current STM32 SPI3 mapping:
 | MISO | PC11 | Output |
 | MOSI | PC12 | Input |
 
-SPI mode: **Mode 0** (CPOL=0, CPHA=0). The current 5 MHz value is an integration ceiling, not hardware approval.
+SPI mode: **Mode 0** (CPOL=0, CPHA=0). The current value of the SPI clock ceiling (PRM-SPI-01) is an integration ceiling, not hardware approval.
 
 ---
 
@@ -98,7 +100,7 @@ The STM32 never initiates SPI clocking. The first response after boot is a defin
 | `0x04` | `VERSION` | STM32 → Pi | Firmware and protocol version report, solicited by `GET_VERSION`. |
 | `0x10` | `GET_SNAPSHOT` | Pi → STM32 | Request current snapshot. |
 | `0x11` | `GET_STATUS` | Pi → STM32 | Request status. |
-| `0x12` | `TIME_SYNC` | Pi → STM32 | **Deprecated** by [Issue #12](../../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md): no longer the synchronization mechanism (see §11). Retained until the Issue #12 implementation removes it. |
+| `0x12` | `TIME_SYNC` | Pi → STM32 | **Deprecated** by [Issue #12](../../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md): no longer the synchronization mechanism (see §11). Deprecated by Issue #12; still implemented in code (2026-10-03) until the Issue #12 implementation lands (GitHub #42). |
 | TBD | `GET_DIAGNOSTIC` | Pi → STM32 | Request DIAGNOSTIC v2 (Issue #12 item 8); value to be assigned. |
 | `0x13` | `SET_MOTOR_COMMAND` | Pi → STM32 | Send a motor command subject to lifecycle/safety checks. |
 | `0x14` | `GET_VERSION` | Pi → STM32 | Request firmware/protocol version. |
@@ -132,7 +134,7 @@ The STM32 may deassert `DATA_READY` after the frame is consumed. The signal does
 
 If a new snapshot replaces an unread response, the service increments a dropped/replaced counter and reports it through diagnostics.
 
-**DATA_READY is the preferred low-latency notification mechanism when physically assigned; polling is retained for recovery, initially at 1 ms** (SD-17). A configurable 1 ms polling fallback rechecks staged-frame availability. When staged data is present while DATA_READY is low and no transfer is armed, the service re-arms the DMA transfer, reasserts DATA_READY, and reports poll-recovery and host-stall counters. **A 100 ms host-stall timeout aborts the active DMA transfer and returns the service to a re-armable state.** These software recovery paths have been exercised on the STM32 target, but the physical DATA_READY waveform and Pi-side GPIO path remain unvalidated.
+**DATA_READY is the preferred low-latency notification mechanism when physically assigned; polling is retained for recovery, initially at PRM-SPI-03** (SD-17). A configurable polling fallback at PRM-SPI-03 rechecks staged-frame availability. When staged data is present while DATA_READY is low and no transfer is armed, the service re-arms the DMA transfer, reasserts DATA_READY, and reports poll-recovery and host-stall counters. **A host-stall timeout of PRM-SPI-04 aborts the active DMA transfer and returns the service to a re-armable state.** These software recovery paths have been exercised on the STM32 target, but the physical DATA_READY waveform and Pi-side GPIO path remain unvalidated.
 
 ---
 
@@ -144,13 +146,13 @@ A `SNAPSHOT` is a logically coherent view of the available STM32 state. For the 
 - every included record was copied completely;
 - each record carries its own acquisition timestamp;
 - the outer `frame_time_us` identifies assembly time only;
-- record validity flags distinguish valid, stale, unavailable, and faulted data;
+- record validity flags distinguish valid, stale, unavailable, faulted, and not-fitted data;
 - sensor and motor record counts match the serialized payload;
 - no record is modified during serialization or DMA.
 
 Coherency does not imply simultaneous acquisition. TCA9548A channels are sampled sequentially. The timestamp spread across records must be available to the host.
 
-**Fixed six-record snapshot:** Normal snapshots serialize six sensor records with stable logical IDs 0-5. Invalid records remain present with validity flags. Before all sensors are ready, serialize all six records with stable IDs and invalid/stale flags for unavailable channels; do not block the host indefinitely waiting for all channels.
+**Fixed six-record snapshot:** Normal snapshots serialize six sensor records with stable logical IDs 0-5. Invalid records remain present with validity flags. Before all sensors are ready, serialize all six records with stable IDs and invalid/stale flags for unavailable channels; do not block the host indefinitely waiting for all channels. An axis without an encoder in the commissioning table (SYSTEM_CONFIGURATION.md §2) is still serialised at its stable logical ID, with validity bit 6 ("not fitted") set and bit 0 clear; it is not a fault and does not count as an unavailable channel for readiness purposes (SYS-ENC-002).
 
 **Replace-if-new semantics:** Snapshot publication uses replace-if-new:
 - If no response frame is pending, serialize the newest caches into a free frame buffer and stage it for SPI.
@@ -203,7 +205,7 @@ Per [Issue #12](../../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md),
 
 ## 12. Synchronization Validity
 
-Synchronization becomes invalid **5 seconds** after the last accepted observation (SD-19). ClockSync on the Pi is the single acceptance policy. Diagnostics expose its state through DIAGNOSTIC v2 (`SPI_PAYLOAD_SCHEMA.md`). See `TIME_SYSTEM_INTERFACE.md` §4 and §5.
+Synchronization becomes invalid **PRM-TS-03** after the last accepted observation (SD-19). ClockSync on the Pi is the single acceptance policy. Diagnostics expose its state through DIAGNOSTIC v2 (`SPI_PAYLOAD_SCHEMA.md`). See `TIME_SYSTEM_INTERFACE.md` §4 and §5.
 
 ---
 
@@ -252,18 +254,18 @@ Lifecycle states and transition rules are canonical in `01_SYSTEM/SYSTEM_LIFECYC
 
 Any incompatible change to field meaning/order, timestamp semantics, framing, CRC, or message semantics requires a protocol version increment.
 
-**Remaining SPI integration gate is live-host and physical acceptance of the implemented transport:**
+**Stage 3 measurements (PARAMETER_REGISTER.md):**
 
-- maximum 5 MHz clock acceptance and associated DMA timing;
+- acceptance of the SPI clock ceiling (PRM-SPI-01) and associated DMA timing;
 - NSS behavior and abort/recovery behavior under a real master;
 - DATA_READY electrical timing and Raspberry Pi GPIO behavior;
 - GPIO/SCK/MISO signal integrity;
 - sustained and repeated 512-byte transactions;
 - real Raspberry Pi ↔ STM32 request/response behavior and sequence/correlation handling.
 
-**The current 5 MHz value is an integration ceiling, not hardware approval** (SD-01, SD-15).
+**The current value of the SPI clock ceiling (PRM-SPI-01) is an integration ceiling, not hardware approval** (SD-01, SD-15).
 
-The following are approved v1.0 decisions and must not be redefined by lower-level documents: Mode 0; fixed 512-byte frame; 490-byte maximum payload; CRC-32/ISO-HDLC parameters; pipelined request/response; five-second synchronization validity; per-exchange clock-sync observations with Pi-side ClockSync (Issue #12, superseding the one-way TIME_SYNC estimate and direct offset stepping); fixed six-record sensor snapshots; replace-if-new behavior with drop diagnostics.
+The following are approved v1.0 decisions and must not be redefined by lower-level documents: Mode 0; fixed 512-byte frame; 490-byte maximum payload; CRC-32/ISO-HDLC parameters; pipelined request/response; synchronization validity window (PRM-TS-03); per-exchange clock-sync observations with Pi-side ClockSync (Issue #12, superseding the one-way TIME_SYNC estimate and direct offset stepping); fixed six-record sensor snapshots; replace-if-new behavior with drop diagnostics.
 
 ---
 
@@ -286,8 +288,4 @@ The following are approved v1.0 decisions and must not be redefined by lower-lev
 
 ## Provenance
 
-Reconciled from:
-- `docs/project/protocols/spi-contract.md` (§§1–8, §10–14, §16–18; §9, §15 are component-internal)
-- `docs/project/firmware/SNAPSHOT_COHERENCY_CONTRACT.md` (coherency guarantee, snapshot model, replace-if-new semantics)
-- `docs/project/interfaces/spi-service-contract.md` (DATA_READY timing, host-stall timeout)
-- `docs/project/interfaces/raspberry-pi-spi.md` (physical interface, hardware baseline)
+Reconciled from the former `docs/project` files `protocols/spi-contract.md` (§§1–8, §10–14, §16–18), `firmware/SNAPSHOT_COHERENCY_CONTRACT.md` (coherency, replace-if-new), `interfaces/spi-service-contract.md` (DATA_READY timing, host-stall timeout) and `interfaces/raspberry-pi-spi.md` (physical interface); all in git history.

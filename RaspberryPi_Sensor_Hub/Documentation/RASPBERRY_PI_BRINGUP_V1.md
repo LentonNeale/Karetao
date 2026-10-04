@@ -1,12 +1,10 @@
 # Raspberry Pi 5 Bring-Up Guide
 
-## Ubuntu Server 24.04 LTS, cloud-init, PREEMPT_RT, ROS 2 Jazzy and STM32 SPI host
+## Ubuntu Server 24.04 LTS, cloud-init and STM32 SPI host (PREEMPT_RT and ROS 2 Jazzy optional)
 
 **Component:** Raspberry Sensor Hub (Karetao host-side integration component)
 **Document class:** Component implementation / provisioning procedure
 **Revision:** 0.1, rewritten 2026-09-20 (see Appendix A for the conflict review that drove the rewrite)
-
-M
 
 ---
 
@@ -24,13 +22,14 @@ Karetao system documents this procedure depends on:
 | Time authority and clock synchronization | `Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` |
 | Host link liveness, command and state contract | `Documentation/02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md` |
 | Lifecycle states, restart and recovery rules | `Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md` |
-| Safety release gates SAFE-001 to SAFE-009 | `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md`, `SAFETY_INTEGRATION.md` |
-| Release conditions 1 to 7 | `Documentation/07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md` Part 4 |
-| System verification status | `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`, `INTEGRATION_GATES.md` |
+| Safety behaviours SAFE-01 to SAFE-05 | `Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md` |
+| Before gated motion (register §2) | `Documentation/07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md` §2 |
+| Parameter values (PRM-* IDs) | `Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md` |
+| System verification status | `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md`, `EVIDENCE_RECORD_FORMAT.md` |
 | STM32 pin baseline (SPI3, DATA_READY PA8) | `Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md` |
 | Host component role | `Documentation/03_COMPONENTS/RASPBERRY_SENSOR_HUB.md` |
 
-The legacy names `SPI_CONTRACT.md`, `LIFECYCLE_CONTRACT.md` and `SAFETY_RELEASE_CHECKLIST.md` are no longer current. The checklist has been removed; a historical copy is in Git history at `Documentation/99_ARCHIVE/DECISIONS/SAFETY_RELEASE_CHECKLIST.md` (commit `9c637ba`).
+The legacy names `SPI_CONTRACT.md`, `LIFECYCLE_CONTRACT.md` and `SAFETY_RELEASE_CHECKLIST.md` are no longer current. The checklist has been removed; a historical copy is in Git history at `Documentation/99_ARCHIVE/DECISIONS/SAFETY_RELEASE_CHECKLIST.md` (commit `9c637ba`). Likewise the former `SAFETY_INTEGRATION.md`, `INTEGRATION_GATES.md` and `SYSTEM_TIMING.md` are removed; numbers now live in `PARAMETER_REGISTER.md`.
 
 **Repository structure:** This document is part of the Karetao repository. The **RaspberryPi_Sensor_Hub** directory contains the component implementation (software source, tests, provisioning), and it references (but does not duplicate) the system contracts in **Documentation/**. When following this guide, clone the entire Karetao repository (Part D.1) so you have access to both the component code and the system authority documents.
 
@@ -39,14 +38,14 @@ System values used in this guide, with their owners:
 | Value | Owner | Status per owner |
 | --- | --- | --- |
 | SPI Mode 0, 512-byte frame, 490-byte max payload, little-endian, CRC-32/ISO-HDLC | SYS-SPI-001 (SD-15) | Approved |
-| SPI clock initial maximum 5 MHz | SYS-TIM-003 (SD-01, SD-15) | Provisional integration ceiling, not hardware approval |
-| DATA_READY optional, 1 ms polling fallback, Pi is SPI clock master | SYS-SPI-003 (SD-17) | Approved; **physical Pi GPIO assignment is a harness decision, not a system-level one.** GPIO25 assigned and wired in E1, pending electrical validation |
-| SPI cable length 20 to 30 cm | SYS-SPI-004 | Proposed; measurement required |
-| Pi is system time authority; every SPI exchange is a clock-sync observation fed to Pi-side ClockSync; invalid after 5 s without an accepted observation | SYS-SYNC-001/002 (SD-18, SD-19, Issue #12) | Modified |
-| Pi link loss detected by STM32 count-based liveness (`link_stale`); interim limit 500 ms; rejects motion | SYS-FAIL-001 (SD-03, Issue #12) | Modified |
-| Restart returns to INACTIVE, explicit reactivation, never auto-resume motion | SYS-REC-002 (SD-24) | Approved |
-| Baseline control-loop rate 100 Hz | SYS-TIM-001 (SD-01) | Baseline |
-| Independent E-stop and motor-disable paths are release gates | SYS-SAFE-001 (SD-25), SAFE-001 to SAFE-009 | Open / blocked |
+| SPI clock maximum PRM-SPI-01 | PRM-SPI-01 (SD-01, SD-15) | Provisional integration ceiling, not hardware approval |
+| DATA_READY optional, polling fallback PRM-SPI-03, Pi is SPI clock master | SYS-SPI-001 (SD-17) | Approved; **physical Pi GPIO assignment is a harness decision, not a system-level one.** GPIO25 assigned and wired in E1, pending electrical validation |
+| SPI cable length PRM-SPI-05 | PRM-SPI-05 | Provisional; Stage 3 measurement required |
+| Pi is system time authority; every SPI exchange is a clock-sync observation fed to Pi-side ClockSync; invalid after PRM-TS-03 without an accepted observation | SYS-SYNC-001 (SD-18, SD-19, Issue #12) | Modified |
+| Pi link loss detected by STM32 count-based liveness (`link_stale`); interim limit PRM-LINK-01; rejects motion | SYS-LINK-001 (SD-03, Issue #12) | Modified |
+| Restart returns to INACTIVE, explicit reactivation, never auto-resume motion | SYS-REC-001 (SD-24) | Approved |
+| Sensor and snapshot publication rate PRM-ACQ-01 | PRM-ACQ-01 (SD-01) | Provisional working value |
+| Independent hardware power cut or E-stop (SAFE-01) and the behaviours SAFE-02 to SAFE-05 | SAFETY_REQUIREMENTS (SD-25) | Open / blocked |
 
 ---
 
@@ -57,14 +56,14 @@ The Raspberry Pi hosts the **Raspberry Sensor Hub**. It provides:
 * SPI master and system time authority (SPI_SYSTEM_INTERFACE §1, §10)
 * Record T1/T4 on every correlated exchange and feed ClockSync (SPI_SYSTEM_INTERFACE §13). Until Issue #12 is implemented, the current firmware still uses periodic TIME_SYNC.
 * Heartbeat toward the STM32 (HOST_SYSTEM_INTERFACE)
-* Measurement and estimator history, EKF, ROS 2 execution (SD-09)
+* Host-side snapshot decoding and single gated commands. Measurement history, an estimator and ROS 2 execution (SD-09) are charter non-goals for now
 * Host-side diagnostics and component verification evidence
 
 The STM32 **Arm Sensor Hub** remains responsible for sensor acquisition, CAN transport, lifecycle gating and command validation.
 
-Neither the Pi, the STM32, nor the SPI link is an emergency stop. Independent E-stop and motor-disable paths are separate release gates (SAFE-002, SAFE-003). Application controls on either processor are supplementary controls only (SD-25). No component in this guide is "the final safety authority"; the system motion-permission authority is an open Karetao decision (SD-02, register issue #5).
+Neither the Pi, the STM32, nor the SPI link is an emergency stop. The independent hardware power cut or E-stop is a separate path (SAFE-01). Application controls on either processor are supplementary controls only (SD-25). No component in this guide is "the final safety authority"; the system motion-permission authority is an open Karetao decision (SD-02, register issue #5).
 
-**Do not energize motors on the strength of this procedure.** Energized motion requires release conditions 1 to 7 and SAFE-001 to SAFE-009, all currently open.
+**Do not energize motors on the strength of this procedure.** Energized motion requires the checks in the register §2 (Before gated motion) and SAFE-01 to SAFE-05, all currently open.
 
 ---
 
@@ -102,8 +101,8 @@ cloud-init owns everything that is repeatable machine configuration: OS packages
 * Raspberry Pi 5, 8 GB, official 27 W USB-C supply, active cooler.
 * 32 GB or larger high-endurance microSD for commissioning; SSD for a deployed robot.
 * Wired Ethernet on a DHCP network. Use Ethernet, not Wi-Fi, for commissioning.
-* SPI harness to the STM32 SPI3 slave: 3.3 V signalling only, common ground, **20 to 30 cm cable (SYS-SPI-004)**. Record the cable length used.
-* Separate emergency-stop and power-interlock path (SAFE-002, SAFE-003). Not part of this guide.
+* SPI harness to the STM32 SPI3 slave: 3.3 V signalling only, common ground, **cable length PRM-SPI-05 (20 to 30 cm Provisional)**. Record the cable length used.
+* Separate emergency-stop and power-interlock path (SAFE-01). Not part of this guide.
 * Optional: USB-serial adapter on the Pi 5 UART debug connector, useful for watching boot and cloud-init console output. It cannot itself recover a locked-out account, since the image has no password login; the documented recovery route is the offline card repair in Appendix B.
 
 Update the Pi bootloader EEPROM before first boot if required and do not interrupt power while doing so.
@@ -555,6 +554,8 @@ Leaving it in place does not affect the deployed robot's network path as long as
 
 # Part B — Real-time kernel and governor
 
+> Optional. ROS 2 and the real-time kernel serve the former high-rate estimator and ROS 2 integration, both charter non-goals for now (PROJECT_CHARTER.md). Keep for a future stage; not needed for Stages 1–4.
+
 ## B1. Ubuntu PREEMPT_RT via Ubuntu Pro
 
 Ubuntu's real-time kernel for Raspberry Pi 4 and 5 is delivered through Ubuntu Pro. Obtain the token separately. **Never place the token in `user-data` or source control.**
@@ -613,13 +614,15 @@ chronyc sources -v
 Two points that follow from the contracts and are **open component decisions**, to be settled in the host implementation before TIME_SYNC validation:
 
 1. **Which Pi clock feeds `pi_time_us`.** The contract defines `pi_time_us` as Pi time at the synchronization point but does not name a clock. If `CLOCK_REALTIME` is used, an NTP step on the Pi becomes an offset jump at the STM32, which the runtime bound of ±1 s (SD-21) will reject. Either use a monotonic clock as the exported domain or ensure chrony only slews after initial sync (chrony's default `makestep 1 3` steps only during the first three updates).
-2. **Drift budget.** Whether ClockSync's frequency estimate keeps timestamp error inside the ±1 ms target (SD-18) must be measured (Issue #12 Gate B). That is an integration measurement, not a provisioning setting.
+2. **Drift budget.** Whether ClockSync's frequency estimate keeps timestamp error inside the PRM-TS-01 target (SD-18) must be measured (Issue #12 Gate B). That is an integration measurement, not a provisioning setting.
 
 Do not begin STM32 TIME_SYNC validation until `chronyc tracking` shows a synchronized source and the clock-source decision above has been recorded.
 
 ---
 
 # Part D — ROS 2 workspace
+
+> Optional. ROS 2 and the real-time kernel serve the former high-rate estimator and ROS 2 integration, both charter non-goals for now (PROJECT_CHARTER.md). Keep for a future stage; not needed for Stages 1–4.
 
 ROS 2 Jazzy (`ros-base`, `ros2_control`, `controller_manager`, `joint_state_broadcaster`) is installed by cloud-init. Do not re-add the apt source by hand; if the install failed, fix the seed and re-provision.
 
@@ -693,11 +696,11 @@ These are Karetao decisions and are **not** re-decided in harness documentation:
 | SPI mode | Mode 0 (CPOL=0, CPHA=0) | SYS-SPI-001 |
 | Transaction | Fixed 512 bytes, max 490-byte payload | SYS-SPI-001 |
 | Byte order / integrity | Little-endian, CRC-32/ISO-HDLC | SYS-SPI-001 |
-| Clock | 5 MHz **initial maximum**, not hardware approval | SYS-TIM-003 |
+| Clock | PRM-SPI-01 (5 MHz) **initial maximum**, not hardware approval | PRM-SPI-01 |
 | Ownership | Pipelined request/response; Pi initiates all clocking | SPI_SYSTEM_INTERFACE §4 |
-| DATA_READY | Optional notification; 1 ms polling is the recovery path and, today, the only path | SYS-SPI-003, SD-17 |
-| Host-stall timeout | 100 ms (STM32 side) | SPI_SYSTEM_INTERFACE §7 |
-| Cable | 20 to 30 cm | SYS-SPI-004 |
+| DATA_READY | Optional notification; polling (PRM-SPI-03) is the recovery path and, today, the only path | SYS-SPI-001, SD-17 |
+| Host-stall timeout | PRM-SPI-04 (STM32 side) | SPI_SYSTEM_INTERFACE §7 |
+| Cable | PRM-SPI-05 | PRM-SPI-05 |
 
 What the harness documentation **does** need to freeze, because it is not yet fixed anywhere:
 
@@ -744,7 +747,7 @@ Test only these message types first: `GET_STATUS`, `GET_SNAPSHOT`, `GET_VERSION`
 
 The host must, before accepting any frame, validate magic, protocol version, length, CRC32 and sequence, reject stale or duplicate responses, and never use SPI reception time as measurement time (SPI_SYSTEM_INTERFACE §13). The current `spi_device.py` provides only stateless `transact` and `get_status` helpers; outstanding-transaction tracking is still to be written (register §3.5).
 
-Record for the SPI integration gate: DMA/NSS behaviour under a real master, DATA_READY electrical timing if wired, SCK/MISO signal integrity at 5 MHz, sustained 512-byte transactions, request/response correlation, host-stall recovery, and the cable length used.
+Record as SPI evidence (`EVIDENCE_RECORD_FORMAT.md`): DMA/NSS behaviour under a real master, DATA_READY electrical timing if wired, SCK/MISO signal integrity at 5 MHz, sustained 512-byte transactions, request/response correlation, host-stall recovery, and the cable length used.
 
 ---
 
@@ -752,12 +755,12 @@ Record for the SPI integration gate: DMA/NSS behaviour under a real master, DATA
 
 ## F1. ros2_control safety defaults
 
-The controller manager must not activate physical hardware at boot; hardware starts `inactive` and requires explicit activation (SYS-REC-002, SYSTEM_LIFECYCLE §2, §5).
+The controller manager must not activate physical hardware at boot; hardware starts `inactive` and requires explicit activation (SYS-REC-001, SYSTEM_LIFECYCLE §2, §5).
 
 ```yaml
 controller_manager:
   ros__parameters:
-    update_rate: 100                      # SYS-TIM-001 baseline; final rate from measurement
+    update_rate: 100                      # PRM-ACQ-01 working value; final rate from measurement
     enforce_command_limits: true
     hardware_components_initial_state:
       inactive:
@@ -768,7 +771,7 @@ controller_manager:
       deactivate_controllers_on_hardware_self_deactivate: true
 ```
 
-Initial real-time settings: `lock_memory: true`, `thread_priority: 50`. No CPU affinity until F3 identifies a suitable CPU. Invalid, stale or unsynchronized records must become faults, not inputs (SYS-SYNC-003, SYSTEM_SYNCHRONIZATION integration obligations). The EKF must not bypass the STM32 command gate.
+Initial real-time settings: `lock_memory: true`, `thread_priority: 50`. No CPU affinity until F3 identifies a suitable CPU. Invalid, stale or unsynchronized records must become faults, not inputs (SYS-SYNC-001, SYSTEM_SYNCHRONIZATION integration obligations). No timestamp consumer may bypass the STM32 command gate.
 
 ## F2. Managed systemd service
 
@@ -796,7 +799,7 @@ LimitMEMLOCK=infinity
 WantedBy=multi-user.target
 ```
 
-Replace the package and launch file names with the real ones. `Restart=on-failure` is acceptable only because the launch file leaves hardware `inactive`; a restart must never itself resume motion (SYS-REC-002).
+Replace the package and launch file names with the real ones. `Restart=on-failure` is acceptable only because the launch file leaves hardware `inactive`; a restart must never itself resume motion (SYS-REC-001).
 
 ```bash
 sudo systemctl daemon-reload
@@ -834,14 +837,14 @@ Complete in order. A failure returns the system to the previous safe stage. Resu
 | F4.2 OS | SSH key-only login, Ubuntu 24.04, RT kernel active, chrony synchronized | Part B, C |
 | F4.3 Permissions | `robot` in `realtime`, `dialout`; rtprio 99; memlock unlimited; spidev and the RP1 gpiochip accessible; chip number recorded for the running kernel | Part B2, E2 |
 | F4.4 Thermal / power | No undervoltage or throttling under representative load (`vcgencmd get_throttled` if available) | — |
-| F4.5 SPI electrical | Logic analyser: levels, pin map, CPOL/CPHA = Mode 0, CS, DATA_READY if wired, timing at 1/2/5 MHz, cable length | SYS-SPI-001, SYS-TIM-003, SYS-SPI-004 |
+| F4.5 SPI electrical | Logic analyser: levels, pin map, CPOL/CPHA = Mode 0, CS, DATA_READY if wired, timing at 1/2/5 MHz, cable length | SYS-SPI-001, PRM-SPI-01, PRM-SPI-05 |
 | F4.6 SPI protocol | Status, snapshot, version, TIME_SYNC frames; CRC; sequence; stale rejection; STM32 reset recovery; host restart recovery | SYS-SPI-001/002/003 |
-| F4.7 Time sync | ClockSync converges from per-exchange observations (Gate A); validity expires after 5 s without an accepted observation; implausible observations rejected; clock-source decision recorded. Until Issue #12 is implemented, test the current TIME_SYNC path | SYS-SYNC-001 to 005 |
-| F4.8 Fault behaviour | SPI disconnect, TIME_SYNC interruption, malformed and stale frames, STM32 reset, Pi restart, **link loss (`link_stale`, interim 500 ms)**: no unsafe command accepted, no last-command hold | SYS-FAIL-001/002, SYS-REC-001/002 |
+| F4.7 Time sync | ClockSync converges from per-exchange observations (Gate A); validity expires after PRM-TS-03 without an accepted observation; implausible observations rejected; clock-source decision recorded. Until Issue #12 is implemented, test the current TIME_SYNC path | SYS-SYNC-001 |
+| F4.8 Fault behaviour | SPI disconnect, TIME_SYNC interruption, malformed and stale frames, STM32 reset, Pi restart, **link loss (`link_stale`, interim PRM-LINK-01)**: no unsafe command accepted, no last-command hold | SYS-LINK-001/002, SYS-REC-001 |
 | F4.9 ROS lifecycle | Hardware starts inactive; activation requires healthy transport and valid sync; faults propagate; controllers deactivate on hardware self-deactivate | SYSTEM_LIFECYCLE §2, §5, §9 |
-| F4.10 Motion release | **Not covered by this guide.** Requires release conditions 1 to 7 and SAFE-001 to SAFE-009, independently reviewed | Register Part 4, SAFETY_REQUIREMENTS |
+| F4.10 Motion release | **Not covered by this guide.** Requires the checks in register §2 and SAFE-01 to SAFE-05, independently reviewed | Register §2, SAFETY_REQUIREMENTS |
 
-Open items affecting F4.8: under Issue #12, any accepted, valid SPI message counts as liveness, so no separate heartbeat carrier is needed. However, `N_moving`/`N_idle` and the expected-message interval are still open, and command acknowledgement and freshness semantics remain open (HOST_SYSTEM_INTERFACE). Test link loss against the interim 500 ms limit.
+Open items affecting F4.8: under Issue #12, any accepted, valid SPI message counts as liveness, so no separate heartbeat carrier is needed. However, `N_moving`/`N_idle` and the expected-message interval are still open, and command acknowledgement and freshness semantics remain open (HOST_SYSTEM_INTERFACE). Test link loss against the interim limit PRM-LINK-01.
 
 ---
 
@@ -887,7 +890,7 @@ Source-of-truth split:
 * **Machine provisioning:** `provisioning/cloud-init/` (version-controlled seed)
 * **Host software:** Karetao `RaspberryPi_Sensor_Hub/src/` (version-controlled source)
 * **ROS workspace:** `~/karetao_ws/` (local build, not version-controlled)
-* **Motion release:** Karetao `04_SAFETY/` and the register's release conditions
+* **Motion release:** Karetao `04_SAFETY/` and the register's §2 (Before gated motion)
 * **Deployment records:** separate from version control (commissioning, calibration, evidence)
 
 ## G2. Controlled changes
@@ -911,7 +914,7 @@ Findings from checking the previous text of this guide against `Documentation/01
 | # | Previous text | Conflict | Resolution |
 | --- | --- | --- | --- |
 | 1 | References to `SPI_CONTRACT.md`, `LIFECYCLE_CONTRACT.md`, `SAFETY_RELEASE_CHECKLIST.md` | Legacy `docs/project` names; not current authority. Checklist is archived and non-normative | Replaced with Karetao `Documentation/**` paths and SAFE-/SYS- identifiers |
-| 2 | Proposed `contracts/` directory holding SPI/lifecycle contracts inside the component tree | Component documentation must not establish a competing authority (DOCUMENTATION_AUTHORITY_MODEL) | Contracts referenced, not copied; layout revised (G1) |
+| 2 | Proposed `contracts/` directory holding SPI/lifecycle contracts inside the component tree | Component documentation must not establish a competing authority (`Documentation/DOCUMENTATION_RULES.md`) | Contracts referenced, not copied; layout revised (G1) |
 | 3 | "The STM32 remains the final safety authority" | SD-25: STM32/Pi controls are supplementary only; motion-permission authority is an open decision (SD-02) | Statement removed; roles section rewritten |
 | 4 | Pi host named after the STM32 component (`arm_sensor_hub_ws`, `arm-sensor-hub.service`, `arm_sensor_hub` hardware component, "Arm Sensor Hub Control") | The Pi hosts the Raspberry Sensor Hub; the Arm Sensor Hub is the STM32 (03_COMPONENTS) | Renamed to `karetao-*` identifiers |
 | 5 | "Freeze SPI mode and maximum clock in harness documentation" | Mode 0 and the 5 MHz ceiling are Karetao decisions (SYS-SPI-001, SYS-TIM-003) | Listed as frozen values; harness freezes only Pi-side pins and the DATA_READY GPIO |

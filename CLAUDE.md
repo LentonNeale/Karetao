@@ -13,7 +13,7 @@ Karetao is a monorepo for a robotic arm platform:
 
 ## Working method (ICM Portal)
 
-Requests are run through the ICM Portal: a local app (in the `LentonNeale/Karetao_Consulting` repo) that takes a request from a Client Liaison conversation to a brief, plan, reviewed design, build, verification and delivery. Start it with `.venv/bin/python -m icm_portal --project ~/Git_repos/Karetao` from that repo. Its settings for Karetao are in `portal.toml`, including the Verify commands, which are the same as CI. Karetao's own ICM workspaces, tools, skills and references are in `icm-project/` (see `icm-project/README.md`); generic ones come from the Portal's shared `icm/`. A Portal build works in a separate worktree and never edits this working copy.
+Requests are run through the ICM Portal: a local app (in the `LentonNeale/Karetao_Consulting` repo) that takes a request from a Client Liaison conversation to a brief, plan, reviewed design, build, verification and delivery. Start it with `.venv/bin/python -m icm_portal --project ~/Git_repos/Karetao` from that repo. Its settings for Karetao are in `portal.toml`, including the Verify commands, which are the same as CI. Karetao's own ICM workspaces, tools, skills and references are in `icm-project/` (see `icm-project/README.md`); generic ones come from the Portal's shared `icm/`. A Portal build works in a separate worktree and never edits this working copy. Work above the runs is tracked as work packages in `lifecycle.json` (WP1 the documentation alignment, whose Requirements-gate PASS is the sign-off; WP2 to WP6 the code-alignment Stages 1 to 5) and sprint stories in `backlog.json`; the Portal's Project tab draws them as the Map.
 
 ## Commands
 
@@ -58,14 +58,17 @@ The format uses magic `0xA55A`, an 18-byte little-endian header, a CRC32 trailer
 
 ## Documentation authority rules
 
-These rules are mandatory and come from the README and `Documentation/00_INDEX.md`:
+These rules are mandatory. They come from `Documentation/00_INDEX.md` and `Documentation/DOCUMENTATION_RULES.md`:
 
+- `Documentation/01_SYSTEM/PROJECT_CHARTER.md` is the scope authority. It sets goals, non-goals, and scope decisions. Lenton Neale decides.
 - `Documentation/**` is the only project documentation authority framework. It owns system requirements, architecture, interfaces (CAN/SPI/HOST/TIME), timing and synchronization, safety, configuration, verification status, and decisions.
 - `Arm_Sensor_Hub/Documentation/` and `RaspberryPi_Sensor_Hub/Documentation/` own component implementation details only. They may explain how a system requirement is implemented, but they must never redefine it or create competing copies.
 - Authority depends on who owns the subject, not on where a file sits. Resolve conflicts against the owning authority and never by guessing. Reference vendor specs as external authority and don't rewrite them.
 - Only the Karetao process and `Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md` can establish `SYSTEM_VERIFIED`. Component test evidence doesn't count.
-- Items marked "proposed" or "open" (for example `SYS-MOTION-*` and motion permission) are not normative. Don't treat them as decided. Open decisions are tracked in `Documentation/07_DECISIONS/` and in `For_Lenton`, which is a working review list and not an authority.
-- Don't delete docs just because they look old. First check git history, unique content, and inbound links (`Documentation/05_REFACTORING_RULES.md`). No archive is kept in the working tree. Git history is the archive, and the former `Documentation/99_ARCHIVE/` was last present at commit `9c637ba`. References to `99_ARCHIVE/` or `docs/project/**` in the refactoring ledger and plan are historical provenance and don't point to live files.
+- Numeric values live in `Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md` (or are interface contract constants) and carry a basis: Measured, Datasheet, Derived, or Provisional. "Provisional" is the word for an engineering estimate not yet confirmed; never use "guess" or "assumed".
+- Items marked "proposed" or "open" (for example SD-26, the differential end effector) are not normative. Don't treat them as decided. Open decisions are tracked in `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md` (decision log), the register §0 (live work), and `Documentation/CHARTER_ALIGNMENT_PLAN.md` (alignment plan).
+- Don't delete docs just because they look old. First check git history, unique content, and inbound links (`Documentation/DOCUMENTATION_RULES.md`). No archive is kept in the working tree; git history is the archive (the former `Documentation/99_ARCHIVE/` was last present at commit `9c637ba`).
+- Run `icm-project/tools/doc_check` before merging a documentation change. It checks forbidden terms, relative links, numbers in `SYSTEM_REQUIREMENTS.md`, and `PRM-*` references.
 - Requirement identifiers follow the patterns `SYS-*`, `SD-xx`, and `LIVE-xx`. Keep traceability from the system requirement to the component implementation, then to verification evidence, then to system verification.
 
 ## GitHub issues

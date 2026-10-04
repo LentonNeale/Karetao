@@ -32,7 +32,7 @@ Lenton Neale decides scope, priorities, requirement approval and verification ac
 
 ## Related documents
 
-- [SYSTEM_OVERVIEW.md](SYSTEM_OVERVIEW.md): still names the EKF and ROS 2 as core responsibilities. For scope this charter takes precedence, and the overview will be updated in the documentation pruning run.
+- [SYSTEM_OVERVIEW.md](SYSTEM_OVERVIEW.md): updated to the charter scope on 2026-10-03.
 - [SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md): owns system requirements.
 - [SYSTEM_VERIFICATION_MATRIX.md](../05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md): owns verification status (goals 4 and 5).
 - [00_INDEX.md](../00_INDEX.md): entry point.
