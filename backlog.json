@@ -761,8 +761,8 @@
         "Only CLAUDE.md is edited, and only if Lenton Neale rules a change"
       ],
       "points": 1,
-      "status": "open",
-      "sprint": null,
+      "status": "sprint",
+      "sprint": "2026-10-04T00:12:21.841270+00:00",
       "created": "2026-10-04T02:17:30.109976+00:00",
       "done_at": null,
       "package": "WP7"
