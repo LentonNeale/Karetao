@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 44,
+  "next_id": 45,
   "stories": [
     {
       "id": "B1",
@@ -682,10 +682,10 @@
         "No finding is treated as decided without a ruling"
       ],
       "points": 2,
-      "status": "sprint",
+      "status": "done",
       "sprint": "2026-10-03T23:58:14.170973+00:00",
       "created": "2026-10-04T00:00:00+00:00",
-      "done_at": null,
+      "done_at": "2026-10-04T02:17:30.109948+00:00",
       "package": "WP1"
     },
     {
@@ -696,7 +696,9 @@
         "SYSTEM_OVERVIEW.md, SYSTEM_REQUIREMENTS.md, SAFETY_REQUIREMENTS.md and PARAMETER_REGISTER.md are reviewed read-only against L0 as merged",
         "Each finding is one row classed as contradicts, exceeds, redefines, orphan, gap or unbased number, with file and line and the L0 text it is checked against",
         "Every SYS-* baseline row and SAFE-* behaviour traces to a charter goal, or is reported as an orphan",
-        "Every charter goal is served by at least one requirement, or is reported as a gap"
+        "Every charter goal is served by at least one requirement, or is reported as a gap",
+        "Carried from S8.1 F5 (Portal run 2026-10-04-l0-scope-confirmed-by-lenton-neale, design.md P6): 'Replaced' at SYSTEM_REQUIREMENTS.md:59 is not in the 00_INDEX.md requirement statuses; it is raised as a finding with a proposed mapping to Withdrawn or Retired",
+        "L1 is checked against the S8.1 rulings F1 to F7 as well as the L0 text, since the L0 edits from those rulings land in S8.3"
       ],
       "points": 3,
       "status": "open",
@@ -714,7 +716,16 @@
         "Only L1 files are edited, and L0 files only where Lenton Neale ruled a change; no L2 to L5 file and no code file is changed",
         "A fault found in L2 to L5 becomes a WP7 story, not an edit",
         "No file is deleted without the DOCUMENTATION_RULES.md check recorded in the commit message",
-        "doc_check.py runs clean and Verify passes"
+        "doc_check.py runs clean and Verify passes",
+        "S8.1 rulings (Portal run 2026-10-04-l0-scope-confirmed-by-lenton-neale, design.md P2 to P8, all accepted by Lenton Neale on 2026-10-04) are applied to L0:",
+        "F1 contradicts: PROJECT_CHARTER.md:27 reads 'No numeric requirement; requirements cite PRM-* values, each with a stated basis.'",
+        "F2 unbased number: DOCUMENTATION_RULES.md:20 adds 'Counts, dates, identifiers and versions are not parameters'; PROJECT_CHARTER.md:23 reads 'No high-rate state estimator; the EKF is dropped.'",
+        "F3 contradicts: PROJECT_CHARTER.md:31 adds 'except where annotated against this charter in ARCHITECTURE_DECISIONS.md' to the SD-01 to SD-25 sentence",
+        "F4 gap: DOCUMENTATION_RULES.md:30 reads 'The charter overrides all. Otherwise the owning authority's statement wins; between statements of the same owner the newer wins unless it is still proposed. Name the subject and never guess.'",
+        "F5 gap: the 00_INDEX.md status table gains a row 'Documents: Agreed, As-built'",
+        "F6 exceeds: DOCUMENTATION_RULES.md:26 reads '... says \"not yet implemented (issue #n, or its contract title until created)\"'",
+        "F7 redefines: no L0 change; the CLAUDE.md 'estimate' ban is carried to WP7 as an L4 story",
+        "Each ruling F1 to F7 is entered in ARCHITECTURE_DECISIONS.md with its date and Lenton Neale as the ruler, so the record is in the repository and not only in the Portal run folder (CHARTER_ALIGNMENT_PLAN.md section 15 allows the run that raises an item to update it)"
       ],
       "points": 3,
       "status": "open",
@@ -739,6 +750,22 @@
       "created": "2026-10-04T00:00:00+00:00",
       "done_at": null,
       "package": "WP1"
+    },
+    {
+      "id": "B44",
+      "title": "L4 carry-over: CLAUDE.md 'estimate' ban",
+      "story": "As the maintainer I want CLAUDE.md's word rule to match DOCUMENTATION_RULES.md so that the L4 review does not hold agents to a stricter rule than L0.",
+      "acceptance": [
+        "CLAUDE.md bans 'guess', 'assumed' and 'estimate', but DOCUMENTATION_RULES.md:22 bans only 'guess' and 'assumed', and PROJECT_CHARTER.md:15 defines Provisional as 'an engineering estimate' (S8.1 F7, Portal run 2026-10-04-l0-scope-confirmed-by-lenton-neale, design.md P8)",
+        "The L4 review raises this as an exceeds finding against L0 and puts it to Lenton Neale for a ruling",
+        "Only CLAUDE.md is edited, and only if Lenton Neale rules a change"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-04T02:17:30.109976+00:00",
+      "done_at": null,
+      "package": "WP7"
     }
   ]
 }
