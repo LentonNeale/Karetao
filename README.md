@@ -32,6 +32,6 @@ A component implementation document may explain how a Karetao requirement is imp
 ## Working with the ICM Portal
 
 Requests (from a conversation to a brief, plan, reviewed design, build and verified delivery) run
-through the ICM Portal from `LentonNeale/Karetao_Consulting`. Its Karetao settings are in
+through the ICM Portal from `LentonNeale/icm_portal` (its shared ICM library is `~/Git_repos/icm_library`). Its Karetao settings are in
 [`portal.toml`](portal.toml), and Karetao's own ICM workspaces, tools and references are in
 [`icm-project/`](icm-project/README.md).

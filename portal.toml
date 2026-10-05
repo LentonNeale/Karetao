@@ -1,7 +1,7 @@
 # ICM Portal settings for Karetao.
-# Start the Portal from the Karetao_Consulting repo:
-#   cd ~/Git_repos/Karetao_Consulting && .venv/bin/python -m icm_portal --project ~/Git_repos/Karetao
-# Full list of keys and defaults: Karetao_Consulting/portal/icm_portal/config.py and portal/README.md.
+# Start the Portal from the icm_portal repo (the shared ICM library lives in ~/Git_repos/icm_library):
+#   cd ~/Git_repos/icm_portal && ~/icm-portal/venv/bin/python -m icm_portal --project ~/Git_repos/Karetao
+# Full list of keys and defaults: icm_portal/icm_portal/config.py and README.md in the icm_portal repo.
 
 # Run data (briefs, plans, designs, chats, logs) and the checklist stay outside this repo.
 runs_dir = "~/icm-portal/data/karetao/runs"
@@ -75,18 +75,18 @@ workspaces = "icm-project/workspaces"
 tools = "icm-project/tools"
 skills = "icm-project/skills"
 references = "icm-project/references"
-templates = "~/Git_repos/Karetao_Consulting/icm/_core/templates"
+templates = "~/Git_repos/icm_library/icm/_core/templates"
 
 # The Portal's shared workspaces. Copy one into icm-project/workspaces/ and point here to customise it.
 [liaison]
-workspace = "~/Git_repos/Karetao_Consulting/icm/workspaces/client-liaison"
+workspace = "~/Git_repos/icm_library/icm/workspaces/client-liaison"
 
 [review]
-workspace = "~/Git_repos/Karetao_Consulting/icm/workspaces/request-review"
+workspace = "~/Git_repos/icm_library/icm/workspaces/request-review"
 
 [build]
 workspace = "icm-project/workspaces/implement-step"   # Karetao copy: adds reference rows
-test_workspace = "~/Git_repos/Karetao_Consulting/icm/workspaces/test-changes"
+test_workspace = "~/Git_repos/icm_library/icm/workspaces/test-changes"
 
 [pre_merge_review]
 workspace = "icm-project/workspaces/pre-merge-review"   # Karetao copy: adds reference rows

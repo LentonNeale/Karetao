@@ -1,8 +1,8 @@
 # icm-project
 
 Karetao's own ICM material: the project-specific workspaces, tools, skills and references the
-[ICM Portal](https://github.com/LentonNeale/Karetao_Consulting) works with. Generic, reusable
-material stays in the Portal's shared `icm/` folder; only things that hold Karetao facts live here.
+[ICM Portal](https://github.com/LentonNeale/icm_portal) works with. Generic, reusable
+material stays in the shared ICM library's `icm/` folder (`~/Git_repos/icm_library/icm`); only things that hold Karetao facts live here.
 
 | Folder | What goes in it | Made by |
 |---|---|---|
@@ -17,8 +17,8 @@ material stays in the Portal's shared `icm/` folder; only things that hold Karet
 ## Running the Portal
 
 ```bash
-cd ~/Git_repos/Karetao_Consulting
-.venv/bin/python -m icm_portal --project ~/Git_repos/Karetao
+cd ~/Git_repos/icm_portal
+~/icm-portal/venv/bin/python -m icm_portal --project ~/Git_repos/Karetao
 ```
 
 Settings are in `../portal.toml`. Run data (briefs, plans, designs, chats, logs) and the checklist
@@ -28,7 +28,7 @@ worktree, never in this working copy.
 ## Privacy check
 
 `forbidden-terms.txt` (untracked) lists Karetao terms that must never appear in the shared Portal
-repo. Before pushing Portal changes, run from the Karetao_Consulting repo:
+repo. Before pushing Portal or library changes, run from the icm_library repo (`~/Git_repos/icm_library`):
 
 ```bash
 python3 scripts/check-project-facts.py --terms ~/Git_repos/Karetao/icm-project/forbidden-terms.txt
