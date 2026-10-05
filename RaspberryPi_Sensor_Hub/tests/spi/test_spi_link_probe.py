@@ -46,6 +46,14 @@ class VersionLinesTests(unittest.TestCase):
         self.assertEqual(len(lines), 1)
         self.assertIn('undecodable', lines[0])
 
+    def test_bad_magic_gives_no_lines(self):
+        self.assertEqual(probe.version_lines(bytes(512)), [])
+
+    def test_bad_crc_gives_no_lines(self):
+        raw = bytearray(version_frame(0x00))
+        raw[-1] ^= 0xFF
+        self.assertEqual(probe.version_lines(bytes(raw)), [])
+
 
 if __name__ == '__main__':
     unittest.main()

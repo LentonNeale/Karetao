@@ -77,11 +77,18 @@ def snapshot_lines(raw: bytes) -> list[str]:
 
 
 def version_lines(raw: bytes) -> list[str]:
-    """One decoded line when raw is a VERSION frame, otherwise no lines."""
+    """One decoded line when raw is a VERSION frame, otherwise no lines.
+
+    A frame that fails to decode (bad magic, length or CRC) gives no lines,
+    because describe() already reports the frame error.
+    """
     try:
         frame = SpiFrame.decode(raw)
-        if frame.message_type is not MessageType.VERSION:
-            return []
+    except ValueError:
+        return []
+    if frame.message_type is not MessageType.VERSION:
+        return []
+    try:
         v = VersionInfo.decode(frame.payload)
     except ValueError as exc:
         return [f'     VERSION payload undecodable ({exc})']
