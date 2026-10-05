@@ -2,7 +2,7 @@
   "version": 1,
   "next_id": {
     "package": 8,
-    "decision": 1
+    "decision": 3
   },
   "packages": [
     {
@@ -25,9 +25,9 @@
         "Sign-off: Lenton Neale walks the list and records the date in ARCHITECTURE_DECISIONS.md; the PASS at this Requirements gate is that sign-off and tags baseline/requirements/v1 (3.9)",
         "Drafted outside the Portal on branch docs/charter-alignment (sprints 0 to 6, 2026-10-03); the Portal tracks the sign-off from here"
       ],
-      "status": "open",
+      "status": "closed",
       "created": "2026-10-03T17:48:59.658967+00:00",
-      "closed": null,
+      "closed": "2026-10-04T04:11:02.885588+00:00",
       "definition": "2026-10-04-l0-scope-confirmed-by-lenton-neale/brief.md"
     },
     {
@@ -48,7 +48,7 @@
       "status": "open",
       "created": "2026-10-03T17:48:59.658991+00:00",
       "closed": null,
-      "definition": "2026-10-04-new-request-5/brief.md"
+      "definition": "2026-10-04-wp2-stage1-fitted-encoders/brief.md"
     },
     {
       "id": "WP3",
@@ -140,11 +140,95 @@
         "Starts after the WP1 Requirements gate PASS; the Architecture gate PASS tags baseline/architecture/v1, and code-alignment WP2 to WP6 start after it",
         "GitHub trail (plan 3.5 and 3.8) runs after L5 as its own short run; GitHub changes held for Lenton Neale"
       ],
-      "status": "open",
+      "status": "closed",
       "created": "2026-10-04T00:00:00+00:00",
-      "closed": null,
-      "definition": "2026-10-04-complete-b44/brief.md"
+      "closed": "2026-10-04T04:17:07.845632+00:00"
     }
   ],
-  "decisions": []
+  "decisions": [
+    {
+      "id": "D1",
+      "package": "WP7",
+      "gate": "architecture",
+      "decision": "pass",
+      "note": "",
+      "override": false,
+      "rework_to": null,
+      "at": "2026-10-04T04:09:23.878760+00:00",
+      "runs": [
+        "2026-10-04T00:12:21.841270+00:00"
+      ],
+      "checks": [
+        {
+          "name": "runs_finished",
+          "ok": true,
+          "detail": "every run is shipped"
+        },
+        {
+          "name": "merged",
+          "ok": true,
+          "detail": "merged as 778c3c6 into main"
+        },
+        {
+          "name": "no_blockers",
+          "ok": true,
+          "detail": "reviewed, no blockers"
+        },
+        {
+          "name": "files_committed",
+          "ok": true,
+          "detail": "committed"
+        }
+      ],
+      "baseline": {
+        "type": "architecture",
+        "n": 1,
+        "sha": "778c3c64a9f4cf58348bf10bbd3d65e72bda2bd5",
+        "branch": "main",
+        "tag": "baseline/architecture/v1"
+      }
+    },
+    {
+      "id": "D2",
+      "package": "WP1",
+      "gate": "requirements",
+      "decision": "pass",
+      "note": "Merged externally",
+      "override": true,
+      "rework_to": null,
+      "at": "2026-10-04T04:10:58.949183+00:00",
+      "runs": [
+        "2026-10-03T23:58:14.170973+00:00"
+      ],
+      "checks": [
+        {
+          "name": "has_run",
+          "ok": true,
+          "detail": "1 run(s)"
+        },
+        {
+          "name": "runs_finished",
+          "ok": true,
+          "detail": "every run is shipped"
+        },
+        {
+          "name": "merged",
+          "ok": false,
+          "detail": "no run has been merged"
+        },
+        {
+          "name": "no_blockers",
+          "ok": true,
+          "detail": "no merged run to review"
+        },
+        {
+          "name": "files_committed",
+          "ok": true,
+          "detail": "committed"
+        }
+      ],
+      "baseline": null,
+      "baseline_note": "no run of this package has been merged"
+    }
+  ]
 }
