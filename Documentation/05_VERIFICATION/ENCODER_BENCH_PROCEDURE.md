@@ -12,7 +12,7 @@ This procedure produces one evidence record per fitted axis, five in total, offe
 
 ## Steps
 
-1. Run `python3 RaspberryPi_Sensor_Hub/tools/spi_link_probe.py --snapshot`. Note `git_hash_abbrev` and the dirty flag. If the dirty flag is set, stop: the record cannot satisfy a matrix row.
+1. Run `python3 RaspberryPi_Sensor_Hub/tools/spi_link_probe.py --snapshot`, so the `VERSION` and sensor lines come from one run. From the `VERSION` line, note `git_hash_abbrev` and `dirty`. If `dirty=yes` (`build_flags` bit 0 set), stop: the record cannot satisfy a matrix row.
 2. For each fitted axis (0, 1, 2, 4 and 5):
    1. Take a reading at rest.
    2. Move that joint, or for axes 4 and 5 that motor shaft, by hand.
@@ -30,7 +30,7 @@ File each record as `Documentation/05_VERIFICATION/evidence/<date>-enc-axis<N>.m
 |---|---|
 | Date | YYYY-MM-DD |
 | Requirement IDs | SYS-ENC-001 |
-| Firmware identity | `git_hash_abbrev` and `build_flags` bit 0 from the probe output; Pi commit hash |
+| Firmware identity | `git_hash_abbrev` and `dirty` (`build_flags` bit 0) from the probe's `VERSION` line; Pi commit hash |
 | Hardware or rig | STM32 board, axis N, mux channel N+2, cable |
 | Procedure | The steps above, with the probe command used |
 | Result | Pass or fail: both readings valid, `raw_angle` differs, timestamp increased; the two readings and timestamps |

@@ -8,7 +8,9 @@ silent MISO, a byte-shifted frame, a firmware that rejects the request, and a
 firmware that never answers all look identical through the normal client.
 
 Read-only: it clocks GET_VERSION once, then GET_STATUS, and reports. It changes
-no device state beyond the sequence numbers it consumes.
+no device state beyond the sequence numbers it consumes. The VERSION reply is
+printed decoded (firmware version, git hash, build flags with the dirty bit,
+protocol version, commit epoch).
 
 With --snapshot it also clocks GET_SNAPSHOT once and prints the decoded sensor
 records (id, validity flag names, angles, timestamp), still read-only.
@@ -38,6 +40,7 @@ from spi.spi_protocol import (  # noqa: E402
     SENSOR_VALIDITY_SAMPLE_VALID,
     SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED,
     SpiFrame,
+    VersionInfo,
     decode_snapshot_sensor_records,
     initial_sequence,
 )
@@ -71,6 +74,20 @@ def snapshot_lines(raw: bytes) -> list[str]:
                      f'raw_angle={record.raw_angle} processed_mdeg={record.processed_angle_mdeg} '
                      f'timestamp_us={record.measurement_timestamp_us}')
     return lines
+
+
+def version_lines(raw: bytes) -> list[str]:
+    """One decoded line when raw is a VERSION frame, otherwise no lines."""
+    try:
+        frame = SpiFrame.decode(raw)
+        if frame.message_type is not MessageType.VERSION:
+            return []
+        v = VersionInfo.decode(frame.payload)
+    except ValueError as exc:
+        return [f'     VERSION payload undecodable ({exc})']
+    return [f'     firmware_version={v.firmware_version} git_hash_abbrev={v.git_hash} '
+            f'build_flags=0x{v.build_flags:02x} dirty={"yes" if v.is_dirty_build else "no"} '
+            f'protocol_version={v.protocol_version} commit_epoch_secs={v.commit_epoch_secs}']
 
 
 def classify(raw: bytes) -> str:
@@ -165,6 +182,8 @@ def main() -> int:
             replies[decoded.split(' ')[0]] = replies.get(decoded.split(' ')[0], 0) + 1
 
             print(f'tx{index:02d} sent {kind.name:12s} -> {decoded}')
+            for line in version_lines(raw):
+                print(line)
             if args.snapshot:
                 for line in snapshot_lines(raw):
                     print(line)
