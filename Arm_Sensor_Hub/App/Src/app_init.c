@@ -36,7 +36,26 @@ static const App_MksMotorConfig s_mks_motors[] = {
  * SD1 is unpopulated. Rewiring the arm means editing only this table.
  */
 static const uint8_t s_sensor_mux_channels[SENSOR_TASK_AXIS_COUNT] = {
-    2u, 3u, 4u, 5u, 6u, 7u
+    2u,  /* 0 Joint X */
+    3u,  /* 1 Joint Y */
+    4u,  /* 2 Joint Z */
+    5u,  /* 3 Wrist Joint 1 */
+    6u,  /* 4 Differential Motor 1 */
+    7u   /* 5 Differential Motor 2 */
+};
+
+/*
+ * Encoder-fitted table, commissioning facts 2026-10-04 (Lenton Neale). It must
+ * match SYSTEM_CONFIGURATION.md section 2.1. An unfitted axis is never read and
+ * is reported NOT_FITTED, not as a fault. Axes 4 and 5 are raw motor-shaft angles.
+ */
+static const bool s_sensor_encoder_fitted[SENSOR_TASK_AXIS_COUNT] = {
+    true,   /* 0 Joint X */
+    true,   /* 1 Joint Y */
+    true,   /* 2 Joint Z */
+    false,  /* 3 Wrist Joint 1 */
+    true,   /* 4 Differential Motor 1 */
+    true    /* 5 Differential Motor 2 */
 };
 
 static const JointMapping_Record s_joint_mapping[] = {
@@ -101,6 +120,11 @@ void App_Init(void)
                                         sizeof(s_sensor_mux_channels) / sizeof(s_sensor_mux_channels[0]));
     if (!s_sensor_channels_valid) {
         g_app_sensor_configure_failures_dbg++;
+    }
+    if (!SensorTask_ConfigureFittedAxes(s_sensor_encoder_fitted,
+                                        sizeof(s_sensor_encoder_fitted) / sizeof(s_sensor_encoder_fitted[0]))) {
+        g_app_sensor_configure_failures_dbg++;
+        s_sensor_channels_valid = false;
     }
     CanService_Init();
     if (s_mapping_valid) {

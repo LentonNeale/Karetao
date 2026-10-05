@@ -216,6 +216,68 @@ class VersionInfo:
                 f'protocol {self.protocol_version} commit_epoch {self.commit_epoch_secs}')
 
 
+SENSOR_VALIDITY_SAMPLE_VALID = 0x0001
+SENSOR_VALIDITY_COMMUNICATION_ERROR = 0x0002
+SENSOR_VALIDITY_MAGNET_NOT_DETECTED = 0x0004
+SENSOR_VALIDITY_MAGNET_TOO_WEAK = 0x0008
+SENSOR_VALIDITY_MAGNET_TOO_STRONG = 0x0010
+SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED = 0x0020
+SENSOR_VALIDITY_NOT_FITTED = 0x0040
+SENSOR_RECORD_BYTES = 24
+SNAPSHOT_PREFIX_BYTES = 12
+_SENSOR_RECORD_STRUCT = struct.Struct('<BBHQHiHBBH')
+
+
+@dataclass(frozen=True)
+class SensorRecord:
+    """Decoded 24-byte sensor record of a SNAPSHOT (0x01) payload.
+
+    Layout: spi_payload_layout.h (SPI_SENSOR_RECORD_*) and SPI_PAYLOAD_SCHEMA.md.
+    """
+
+    sensor_id: int
+    status: int
+    validity_flags: int
+    measurement_timestamp_us: int
+    raw_angle: int
+    processed_angle_mdeg: int
+    magnitude: int
+    agc: int
+
+    @classmethod
+    def decode(cls, record: bytes) -> 'SensorRecord':
+        if len(record) != SENSOR_RECORD_BYTES:
+            raise ValueError('unexpected sensor record size')
+        (sensor_id, status, validity_flags, timestamp_us, raw_angle, processed_angle_mdeg,
+         magnitude, agc, reserved, reserved_2) = _SENSOR_RECORD_STRUCT.unpack(record)
+        if reserved or reserved_2:
+            raise ValueError('non-zero reserved bytes in sensor record')
+        return cls(sensor_id=sensor_id, status=status, validity_flags=validity_flags,
+                   measurement_timestamp_us=timestamp_us, raw_angle=raw_angle,
+                   processed_angle_mdeg=processed_angle_mdeg, magnitude=magnitude, agc=agc)
+
+    @property
+    def is_valid(self) -> bool:
+        return bool(self.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID)
+
+    @property
+    def is_not_fitted(self) -> bool:
+        """True when the axis has no encoder in the commissioning table."""
+        return bool(self.validity_flags & SENSOR_VALIDITY_NOT_FITTED)
+
+
+def decode_snapshot_sensor_records(payload: bytes) -> list[SensorRecord]:
+    """Decode the sensor records of a SNAPSHOT payload (sensor_count at offset 1)."""
+    if len(payload) < SNAPSHOT_PREFIX_BYTES:
+        raise ValueError('SNAPSHOT payload shorter than its prefix')
+    sensor_count = payload[1]
+    end = SNAPSHOT_PREFIX_BYTES + sensor_count * SENSOR_RECORD_BYTES
+    if len(payload) < end:
+        raise ValueError('SNAPSHOT payload shorter than its sensor records')
+    return [SensorRecord.decode(payload[offset:offset + SENSOR_RECORD_BYTES])
+            for offset in range(SNAPSHOT_PREFIX_BYTES, end, SENSOR_RECORD_BYTES)]
+
+
 TIME_SYNC_PAYLOAD_BYTES = 16
 TIME_SYNC_SCHEMA_VERSION = 1
 COMMAND_REPLY_PAYLOAD_BYTES = 12

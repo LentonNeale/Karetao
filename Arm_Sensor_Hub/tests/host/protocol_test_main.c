@@ -454,6 +454,25 @@ static void TestSensorLatestValue(void)
     assert(record.freshness == SENSOR_FRESHNESS_INVALID);
     assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) == 0u);
     assert((record.validity_flags & SENSOR_VALIDITY_COMMUNICATION_ERROR) != 0u);
+
+    SensorLatestValue_SetNotFitted(NULL, UINT64_C(3000));
+    SensorLatestValue_SetNotFitted(&record, UINT64_C(3000));
+    assert(record.validity_flags == SENSOR_VALIDITY_NOT_FITTED);
+    assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) == 0u);
+    assert((record.validity_flags & SENSOR_VALIDITY_COMMUNICATION_ERROR) == 0u);
+    assert((record.validity_flags & (SENSOR_VALIDITY_MAGNET_NOT_DETECTED |
+                                     SENSOR_VALIDITY_MAGNET_TOO_WEAK |
+                                     SENSOR_VALIDITY_MAGNET_TOO_STRONG)) == 0u);
+    assert(record.status == 0u);
+    assert(record.raw_angle_counts == 0u);
+    assert(record.processed_angle_mdeg == 0);
+    assert(record.magnitude == 0u);
+    assert(record.agc == 0u);
+    assert(record.measurement_timestamp_us == UINT64_C(3000));
+    assert(record.last_update_timestamp_us == UINT64_C(3000));
+    assert(record.synchronization_quality == TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED);
+    assert(record.freshness == SENSOR_FRESHNESS_INVALID);
+    assert(record.calibration_version == 8u);
 }
 
 static void TestMotorLatestValue(void)
@@ -510,6 +529,8 @@ static void TestSnapshotLayout(void)
     assert(SPI_SNAPSHOT_MAX_PAYLOAD_BYTES == 348u);
     assert(SPI_SNAPSHOT_MAX_FRAME_BYTES == 370u);
     assert(SPI_SNAPSHOT_MAX_FRAME_BYTES <= SPI_FRAME_MAX_BYTES);
+    assert(SPI_SENSOR_VALIDITY_NOT_FITTED == SENSOR_VALIDITY_NOT_FITTED);
+    assert(SENSOR_VALIDITY_NOT_FITTED == 0x0040u);
 }
 
 static bool SerializeTestFrame(uint8_t *frame_buffer,

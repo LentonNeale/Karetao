@@ -27,6 +27,7 @@ typedef enum
 #define SENSOR_VALIDITY_MAGNET_TOO_WEAK UINT16_C(0x0008)
 #define SENSOR_VALIDITY_MAGNET_TOO_STRONG UINT16_C(0x0010)
 #define SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED UINT16_C(0x0020)
+#define SENSOR_VALIDITY_NOT_FITTED UINT16_C(0x0040)
 
 typedef struct
 {
@@ -62,6 +63,10 @@ void SensorLatestValue_SetInvalid(Sensor_LatestValue *record,
                                   uint8_t status,
                                   uint16_t reason_flags,
                                   uint64_t update_timestamp_us);
+/**
+ * @brief Marks an axis that has no encoder fitted (never a communication error).
+ */
+void SensorLatestValue_SetNotFitted(Sensor_LatestValue *record, uint64_t update_timestamp_us);
 /**
  * @brief Executes latest value mark stale.
  */

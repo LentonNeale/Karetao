@@ -69,6 +69,8 @@
 #define SPI_SENSOR_RECORD_OFFSET_AGC UINT16_C(20)
 #define SPI_SENSOR_RECORD_OFFSET_RESERVED UINT16_C(21)
 #define SPI_SENSOR_RECORD_OFFSET_RESERVED_2 UINT16_C(22)
+/** Sensor validity bit 6: axis has no encoder in the commissioning table (SPI_PAYLOAD_SCHEMA.md). */
+#define SPI_SENSOR_VALIDITY_NOT_FITTED UINT16_C(0x0040)
 
 /** Serialized size of one fixed-width motor record within a snapshot. */
 #define SPI_MOTOR_RECORD_BYTES UINT16_C(24)

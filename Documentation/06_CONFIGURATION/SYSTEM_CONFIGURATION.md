@@ -42,22 +42,24 @@ The mapping model defines a one-to-one relationship between:
 - SensorTask uses the validated record's logical joint and AS5600 IDs to keep latest-value records at stable positions.
 - Future MotorService uses the matching logical joint, motor index, CAN ID, direction, offset, and transmission ratio when translating logical commands and feedback.
 
-### 2.1 Commissioning table (as built, 2026-09-17; recorded 2026-10-03)
+### 2.1 Commissioning table (as built, 2026-09-17; recorded 2026-10-03; joint names and encoders fitted 2026-10-04)
 
 This table is the only statement of which axes carry an encoder, which TCA9548A channel each uses and which MKS motor each maps to (SYS-ENC-003). The tables in `Arm_Sensor_Hub/App/Src/app_init.c` implement it and must match it; a mismatch is a defect in whichever side was changed without the other.
 
 | Axis (logical ID) | Joint name | Encoder fitted | Mux channel | Motor index | CAN ID | MKS model | MKS firmware | Direction | Zero offset | Ratio | Basis |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 0 | unknown | unknown | 2 | 0 | 0x001 | SERVO42 (CAN_SERVICE_MKS_SERVO42) | unknown | +1 | 0 | 1/1 | as built (app_init.c) |
-| 1 | unknown | unknown | 3 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
-| 2 | unknown | unknown | 4 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
-| 3 | unknown | unknown | 5 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
-| 4 | unknown | unknown | 6 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
-| 5 | unknown | unknown | 7 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c) |
+| 0 | Joint X | yes | 2 | 0 | 0x001 | SERVO42 (CAN_SERVICE_MKS_SERVO42) | unknown | +1 | 0 | 1/1 | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04 |
+| 1 | Joint Y | yes | 3 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04 |
+| 2 | Joint Z | yes | 4 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04 |
+| 3 | Wrist Joint 1 | no | 5 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04 |
+| 4 | Differential Motor 1 | yes | 6 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04; coupled-joint meaning deferred (SD-26) |
+| 5 | Differential Motor 2 | yes | 7 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04; coupled-joint meaning deferred (SD-26) |
 
 Logical axis N maps to mux channel N+2. Channel SD0 carries the bench sensor and is excluded; SD1 is unpopulated.
 
-Cells marked unknown are facts only the maintainer can supply; they are filled in the Design stage of the sprint that needs them. Until an axis's Encoder fitted cell is set, the firmware treats the axis as fitted (current behaviour) and an absent encoder reads as a communication error; SYS-ENC-002 changes that once implemented.
+Axes 4 and 5 report the raw angle of each motor shaft; no end-effector or coupled-joint meaning is given (SD-26 deferred).
+
+The Encoder fitted column is implemented by `s_sensor_encoder_fitted` in `Arm_Sensor_Hub/App/Src/app_init.c`. An axis marked no is published as NOT_FITTED (validity bit 6) and is never a fault (SYS-ENC-002). Cells still marked unknown are facts only the maintainer can supply; they are filled in the sprint that needs them.
 
 Full commissioning is required before gated motion on an axis (charter goal 4).
 

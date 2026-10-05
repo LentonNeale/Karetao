@@ -16,7 +16,24 @@ from spi.spi_protocol import (
     decode_command_reply,
     encode_time_sync_payload,
     extract_time_sync_from_ack_nack,
+    SENSOR_RECORD_BYTES,
+    SENSOR_VALIDITY_COMMUNICATION_ERROR,
+    SENSOR_VALIDITY_MAGNET_NOT_DETECTED,
+    SENSOR_VALIDITY_MAGNET_TOO_STRONG,
+    SENSOR_VALIDITY_MAGNET_TOO_WEAK,
+    SENSOR_VALIDITY_NOT_FITTED,
+    SENSOR_VALIDITY_SAMPLE_VALID,
+    SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED,
+    SNAPSHOT_PREFIX_BYTES,
+    SensorRecord,
+    decode_snapshot_sensor_records,
 )
+
+
+def _sensor_record(sensor_id: int, flags: int, timestamp_us: int = 0, raw_angle: int = 0,
+                   processed_mdeg: int = 0, magnitude: int = 0, agc: int = 0) -> bytes:
+    return struct.pack('<BBHQHiHBBH', sensor_id, 0, flags, timestamp_us, raw_angle,
+                       processed_mdeg, magnitude, agc, 0, 0)
 
 
 class SpiProtocolTests(unittest.TestCase):
@@ -247,6 +264,57 @@ class TimeSyncFrameExtensionTests(unittest.TestCase):
         pi_time_us, sync_seq = result
         self.assertEqual(pi_time_us, 1234567)
         self.assertEqual(sync_seq, 50)
+
+    def test_sensor_validity_constants(self) -> None:
+        self.assertEqual(SENSOR_VALIDITY_SAMPLE_VALID, 0x0001)
+        self.assertEqual(SENSOR_VALIDITY_COMMUNICATION_ERROR, 0x0002)
+        self.assertEqual(SENSOR_VALIDITY_MAGNET_NOT_DETECTED, 0x0004)
+        self.assertEqual(SENSOR_VALIDITY_MAGNET_TOO_WEAK, 0x0008)
+        self.assertEqual(SENSOR_VALIDITY_MAGNET_TOO_STRONG, 0x0010)
+        self.assertEqual(SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED, 0x0020)
+        self.assertEqual(SENSOR_VALIDITY_NOT_FITTED, 0x0040)
+        self.assertEqual(struct.calcsize('<BBHQHiHBBH'), SENSOR_RECORD_BYTES)
+
+    def test_sensor_record_not_fitted_decode(self) -> None:
+        record = SensorRecord.decode(_sensor_record(3, SENSOR_VALIDITY_NOT_FITTED))
+        self.assertTrue(record.is_not_fitted)
+        self.assertFalse(record.is_valid)
+        self.assertEqual(record.sensor_id, 3)
+        self.assertEqual(record.raw_angle, 0)
+        self.assertEqual(record.processed_angle_mdeg, 0)
+
+    def test_sensor_record_valid_round_trip(self) -> None:
+        flags = SENSOR_VALIDITY_SAMPLE_VALID | SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED
+        record = SensorRecord.decode(_sensor_record(1, flags, 123456789, 2048, -45000, 1500, 90))
+        self.assertTrue(record.is_valid)
+        self.assertFalse(record.is_not_fitted)
+        self.assertEqual(record.validity_flags, flags)
+        self.assertEqual(record.measurement_timestamp_us, 123456789)
+        self.assertEqual(record.raw_angle, 2048)
+        self.assertEqual(record.processed_angle_mdeg, -45000)
+        self.assertEqual(record.magnitude, 1500)
+        self.assertEqual(record.agc, 90)
+
+    def test_sensor_record_reject_short_payload(self) -> None:
+        with self.assertRaises(ValueError):
+            SensorRecord.decode(b'\x00' * (SENSOR_RECORD_BYTES - 1))
+
+    def test_sensor_record_reject_nonzero_reserved(self) -> None:
+        raw = bytearray(_sensor_record(0, 0))
+        raw[21] = 1
+        with self.assertRaises(ValueError):
+            SensorRecord.decode(bytes(raw))
+
+    def test_decode_snapshot_sensor_records(self) -> None:
+        prefix = struct.pack('<BBB', 1, 2, 0) + b'\x00' * (SNAPSHOT_PREFIX_BYTES - 3)
+        payload = (prefix + _sensor_record(0, SENSOR_VALIDITY_SAMPLE_VALID)
+                   + _sensor_record(1, SENSOR_VALIDITY_NOT_FITTED))
+        records = decode_snapshot_sensor_records(payload)
+        self.assertEqual([r.sensor_id for r in records], [0, 1])
+        self.assertTrue(records[0].is_valid)
+        self.assertTrue(records[1].is_not_fitted)
+        with self.assertRaises(ValueError):
+            decode_snapshot_sensor_records(payload[:-1])
 
 
 if __name__ == '__main__':
