@@ -74,6 +74,16 @@ void SensorTask_Init(void);
  */
 bool SensorTask_ConfigureMuxChannels(const uint8_t *mux_channels, size_t count);
 /**
+ * @brief Declare which logical axes carry an encoder.
+ *
+ * `encoder_fitted[axis]` false marks the axis NOT_FITTED: bring-up and polling
+ * never address it and its record carries only the NOT_FITTED validity bit, with
+ * no fault. The default, until this is called, is every axis fitted. Returns
+ * false when the table is NULL, the count is not SENSOR_TASK_AXIS_COUNT, or the
+ * service is already ACTIVE.
+ */
+bool SensorTask_ConfigureFittedAxes(const bool *encoder_fitted, size_t count);
+/**
  * @brief Executes task activate.
  */
 Lifecycle_Result SensorTask_Activate(void);

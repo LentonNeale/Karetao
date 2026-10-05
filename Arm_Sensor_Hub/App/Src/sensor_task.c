@@ -19,6 +19,7 @@
 static AS5600_Device s_encoders[SENSOR_TASK_RECORD_COUNT];
 static SensorTask_BringupSnapshot s_snapshot;
 static Sensor_LatestValue s_latest_values[SENSOR_TASK_RECORD_COUNT];
+static bool s_axis_fitted[SENSOR_TASK_RECORD_COUNT];
 static Lifecycle_Record s_lifecycle;
 static uint32_t s_last_poll_tick;
 static uint32_t s_diag_word;
@@ -56,6 +57,7 @@ static void SensorTask_RunInitChecks(void)
 	uint64_t ts;
 	uint8_t channel;
 	uint32_t healthy_channels = 0u;
+	uint32_t fitted_channels = 0u;
 
 	mux_status = TCA9548A_Probe(0x01u, &mux_readback);
 	if ((mux_status != I2C_MANAGER_STATUS_OK) || (mux_readback != 0x01u))
@@ -75,7 +77,16 @@ static void SensorTask_RunInitChecks(void)
 	for (channel = 0u; channel < SENSOR_TASK_RECORD_COUNT; ++channel)
 	{
 		uint8_t sensor_status = 0u;
-		AS5600_Status sensor_result = AS5600_ReadStatus(&s_encoders[channel], &sensor_status, &ts);
+		AS5600_Status sensor_result;
+
+		if (!s_axis_fitted[channel])
+		{
+			SensorLatestValue_SetNotFitted(&s_latest_values[channel], TimeService_NowUs());
+			continue;
+		}
+
+		fitted_channels++;
+		sensor_result = AS5600_ReadStatus(&s_encoders[channel], &sensor_status, &ts);
 		if (sensor_result == AS5600_STATUS_OK)
 		{
 			healthy_channels++;
@@ -92,7 +103,8 @@ static void SensorTask_RunInitChecks(void)
 		}
 	}
 
-	if (healthy_channels < SENSOR_TASK_MIN_HEALTHY_CHANNELS)
+	/* The threshold applies to fitted axes; with none fitted there is nothing to require. */
+	if ((fitted_channels > 0u) && (healthy_channels < SENSOR_TASK_MIN_HEALTHY_CHANNELS))
 	{
 		(void)Lifecycle_Fail(&s_lifecycle, (uint32_t)AS5600_STATUS_NOT_READY);
 		s_snapshot.result = SENSOR_TASK_BRINGUP_FAIL_COMM;
@@ -199,6 +211,7 @@ void SensorTask_Init(void)
 	for (record_index = 0u; record_index < SENSOR_TASK_RECORD_COUNT; ++record_index)
 	{
 		AS5600_InitDevice(&s_encoders[record_index], record_index);
+		s_axis_fitted[record_index] = true;
 		SensorLatestValue_Init(&s_latest_values[record_index],
 		                       record_index,
 		                       record_index,
@@ -253,6 +266,33 @@ bool SensorTask_ConfigureMuxChannels(const uint8_t *mux_channels, size_t count)
 	return true;
 }
 
+bool SensorTask_ConfigureFittedAxes(const bool *encoder_fitted, size_t count)
+{
+	size_t axis;
+
+	if ((encoder_fitted == NULL) || (count != SENSOR_TASK_RECORD_COUNT))
+	{
+		return false;
+	}
+
+	/* Changing which axes are read on a live acquisition path is not allowed. */
+	if (Lifecycle_IsActive(&s_lifecycle))
+	{
+		return false;
+	}
+
+	for (axis = 0u; axis < count; ++axis)
+	{
+		s_axis_fitted[axis] = encoder_fitted[axis];
+		if (!s_axis_fitted[axis])
+		{
+			SensorLatestValue_SetNotFitted(&s_latest_values[axis], TimeService_NowUs());
+		}
+	}
+
+	return true;
+}
+
 Lifecycle_Result SensorTask_Activate(void)
 {
 	return Lifecycle_Apply(&s_lifecycle, LIFECYCLE_TRANSITION_ACTIVATE, true, 0u);
@@ -295,6 +335,12 @@ void SensorTask_Process(void)
 	 */
 	for (channel = 0u; channel < SENSOR_TASK_RECORD_COUNT; ++channel)
 	{
+		if (!s_axis_fitted[channel])
+		{
+			SensorLatestValue_SetNotFitted(&s_latest_values[channel], TimeService_NowUs());
+			continue;
+		}
+
 		SensorTask_ProcessChannel(channel, &time_sync_snapshot);
 	}
 

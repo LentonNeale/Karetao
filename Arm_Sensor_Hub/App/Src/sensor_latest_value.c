@@ -87,6 +87,25 @@ void SensorLatestValue_SetInvalid(Sensor_LatestValue *record,
     record->freshness = SENSOR_FRESHNESS_INVALID;
 }
 
+void SensorLatestValue_SetNotFitted(Sensor_LatestValue *record, uint64_t update_timestamp_us)
+{
+    if (record == NULL)
+    {
+        return;
+    }
+
+    record->raw_angle_counts = 0u;
+    record->processed_angle_mdeg = 0;
+    record->magnitude = 0u;
+    record->agc = 0u;
+    record->status = 0u;
+    record->validity_flags = SENSOR_VALIDITY_NOT_FITTED;
+    record->measurement_timestamp_us = update_timestamp_us;
+    record->last_update_timestamp_us = update_timestamp_us;
+    record->synchronization_quality = TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED;
+    record->freshness = SENSOR_FRESHNESS_INVALID;
+}
+
 /**
  * @brief Executes latest value mark stale.
  */

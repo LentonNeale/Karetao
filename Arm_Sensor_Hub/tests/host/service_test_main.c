@@ -812,6 +812,58 @@ static void TestSensorTaskMuxMapping(void)
     }
 }
 
+static void TestSensorTaskNotFitted(void)
+{
+    static const uint8_t commissioned[SENSOR_TASK_AXIS_COUNT] = {2u, 3u, 4u, 5u, 6u, 7u};
+    static const bool fitted[SENSOR_TASK_AXIS_COUNT] = {true, true, true, false, true, true};
+    size_t record_count = 0u;
+    const Sensor_LatestValue *records;
+    uint32_t write;
+    size_t axis;
+
+    TCA9548A_Init(TCA9548A_ADDR_0);
+    SensorTask_Init();
+    assert(SensorTask_ConfigureMuxChannels(commissioned, SENSOR_TASK_AXIS_COUNT));
+
+    assert(!SensorTask_ConfigureFittedAxes(NULL, SENSOR_TASK_AXIS_COUNT));
+    assert(!SensorTask_ConfigureFittedAxes(fitted, SENSOR_TASK_AXIS_COUNT - 1u));
+    assert(SensorTask_ConfigureFittedAxes(fitted, SENSOR_TASK_AXIS_COUNT));
+    assert(SensorTask_Activate() == LIFECYCLE_RESULT_OK);
+    assert(!SensorTask_ConfigureFittedAxes(fitted, SENSOR_TASK_AXIS_COUNT));
+
+    /* Bring-up never addresses SD5, the mux channel of the unfitted axis 3. */
+    s_i2c_rx_payloads[0][0] = 0x01u;
+    s_hal_tick = 20u;
+    SensorTask_Process();
+    for (write = 0u; write < s_i2c_write_count; ++write) {
+        assert(s_i2c_writes[write].data[0] != (1u << 5u));
+    }
+    assert(SensorTask_GetBringupResult() == SENSOR_TASK_BRINGUP_PASS);
+    assert(SensorTask_GetBringupSnapshot()->comm_error_count == 0u);
+
+    /* Polling does not address it either, and keeps refreshing the record. */
+    s_i2c_write_count = 0u;
+    s_i2c_tx_call_count = 0u;
+    s_i2c_rx_call_count = 0u;
+    s_hal_tick = 40u;
+    SensorTask_Process();
+    for (write = 0u; write < s_i2c_write_count; ++write) {
+        assert(s_i2c_writes[write].data[0] != (1u << 5u));
+    }
+    assert(SensorTask_GetBringupSnapshot()->comm_error_count == 0u);
+
+    records = SensorTask_GetLatestValues(&record_count);
+    assert(records != NULL);
+    assert(record_count == SENSOR_TASK_AXIS_COUNT);
+    for (axis = 0u; axis < record_count; ++axis) {
+        if (axis == 3u) {
+            assert(records[axis].validity_flags == SENSOR_VALIDITY_NOT_FITTED);
+        } else {
+            assert((records[axis].validity_flags & SENSOR_VALIDITY_NOT_FITTED) == 0u);
+        }
+    }
+}
+
 static void TestCanServiceCore(void)
 {
     assert(CanService_RegisterMotor(CAN_SERVICE_MAX_MKS_MOTORS, 0u, 0u, CAN_SERVICE_MKS_SERVO42, 1u) ==
@@ -1004,7 +1056,11 @@ static void TestSpiSlaveServiceLatestSnapshot(void)
     uint16_t motor0_offset = SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_PREFIX_BYTES +
                              (SPI_SNAPSHOT_SENSOR_RECORD_COUNT * SPI_SENSOR_RECORD_BYTES);
 
+    uint16_t sensor3_offset = sensor0_offset + (3u * SPI_SENSOR_RECORD_BYTES);
+    static const bool fitted[SENSOR_TASK_AXIS_COUNT] = {true, true, true, false, true, true};
+
     SensorTask_Init();
+    assert(SensorTask_ConfigureFittedAxes(fitted, SENSOR_TASK_AXIS_COUNT));
     CanService_Init();
     assert(CanService_RegisterMotor(0u, 0u, 1u, CAN_SERVICE_MKS_SERVO42, 0x123u) == MKS_OK);
     s_time_now_us = 700u;
@@ -1031,6 +1087,9 @@ static void TestSpiSlaveServiceLatestSnapshot(void)
     assert(frame[sensor0_offset + SPI_SENSOR_RECORD_OFFSET_AGC] == 0u);
     assert(frame[sensor1_offset + SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] == 1u);
     assert(ReadU16(&frame[sensor1_offset + SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]) == 0u);
+    assert(frame[sensor3_offset + SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] == 3u);
+    assert(ReadU16(&frame[sensor3_offset + SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]) ==
+           SPI_SENSOR_VALIDITY_NOT_FITTED);
     assert(frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX] == 0u);
     assert(ReadU16(&frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_CAN_ID]) == 0x123u);
     assert(frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] == 0u);
@@ -1060,6 +1119,9 @@ int main(void)
 
     ResetHalState();
     TestSensorTaskMuxMapping();
+
+    ResetHalState();
+    TestSensorTaskNotFitted();
 
     ResetHalState();
     TestCanServiceCore();

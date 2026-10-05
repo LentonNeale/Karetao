@@ -9,6 +9,9 @@ firmware that never answers all look identical through the normal client.
 
 Read-only: it clocks GET_VERSION once, then GET_STATUS, and reports. It changes
 no device state beyond the sequence numbers it consumes.
+
+With --snapshot it also clocks GET_SNAPSHOT once and prints the decoded sensor
+records (id, validity flag names, angles, timestamp), still read-only.
 """
 
 from __future__ import annotations
@@ -27,11 +30,47 @@ from spi.spi_protocol import (  # noqa: E402
     MAGIC,
     MessageType,
     NackReason,
+    SENSOR_VALIDITY_COMMUNICATION_ERROR,
+    SENSOR_VALIDITY_MAGNET_NOT_DETECTED,
+    SENSOR_VALIDITY_MAGNET_TOO_STRONG,
+    SENSOR_VALIDITY_MAGNET_TOO_WEAK,
+    SENSOR_VALIDITY_NOT_FITTED,
+    SENSOR_VALIDITY_SAMPLE_VALID,
+    SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED,
     SpiFrame,
+    decode_snapshot_sensor_records,
     initial_sequence,
 )
 
 MAGIC_LE = struct.pack('<H', MAGIC)
+
+VALIDITY_FLAG_NAMES = (
+    (SENSOR_VALIDITY_SAMPLE_VALID, 'SAMPLE_VALID'),
+    (SENSOR_VALIDITY_COMMUNICATION_ERROR, 'COMMUNICATION_ERROR'),
+    (SENSOR_VALIDITY_MAGNET_NOT_DETECTED, 'MAGNET_NOT_DETECTED'),
+    (SENSOR_VALIDITY_MAGNET_TOO_WEAK, 'MAGNET_TOO_WEAK'),
+    (SENSOR_VALIDITY_MAGNET_TOO_STRONG, 'MAGNET_TOO_STRONG'),
+    (SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED, 'TIMESTAMP_SYNCHRONIZED'),
+    (SENSOR_VALIDITY_NOT_FITTED, 'NOT_FITTED'),
+)
+
+
+def snapshot_lines(raw: bytes) -> list[str]:
+    """One line per sensor record when raw is a SNAPSHOT frame, otherwise no lines."""
+    try:
+        frame = SpiFrame.decode(raw)
+        if frame.message_type is not MessageType.SNAPSHOT:
+            return []
+        records = decode_snapshot_sensor_records(frame.payload)
+    except ValueError as exc:
+        return [f'     snapshot sensor records undecodable ({exc})']
+    lines = []
+    for record in records:
+        names = [name for bit, name in VALIDITY_FLAG_NAMES if record.validity_flags & bit]
+        lines.append(f'     sensor {record.sensor_id}: flags={"|".join(names) or "none"} '
+                     f'raw_angle={record.raw_angle} processed_mdeg={record.processed_angle_mdeg} '
+                     f'timestamp_us={record.measurement_timestamp_us}')
+    return lines
 
 
 def classify(raw: bytes) -> str:
@@ -83,6 +122,10 @@ def main() -> int:
                              'fixed delay. This is what the transaction is actually gated on, '
                              'so prefer it over --interval-ms when diagnosing corruption.')
     parser.add_argument('--data-ready-line', type=int, default=DEFAULT_DATA_READY_LINE)
+    parser.add_argument('--snapshot', action='store_true',
+                        help='Also send GET_SNAPSHOT (as the second request) and print each '
+                             'sensor record from its reply, which arrives on the next transfer. '
+                             'Needs at least 3 transactions.')
     args = parser.parse_args()
 
     data_ready = DataReadyWatcher(line_offset=args.data_ready_line) if args.data_ready else None
@@ -100,6 +143,8 @@ def main() -> int:
             # Ask for the version first; later transfers clock out its reply,
             # since the device stages a response only after reading the request.
             kind = MessageType.GET_VERSION if index == 0 else MessageType.GET_STATUS
+            if args.snapshot and index == 1:
+                kind = MessageType.GET_SNAPSHOT
             request = SpiFrame(message_type=kind, seq=sequence + index, payload=b'\x01')
             if data_ready is not None:
                 t0 = time.monotonic()
@@ -120,6 +165,9 @@ def main() -> int:
             replies[decoded.split(' ')[0]] = replies.get(decoded.split(' ')[0], 0) + 1
 
             print(f'tx{index:02d} sent {kind.name:12s} -> {decoded}')
+            if args.snapshot:
+                for line in snapshot_lines(raw):
+                    print(line)
             if 'magic at offset 0' not in shape:
                 print(f'     {shape}')
                 print(f'     first 24 bytes: {raw[:24].hex(" ")}')
