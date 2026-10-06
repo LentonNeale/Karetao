@@ -1,7 +1,7 @@
 {
   "version": 1,
   "next_id": {
-    "package": 8,
+    "package": 9,
     "decision": 4
   },
   "packages": [
@@ -143,6 +143,26 @@
       "status": "closed",
       "created": "2026-10-04T00:00:00+00:00",
       "closed": "2026-10-04T04:17:07.845632+00:00"
+    },
+    {
+      "id": "WP8",
+      "title": "Code checked against the baselined documentation",
+      "type": "investigation",
+      "entry": "design",
+      "target": "design",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "Seven audit areas reviewed read-only, one Portal run each: SPI wire format, CAN and MKS, time and sync, lifecycle/health/gate, parameters, Pi host and tools, trail",
+        "Each area is checked against baseline/requirements/v1 and baseline/architecture/v1 and the documents that own it; no code or documentation file is edited",
+        "Every finding is a backlog story with: kind (Add, Remove, Change, Doc fault, Unknown), the SYS-*/SAFE-*/PRM-* item or contract clause, charter goal (1 to 5), files touched, bench-blocking yes/no, and size",
+        "Every Doc fault finding has a ruling by Lenton Neale; every Unknown is a question for Lenton Neale, recorded as unknown and never invented",
+        "CHARTER_ALIGNMENT_PLAN.md sections 2.4 and 11 point at the WP8 stories instead of holding their own list",
+        "Ends with the code-alignment packages re-cut from the bench-blocking stories, each targeting Implementation (host tests and Debug build pass, bench procedure and empty evidence record ready), plus one Bench bring-up and verification package for when the arm is connected"
+      ],
+      "status": "open",
+      "created": "2026-10-06T00:02:04.701957+00:00",
+      "closed": null
     }
   ],
   "decisions": [

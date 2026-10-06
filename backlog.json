@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 45,
+  "next_id": 52,
   "stories": [
     {
       "id": "B1",
@@ -766,6 +766,134 @@
       "created": "2026-10-04T02:17:30.109976+00:00",
       "done_at": null,
       "package": "WP7"
+    },
+    {
+      "id": "B45",
+      "title": "WP8.1 Audit the SPI wire format",
+      "story": "As the maintainer I want the C and Python SPI framing checked against the SPI contract and against each other so that the code-alignment work is planned from evidence, not from memory.",
+      "acceptance": [
+        "spi_protocol.c, spi_payload_layout.h, spi_slave_service.c, spi_data_ready.c and spi_protocol.py checked against SPI_SYSTEM_INTERFACE.md and SPI_PAYLOAD_SCHEMA.md: header, message-type IDs, payload layouts, CRC32, frame limit, validity bits",
+        "The C and Python sides compared field by field; every lockstep mismatch is a finding",
+        "Messages the contract defines but code lacks (DIAGNOSTIC, GET_DIAGNOSTIC, SET_MOTOR_COMMAND, ACK/NACK) and code messages the contract does not define are listed",
+        "Read-only: no code or documentation file is changed; the report stays in the run folder",
+        "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-06T00:02:04.702776+00:00",
+      "done_at": null,
+      "package": "WP8"
+    },
+    {
+      "id": "B46",
+      "title": "WP8.2 Audit CAN and the MKS servo path",
+      "story": "As the maintainer I want the CAN tasks, MksServo middleware and commissioning tables checked against the CAN contract and configuration so that the code-alignment work is planned from evidence, not from memory.",
+      "acceptance": [
+        "CAN tasks, MksServo (through mks_api.h) and the app_init.c motor and mapping tables checked against CAN_SYSTEM_INTERFACE.md, SYSTEM_CONFIGURATION.md and the MKS references in icm-project/references",
+        "Bitrate as generated against PRM-CAN-02/03, polling coverage of six motors, timeouts and error handling are each recorded",
+        "Read-only: no code or documentation file is changed; the report stays in the run folder",
+        "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-06T00:02:04.702806+00:00",
+      "done_at": null,
+      "package": "WP8"
+    },
+    {
+      "id": "B47",
+      "title": "WP8.3 Audit time and clock sync",
+      "story": "As the maintainer I want time_service and the TIME_SYNC path checked against the TIME contract and the Issue #12 decisions so that the code-alignment work is planned from evidence, not from memory.",
+      "acceptance": [
+        "time_service, TIME_SYNC handling and snapshot timestamps checked against TIME_SYSTEM_INTERFACE.md and ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md",
+        "What must be added (ISR raw capture, request_received_local_us, Pi-side ClockSync) and removed (STM32-held offset, TIME_SYNC) is listed per file, with As-built documents noted",
+        "Read-only: no code or documentation file is changed; the report stays in the run folder",
+        "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-06T00:02:04.702816+00:00",
+      "done_at": null,
+      "package": "WP8"
+    },
+    {
+      "id": "B48",
+      "title": "WP8.4 Audit lifecycle, health and the motion gate",
+      "story": "As the maintainer I want lifecycle, health_monitor and motion_permission checked against the safety requirements so that the code-alignment work is planned from evidence, not from memory.",
+      "acceptance": [
+        "lifecycle.c, health_monitor.c and motion_permission.c checked against SAFETY_REQUIREMENTS.md, SYS-GATE-001 and SYS-LINK-001",
+        "Gate logic beyond SYS-GATE-001 is listed for removal or a ruling; fault visibility gaps against SAFE-05 are listed",
+        "Read-only: no code or documentation file is changed; the report stays in the run folder",
+        "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-06T00:02:04.702823+00:00",
+      "done_at": null,
+      "package": "WP8"
+    },
+    {
+      "id": "B49",
+      "title": "WP8.5 Audit numbers in code against the parameter register",
+      "story": "As the maintainer I want every hard-coded number in firmware and Pi code traced to a PRM-* row or a contract constant so that the code-alignment work is planned from evidence, not from memory.",
+      "acceptance": [
+        "Every timing, rate, size, threshold and ID literal in App/, the Core USER CODE sections and RaspberryPi_Sensor_Hub/src is matched to a PRM-* row in PARAMETER_REGISTER.md or an interface contract constant",
+        "Numbers with no register row, and values that differ from their row, are findings; counts, dates, identifiers and versions are excluded per DOCUMENTATION_RULES.md",
+        "Read-only: no code or documentation file is changed; the report stays in the run folder",
+        "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-06T00:02:04.702829+00:00",
+      "done_at": null,
+      "package": "WP8"
+    },
+    {
+      "id": "B50",
+      "title": "WP8.6 Audit the Pi host side and tools",
+      "story": "As the maintainer I want the Pi source and tools checked against the HOST contract and the charter non-goals so that the code-alignment work is planned from evidence, not from memory.",
+      "acceptance": [
+        "RaspberryPi_Sensor_Hub/src and tools checked against HOST_SYSTEM_INTERFACE.md and RaspberryPi_Sensor_Hub/Documentation",
+        "Code that serves a non-goal (planner, high-rate estimator, ROS 2) is listed for removal; missing host pieces needed for bench testing are listed",
+        "Read-only: no code or documentation file is changed; the report stays in the run folder",
+        "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-06T00:02:04.702833+00:00",
+      "done_at": null,
+      "package": "WP8"
+    },
+    {
+      "id": "B51",
+      "title": "WP8.7 Audit the verification trail",
+      "story": "As the maintainer I want every matrix row traced to the code module and test it names so that the code-alignment work is planned from evidence, not from memory.",
+      "acceptance": [
+        "Every row of SYSTEM_VERIFICATION_MATRIX.md: the named code module and test exist and cover the requirement, or the row says none yet with an issue",
+        "Host tests and Pi tests that test nothing in the baseline, and requirements with no test, are listed",
+        "Closes the sprint with the re-cut proposal for the code-alignment packages (WP8 acceptance item 6) for Lenton Neale to approve",
+        "Read-only: no code or documentation file is changed; the report stays in the run folder",
+        "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-06T00:02:04.702837+00:00",
+      "done_at": null,
+      "package": "WP8"
     }
   ]
 }
