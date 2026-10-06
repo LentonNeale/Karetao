@@ -45,9 +45,9 @@
         "One evidence record per fitted axis (EVIDENCE_RECORD_FORMAT.md, VERSION identity) accepted in SYSTEM_VERIFICATION_MATRIX.md (SYS-ENC-001)",
         "Register item LIVE-17 and its GitHub issues closed"
       ],
-      "status": "open",
+      "status": "closed",
       "created": "2026-10-03T17:48:59.658991+00:00",
-      "closed": null,
+      "closed": "2026-10-05T23:17:47.546554+00:00",
       "definition": "2026-10-06-fix-version-lines-bad-frames/brief.md"
     },
     {
@@ -65,9 +65,9 @@
         "Bench evidence at rest and during motion accepted in the matrix for SYS-MOT-001, SYS-MOT-002 and SYS-TS-001",
         "Register items LIVE-18 and LIVE-19 closed"
       ],
-      "status": "open",
+      "status": "dropped",
       "created": "2026-10-03T17:48:59.659003+00:00",
-      "closed": null
+      "closed": "2026-10-05T23:31:06.459389+00:00"
     },
     {
       "id": "WP4",
@@ -84,9 +84,9 @@
         "Firmware and Pi parameters centralised in one header and one config that mirror the register",
         "Every evidence record carries the firmware identity from the VERSION message; timing-harness outputs filed as evidence"
       ],
-      "status": "open",
+      "status": "dropped",
       "created": "2026-10-03T17:48:59.659012+00:00",
-      "closed": null
+      "closed": "2026-10-05T23:31:13.285175+00:00"
     },
     {
       "id": "WP5",
@@ -103,9 +103,9 @@
         "Matrix rows Joint X, Y and Z verified motion reach SYSTEM_VERIFIED: gated command ACKed with motion visible in the snapshot, stop on link loss observed",
         "SAFE-01 to SAFE-05 evidence accepted; register items LIVE-20 and LIVE-21 closed"
       ],
-      "status": "open",
+      "status": "dropped",
       "created": "2026-10-03T17:48:59.659020+00:00",
-      "closed": null
+      "closed": "2026-10-05T23:31:18.005613+00:00"
     },
     {
       "id": "WP6",
@@ -120,9 +120,9 @@
         "Each of the three joints verified as for X, Y and Z: movement record, gated command, stop on link loss",
         "Matrix rows for joints 4 to 6 reach SYSTEM_VERIFIED"
       ],
-      "status": "open",
+      "status": "dropped",
       "created": "2026-10-03T17:48:59.659028+00:00",
-      "closed": null
+      "closed": "2026-10-05T23:31:22.811052+00:00"
     },
     {
       "id": "WP7",
