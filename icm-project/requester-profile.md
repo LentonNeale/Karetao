@@ -17,4 +17,5 @@ How requests for Karetao are usually made, for the Client Liaison. Edit freely; 
   alignment; its PASS at the Requirements gate is the sign-off. WP2 to WP6 are the code-alignment
   Stages 1 to 5 (fitted encoders, motor positions and timestamps, links measured, gated motion
   X/Y/Z, remaining joints). A new request for one of them is a run in that package.
+- **Output fixes:** for a fix that changes printed output, ask which exact text a test should check.
 - **Style:** plain language; short questions, a few at a time.
