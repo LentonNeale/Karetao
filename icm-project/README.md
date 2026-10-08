@@ -6,7 +6,7 @@ material stays in the shared ICM library's `icm/` folder (`~/Git_repos/icm_libra
 
 | Folder | What goes in it | Made by |
 |---|---|---|
-| `workspaces/` | A Karetao copy of a workspace, customised to this project | Management tab → Workspaces → Start guided add (`workspace_builder`) |
+| `workspaces/` | A Karetao workspace, or a `<name>.overlay/` folder of additions to a library workspace (`implement-step.overlay`, `pre-merge-review.overlay`: the reference routing rows and `shared/references.md`) | Management tab → Workspaces → Start guided add (`workspace_builder`) |
 | `tools/` | A deterministic Python tool with its `.md` card, specific to Karetao | Management tab → Tools → Start guided add (`tool_builder`) |
 | `skills/` | A Claude Code skill only Karetao uses | Management tab → Skills |
 | `references/` | Reference folders: vendor datasheets and manuals, standards, interface notes | Management tab → References → Start guided add (`reference-intake`), or the Research tab |

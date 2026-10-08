@@ -77,7 +77,8 @@ skills = "icm-project/skills"
 references = "icm-project/references"
 templates = "~/Git_repos/icm_library/icm/_core/templates"
 
-# The Portal's shared workspaces. Copy one into icm-project/workspaces/ and point here to customise it.
+# The Portal's shared workspaces. To customise one, add a <name>.overlay/ folder of additions in
+# icm-project/workspaces/ and name it with overlay = (see the library's CONVENTIONS.md, Overlays).
 [liaison]
 workspace = "~/Git_repos/icm_library/icm/workspaces/client-liaison"
 
@@ -85,8 +86,10 @@ workspace = "~/Git_repos/icm_library/icm/workspaces/client-liaison"
 workspace = "~/Git_repos/icm_library/icm/workspaces/request-review"
 
 [build]
-workspace = "icm-project/workspaces/implement-step"   # Karetao copy: adds reference rows
+workspace = "~/Git_repos/icm_library/icm/workspaces/implement-step"
+overlay = "icm-project/workspaces/implement-step.overlay"   # adds the reference routing rows
 test_workspace = "~/Git_repos/icm_library/icm/workspaces/test-changes"
 
 [pre_merge_review]
-workspace = "icm-project/workspaces/pre-merge-review"   # Karetao copy: adds reference rows
+workspace = "~/Git_repos/icm_library/icm/workspaces/pre-merge-review"
+overlay = "icm-project/workspaces/pre-merge-review.overlay"   # adds the reference routing rows
