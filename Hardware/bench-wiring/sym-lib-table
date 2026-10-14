@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "karetao")(type "KiCad")(uri "${KIPRJMOD}/karetao.kicad_sym")(options "")(descr "Karetao bench wiring symbols (generated)"))
+)
