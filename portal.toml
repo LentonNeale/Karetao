@@ -18,7 +18,10 @@ default = "agile"   # charter alignment plan runs as agile sprints (Backlog, Spr
 # charter-alignment sign-off (CHARTER_ALIGNMENT_PLAN.md section 3); a PASS there tags baseline/requirements/v1.
 [lifecycle]
 profile = "mechatronics"   # Intake, Requirements*, Architecture*, Design, Implementation, Bring-up, Verification*, Validation, Release* (* = gate)
-file = "lifecycle.json"
+file = "icm-project/lifecycle.json"
+
+[backlog]
+file = "icm-project/backlog.json"
 
 # The project files each baseline covers; a gate's files_committed check and the Baselines list use them.
 [lifecycle.files]

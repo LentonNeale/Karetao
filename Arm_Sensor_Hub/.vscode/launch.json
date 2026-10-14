@@ -12,8 +12,8 @@
       "runToEntryPoint": "main",
       "device": "STM32F405RG",
       "preLaunchTask": "CMake: Build Debug",
-      "serverpath": "/home/lenton/.local/share/stm32cube/bundles/stlink-gdbserver/7.14.0+st.2/bin/ST-LINK_gdbserver",
-      "stm32cubeprogrammer": "/home/lenton/.local/share/stm32cube/bundles/programmer/2.23.0/bin",
+      "serverpath": "${userHome}/.local/share/stm32cube/bundles/stlink-gdbserver/7.14.0+st.2/bin/ST-LINK_gdbserver",
+      "stm32cubeprogrammer": "${userHome}/.local/share/stm32cube/bundles/programmer/2.23.0/bin",
       "showDevDebugOutput": "raw",
 
       // This environment provides the ARM GNU binutils in /usr/bin, which is the

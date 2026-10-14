@@ -14,6 +14,9 @@ material stays in the shared ICM library's `icm/` folder (`~/Git_repos/icm_libra
 
 `requester-profile.md` tells the Client Liaison how requests here are usually phrased.
 
+`lifecycle.json` holds the work packages (Project tab: Work, Lifecycle, Map) and `backlog.json` the sprint
+stories. `portal.toml` points the Portal at both (`[lifecycle] file`, `[backlog] file`).
+
 ## Running the Portal
 
 ```bash

@@ -1,6 +1,6 @@
 # Where the Karetao project uses CRC-32/ISO-HDLC (project citations, not source citations)
 
-These rows are facts about the project, cited as `path:lines` in `/home/lenton/Git_repos/Karetao`.
+These rows are facts about the project, cited as `path:lines` in this repository.
 Parameters come from `parameters.md`; this note records what the code and docs state.
 
 | Rule | Value | Citation |

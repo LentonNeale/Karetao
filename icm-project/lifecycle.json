@@ -162,7 +162,8 @@
       ],
       "status": "open",
       "created": "2026-10-06T00:02:04.701957+00:00",
-      "closed": null
+      "closed": null,
+      "definition": "2026-10-06-new-request-2/brief.md"
     }
   ],
   "decisions": [

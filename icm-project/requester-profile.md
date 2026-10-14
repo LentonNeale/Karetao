@@ -12,8 +12,8 @@ How requests for Karetao are usually made, for the Client Liaison. Edit freely; 
   Datasheet, Derived or Provisional).
 - **Authority:** `Documentation/**` is the system authority (start at `Documentation/00_INDEX.md`);
   a request that would change a requirement, interface or safety rule goes there first.
-- **Current work:** the documentation alignment plan at `Documentation/CHARTER_ALIGNMENT_PLAN.md`, run as agile sprints; stories are in `backlog.json`.
-- **Work packages:** `lifecycle.json` (Project tab: Work, Lifecycle, Map). WP1 is the documentation
+- **Current work:** the documentation alignment plan at `Documentation/CHARTER_ALIGNMENT_PLAN.md`, run as agile sprints; stories are in `icm-project/backlog.json`.
+- **Work packages:** `icm-project/lifecycle.json` (Project tab: Work, Lifecycle, Map). WP1 is the documentation
   alignment; its PASS at the Requirements gate is the sign-off. WP2 to WP6 are the code-alignment
   Stages 1 to 5 (fitted encoders, motor positions and timestamps, links measured, gated motion
   X/Y/Z, remaining joints). A new request for one of them is a run in that package.

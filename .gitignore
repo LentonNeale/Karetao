@@ -3,3 +3,7 @@ __pycache__/
 .pytest_cache/
 Arm_Sensor_Hub/build/
 .claude/settings.local.json
+
+# Claude Code project instructions: kept local, not published
+/CLAUDE.md
+/.claude/CLAUDE.md
