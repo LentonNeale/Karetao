@@ -8,6 +8,10 @@ Replies for write commands carry the same code and `status (uint8_t)` unless sta
 | 80H precondition | The motor must be unloaded. | p. 35 |
 | 82H set working mode | DLC 3, 82H, mode (uint8_t); status = 0 Set fail. status = 1 Set success. | p. 35 |
 | 82H modes | 00H CR_OPEN; 01H CR_CLOSE; 02H CR_vFOC (default); 03H SR_OPEN; 04H SR_CLOSE; 05H SR_vFOC | p. 35 |
+| Mode maximum speeds | Open mode 400(RPM); Close mode 1500(RPM); FOC mode 3000(RPM); a set speed above the mode's maximum runs at that maximum | p. 68 |
+| Mode work current | OPEN and CLOSE: Fix, the work current is Ma; vFOC: self-adaption, the Max current is Ma | p. 20 |
+| Holding current scope | Hold Ma: Only for OPEN mode and CLOSE mode, vFOC mode is invalid (Default: 50%, the holding current at half the working current) | p. 20 |
+| Bus-control commands | The instructions in this section are only valid in bus control mode (SR_OPEN/SR_CLOSE/ SR_vFOC) | p. 68 |
 | Bus-control modes | The instructions in this section are only valid in bus control mode (SR_OPEN/SR_CLOSE/ SR_vFOC ) . | p. 68 |
 | 83H set working current | DLC 4: 83H, value (uint16_t) | p. 36 |
 | 83H maximum current | SERVO42D/28D/35D: Maximum Current =3000mA; SERVO57D: Maximum Current =5200mA | p. 36 |
