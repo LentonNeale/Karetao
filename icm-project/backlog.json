@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 52,
+  "next_id": 128,
   "stories": [
     {
       "id": "B1",
@@ -777,13 +777,14 @@
         "Messages the contract defines but code lacks (DIAGNOSTIC, GET_DIAGNOSTIC, SET_MOTOR_COMMAND, ACK/NACK) and code messages the contract does not define are listed",
         "Read-only: no code or documentation file is changed; the report stays in the run folder",
         "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
-        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer",
+        "Done 2026-10-14: report A1 to A9 of the full code review; findings re-cut as WP9 to WP16 (B52 to B125)"
       ],
       "points": 3,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-06T00:02:04.702776+00:00",
-      "done_at": null,
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
       "package": "WP8"
     },
     {
@@ -795,13 +796,14 @@
         "Bitrate as generated against PRM-CAN-02/03, polling coverage of six motors, timeouts and error handling are each recorded",
         "Read-only: no code or documentation file is changed; the report stays in the run folder",
         "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
-        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer",
+        "Done 2026-10-14: report A1 to A9 of the full code review; findings re-cut as WP9 to WP16 (B52 to B125)"
       ],
       "points": 3,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-06T00:02:04.702806+00:00",
-      "done_at": null,
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
       "package": "WP8"
     },
     {
@@ -813,13 +815,14 @@
         "What must be added (ISR raw capture, request_received_local_us, Pi-side ClockSync) and removed (STM32-held offset, TIME_SYNC) is listed per file, with As-built documents noted",
         "Read-only: no code or documentation file is changed; the report stays in the run folder",
         "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
-        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer",
+        "Done 2026-10-14: report A1 to A9 of the full code review; findings re-cut as WP9 to WP16 (B52 to B125)"
       ],
       "points": 2,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-06T00:02:04.702816+00:00",
-      "done_at": null,
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
       "package": "WP8"
     },
     {
@@ -831,13 +834,14 @@
         "Gate logic beyond SYS-GATE-001 is listed for removal or a ruling; fault visibility gaps against SAFE-05 are listed",
         "Read-only: no code or documentation file is changed; the report stays in the run folder",
         "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
-        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer",
+        "Done 2026-10-14: report A1 to A9 of the full code review; findings re-cut as WP9 to WP16 (B52 to B125)"
       ],
       "points": 2,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-06T00:02:04.702823+00:00",
-      "done_at": null,
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
       "package": "WP8"
     },
     {
@@ -849,13 +853,14 @@
         "Numbers with no register row, and values that differ from their row, are findings; counts, dates, identifiers and versions are excluded per DOCUMENTATION_RULES.md",
         "Read-only: no code or documentation file is changed; the report stays in the run folder",
         "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
-        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer",
+        "Done 2026-10-14: report A1 to A9 of the full code review; findings re-cut as WP9 to WP16 (B52 to B125)"
       ],
       "points": 3,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-06T00:02:04.702829+00:00",
-      "done_at": null,
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
       "package": "WP8"
     },
     {
@@ -867,13 +872,14 @@
         "Code that serves a non-goal (planner, high-rate estimator, ROS 2) is listed for removal; missing host pieces needed for bench testing are listed",
         "Read-only: no code or documentation file is changed; the report stays in the run folder",
         "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
-        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer",
+        "Done 2026-10-14: report A1 to A9 of the full code review; findings re-cut as WP9 to WP16 (B52 to B125)"
       ],
       "points": 2,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-06T00:02:04.702833+00:00",
-      "done_at": null,
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
       "package": "WP8"
     },
     {
@@ -886,14 +892,1398 @@
         "Closes the sprint with the re-cut proposal for the code-alignment packages (WP8 acceptance item 6) for Lenton Neale to approve",
         "Read-only: no code or documentation file is changed; the report stays in the run folder",
         "Every finding is a new open story on WP8 with kind (Add, Remove, Change, Doc fault, Unknown), the requirement or contract clause, charter goal, files, bench-blocking yes/no and size",
-        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer"
+        "Doc fault and Unknown findings are listed for Lenton Neale to rule on or answer",
+        "Done 2026-10-14: report A1 to A9 of the full code review; findings re-cut as WP9 to WP16 (B52 to B125)"
+      ],
+      "points": 2,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-06T00:02:04.702837+00:00",
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
+      "package": "WP8"
+    },
+    {
+      "id": "B52",
+      "title": "S9.1 Firmware identity taken at build time, not configure time",
+      "story": "As the maintainer I want firmware identity taken at build time, not configure time so that the WP9 acceptance can be met before the arm is connected. Review findings: SPI-19, FW-3, VER-39 (kinds: Defect; charter goals: 3,5, 5, 5, 3; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-19, FW-3, VER-39",
+        "Clauses: EVIDENCE_RECORD_FORMAT dirty-build rule; SPI_PAYLOAD_SCHEMA VERSION build_flags and git_hash_abbrev; `EVIDENCE_RECORD_FORMAT.md` \"Rules\" (dirty build cannot satisfy a row)",
+        "Files: Arm_Sensor_Hub/App/Inc/firmware_version.h:48-69, Arm_Sensor_Hub/CMakeLists.txt:90-134, Arm_Sensor_Hub/CMakeLists.txt:92-134, Arm_Sensor_Hub/build/Debug/build.ninja:744",
+        "Ruling R28(a): the compiler version string is part of the build identity",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B53",
+      "title": "S9.2 Size the default task stack from measured usage and enable overflow checking",
+      "story": "As the maintainer I want size the default task stack from measured usage and enable overflow checking so that the WP9 acceptance can be met before the arm is connected. Review findings: FW-2, PRM-9 (kinds: Defect; charter goals: 1; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-2, PRM-9",
+        "Clauses: none (defect)",
+        "Files: Arm_Sensor_Hub/App/Src/spi_slave_service.c:186, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:35, Arm_Sensor_Hub/Core/Inc/FreeRTOSConfig.h:116, Arm_Sensor_Hub/Core/Inc/FreeRTOSConfig.h:46-170, Arm_Sensor_Hub/Core/Src/main.c:62-67, Arm_Sensor_Hub/Core/Src/main.c:63-67",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B54",
+      "title": "S9.3 Configure-time check that every App/Src module is in both CMake source lists",
+      "story": "As the maintainer I want configure-time check that every App/Src module is in both CMake source lists so that the WP9 acceptance can be met before the arm is connected. Review findings: FW-4 (kinds: Change; charter goals: 4; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-4",
+        "Clauses: SYS-GATE-001",
+        "Files: Arm_Sensor_Hub/CMakeLists.txt:61-82, Arm_Sensor_Hub/tests/host/CMakeLists.txt:1-46",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B55",
+      "title": "S9.4 Shared golden-frame vectors asserted by the C and Python suites; contract constants named once per side",
+      "story": "As the maintainer I want shared golden-frame vectors asserted by the C and Python suites; contract constants named once per side so that the WP9 acceptance can be met before the arm is connected. Review findings: SPI-10, VER-23, PRM-19, PRM-20 (kinds: Add, Change, Doc fault; charter goals: 2, 5, 5; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-10, VER-23, PRM-19, PRM-20",
+        "Clauses: SPI section 14; SPI section 3; SYS-SPI-001 acceptance; SYS-SPI-001 acceptance (\"the C and Python protocol tests exchange the same frames bit-for-bit\")",
+        "Files: Arm_Sensor_Hub/App/Inc/spi_protocol.h:25-27, Arm_Sensor_Hub/App/Src/spi_protocol.c:30, Arm_Sensor_Hub/App/Src/spi_slave_service.c:204, Arm_Sensor_Hub/tests/host/CMakeLists.txt, Arm_Sensor_Hub/tests/host/protocol_test_main.c:613-652, Arm_Sensor_Hub/tests/host/protocol_test_main.c:613-726, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md:231, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:40, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:34-49, RaspberryPi_Sensor_Hub/src/spi/timing.py:34-40, RaspberryPi_Sensor_Hub/tests/spi/test_spi_protocol.py, RaspberryPi_Sensor_Hub/tests/spi/test_spi_protocol.py:48-80",
+        "Golden vectors include the 4-byte GET request (R1), a frame with non-zero bytes after the CRC (R4), the R18 reason codes and the system-activate request and reply (R19b)",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B56",
+      "title": "S9.5 Restore the MksServo codec host tests and check them against the MKS manual",
+      "story": "As the maintainer I want restore the MksServo codec host tests and check them against the MKS manual so that the WP9 acceptance can be met before the arm is connected. Review findings: CAN-26, VER-24 (kinds: Add; charter goals: 2, 4, 5; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-26, VER-24",
+        "Clauses: CLAUDE.md host-test rule; SYS-MOT-001 (position decode), SYS-CMD-001, SYS-LINK-002 (stop and disable frames)",
+        "Files: Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/CMakeLists.txt:30-32, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/CMakeLists.txt:7,30-33, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/README.md:25, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/src/*.cpp, Arm_Sensor_Hub/tests/host/CMakeLists.txt:27-52, Arm_Sensor_Hub/tests/host/service_test_main.c:460-566, Arm_Sensor_Hub/tests/host/service_test_main.c:460-567",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
       ],
       "points": 2,
       "status": "open",
       "sprint": null,
-      "created": "2026-10-06T00:02:04.702837+00:00",
+      "created": "2026-10-14T00:00:00+00:00",
       "done_at": null,
-      "package": "WP8"
+      "package": "WP9"
+    },
+    {
+      "id": "B57",
+      "title": "S9.6 Evidence-record tool and 05_VERIFICATION/evidence/ with VERSION identity and Pi commit",
+      "story": "As the maintainer I want evidence-record tool and 05_VERIFICATION/evidence/ with VERSION identity and Pi commit so that the WP9 acceptance can be met before the arm is connected. Review findings: VER-40, HOST-11 (kinds: Add, Change; charter goals: 1, 5, 3; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-40, HOST-11",
+        "Clauses: EVIDENCE_RECORD_FORMAT Required fields; `EVIDENCE_RECORD_FORMAT.md` \"Required fields\"",
+        "Files: Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:60, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:134-228, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:281-335",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R28(b): a dirty Pi working tree disqualifies a record exactly as the firmware dirty bit does; the tool refuses to mark it as satisfying a row",
+        "Depends on S9.1"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B58",
+      "title": "S9.7 Host-test harness: NDEBUG guard, CAN TX log, deeper I2C scripts, real time_service in service tests",
+      "story": "As the maintainer I want host-test harness: NDEBUG guard, CAN TX log, deeper I2C scripts, real time_service in service tests so that the WP9 acceptance can be met before the arm is connected. Review findings: VER-34, VER-35, VER-36, VER-37 (kinds: Change; charter goals: 1, 2, 4, 5; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-34, VER-35, VER-36, VER-37",
+        "Clauses: SYS-ENC-001; SYS-LINK-002, SYS-CMD-001, SAFE-04 (frame order matters: stop, then disable); SYS-SYNC-001, SYS-TS-001 (Issue #12 ISR capture); none (defect in the test harness)",
+        "Files: Arm_Sensor_Hub/App/Src/time_service.c:10-27,330-388, Arm_Sensor_Hub/CMakeLists.txt:20-22, Arm_Sensor_Hub/CMakePresets.json:84-91, Arm_Sensor_Hub/tests/host/CMakeLists.txt:27-56, Arm_Sensor_Hub/tests/host/protocol_test_main.c:1, Arm_Sensor_Hub/tests/host/service_test_main.c:156-203,951-956, Arm_Sensor_Hub/tests/host/service_test_main.c:57-64,254-279, Arm_Sensor_Hub/tests/host/service_test_main.c:84-86,359-376, service_test_main.c:1",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B59",
+      "title": "S9.8 Remove dead Pi tests and the TIME_SYNC echo decoder; move sensor tests to their own class",
+      "story": "As the maintainer I want remove dead Pi tests and the TIME_SYNC echo decoder; move sensor tests to their own class so that the WP9 acceptance can be met before the arm is connected. Review findings: VER-16, VER-17, HOST-19, SPI-18 (kinds: Remove; charter goals: 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-16, VER-17, HOST-19, SPI-18",
+        "Clauses: SPI_PAYLOAD_SCHEMA ACK/NACK; `SPI_PAYLOAD_SCHEMA.md` \"ACK (0x80) and NACK (0x81)\" (12 bytes); none in the baseline. It cites retired SYS-SYNC-002..005, SYS-SPI-003/004, SYS-TIM-003.",
+        "Files: Arm_Sensor_Hub/App/Src/spi_protocol.c:48-56, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:338-366, RaspberryPi_Sensor_Hub/tests/spi/test_spi_protocol.py:201-266, RaspberryPi_Sensor_Hub/tests/spi/test_spi_protocol.py:268-317, RaspberryPi_Sensor_Hub/tests/spi/test_validation_claims.py:1-466",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B60",
+      "title": "S9.9 CI: doc_check job, lockstep cross-triggers, .map upload, -Werror on App, pinned toolchain, three warnings fixed",
+      "story": "As the maintainer I want cI: doc_check job, lockstep cross-triggers, .map upload, -Werror on App, pinned toolchain, three warnings fixed so that the WP9 acceptance can be met before the arm is connected. Review findings: VER-50, VER-52, VER-53, FW-27, FW-28 (kinds: Add, Change; charter goals: 5; bench-blocking: no; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-50, VER-52, VER-53, FW-27, FW-28",
+        "Clauses: BUILD_CONTRACT Quality and Artifacts; BUILD_CONTRACT reproducibility and open decisions; CLAUDE.md \"Run `icm-project/tools/doc_check` before merging a documentation change\"; CLAUDE.md \"When you change one side, change the other side and its tests too\"; `BUILD_CONTRACT.md` \"Quality and Artifacts\" (\"retain the ELF/map files needed for debug\")",
+        "Files: .github/workflows/, .github/workflows/arm-ci.yml:3-15, .github/workflows/arm-ci.yml:42-48, .github/workflows/arm-ci.yml:48-55, .github/workflows/raspberry-ci.yml:3-15, Arm_Sensor_Hub/.settings/bundles.store.json, Arm_Sensor_Hub/.vscode/settings.json:4-15, Arm_Sensor_Hub/App/Src/i2c_manager.c:287, Arm_Sensor_Hub/App/Src/i2c_manager.c:313, Arm_Sensor_Hub/App/Src/spi_protocol.c:50, Arm_Sensor_Hub/cmake/gcc-arm-none-eabi.cmake:29, Arm_Sensor_Hub/cmake/gcc-arm-none-eabi.cmake:45",
+        "Ruling R28(a): CI pins the system arm-none-eabi-gcc used for evidence builds; the VS Code ST bundle build stays development only",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B61",
+      "title": "S9.10 One firmware parameter header and one Pi config module mirroring the register; CubeMX values checked at init",
+      "story": "As the maintainer I want one firmware parameter header and one Pi config module mirroring the register; CubeMX values checked at init so that the WP9 acceptance can be met before the arm is connected. Review findings: PRM-24, PRM-25, PRM-18, HOST-16, PRM-17, PRM-14 (kinds: Add, Change; charter goals: 3, 5; bench-blocking: no; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: PRM-24, PRM-25, PRM-18, HOST-16, PRM-17, PRM-14",
+        "Clauses: CHARTER_ALIGNMENT_PLAN section 11 item 9; PARAMETER_REGISTER role and code-default rule; PRM-CAN-01; PRM-SPI-01; PRM-SPI-04; SPI section 8",
+        "Files: Arm_Sensor_Hub/App/Inc/sensor_task.h:21, Arm_Sensor_Hub/App/Inc/spi_payload_layout.h:87, Arm_Sensor_Hub/App/Src/can_service.c:37-38, Arm_Sensor_Hub/App/Src/can_tx_policy.c:11-13, Arm_Sensor_Hub/App/Src/sensor_task.c:14, Arm_Sensor_Hub/App/Src/spi_slave_service.c:141, Arm_Sensor_Hub/App/Src/spi_slave_service.c:40-41, Arm_Sensor_Hub/App/Src/tca9548a_mux.c:83, Arm_Sensor_Hub/Core/Src/main.c:241-245, Arm_Sensor_Hub/Core/Src/main.c:278, Arm_Sensor_Hub/Core/Src/main.c:352, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/src/mks_api.cpp:37",
+        "The header and config module mirror the new Provisional rows from B101 as they land",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B62",
+      "title": "S9.11 Pi packaging and small defects: pyproject, shared ACK parser and sequencer, resource cleanup, stable spidev path, adapter tests",
+      "story": "As the maintainer I want pi packaging and small defects: pyproject, shared ACK parser and sequencer, resource cleanup, stable spidev path, adapter tests so that the WP9 acceptance can be met before the arm is connected. Review findings: HOST-22, HOST-23, HOST-24, HOST-25, HOST-21 (kinds: Add, Change, Defect; charter goals: 3, 5, none; bench-blocking: no; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: HOST-22, HOST-23, HOST-24, HOST-25, HOST-21",
+        "Clauses: VERIFICATION_STRATEGY Chain; external: linux-spidev py-spidev-api Bus number stability; none (defect); none (duplication); none (maintainability)",
+        "Files: RaspberryPi_Sensor_Hub/src/spi/data_ready.py:83-90, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:39, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:66-68, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:66-72, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:87-95, RaspberryPi_Sensor_Hub/src/spi/spi_device.py:85-91, RaspberryPi_Sensor_Hub/src/spi/timing.py:58-61, RaspberryPi_Sensor_Hub/tests/spi/, RaspberryPi_Sensor_Hub/tests/spi/test_spi_protocol.py:6, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:126-128, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:155-157, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:27",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B63",
+      "title": "S9.12 doc_check extensions: matrix trace, retired IDs, section references, index coverage, Used-by, commissioning table",
+      "story": "As the maintainer I want doc_check extensions: matrix trace, retired IDs, section references, index coverage, Used-by, commissioning table so that the WP9 acceptance can be met before the arm is connected. Review findings: VER-51, VER-54, DOC-41 (kinds: Add; charter goals: 1, 5, 5; bench-blocking: no; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-51, VER-54, DOC-41",
+        "Clauses: DOCUMENTATION_RULES check tool; SYS-ENC-003 (\"checked by inspection; `VERIFICATION_STRATEGY.md` \"Chain\"",
+        "Files: Arm_Sensor_Hub/App/Src/app_init.c:26-73, Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md, icm-project/tools/doc_check/allowed.toml, icm-project/tools/doc_check/doc_check.py:26-36,41-46, icm-project/tools/doc_check/doc_check.py:89-155",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B64",
+      "title": "S9.13 Remove dead and duplicated firmware code, including the ISR mutex-give async I2C path",
+      "story": "As the maintainer I want remove dead and duplicated firmware code, including the ISR mutex-give async I2C path so that the WP9 acceptance can be met before the arm is connected. Review findings: FW-29, FW-14 (kinds: Defect, Remove; charter goals: 1, 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-29, FW-14",
+        "Clauses: none (defect); none (tidiness)",
+        "Files: Arm_Sensor_Hub/App/Src/as5600.c:243-246, Arm_Sensor_Hub/App/Src/i2c_manager.c:311-505, Arm_Sensor_Hub/App/Src/i2c_manager.c:419-474, Arm_Sensor_Hub/App/Src/i2c_manager.c:507-582, Arm_Sensor_Hub/App/Src/sensor_latest_value.c:112-121, Arm_Sensor_Hub/App/Src/spi_protocol.c:9-20, Arm_Sensor_Hub/App/Src/spi_slave_service.c:54-86, Arm_Sensor_Hub/App/Src/tca9548a_mux.c:19-135, Arm_Sensor_Hub/Core/Src/stm32f4xx_hal_msp.c:179-186",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B65",
+      "title": "S10.1 GET_SNAPSHOT serves the latest sensor and motor records as a correlated SNAPSHOT",
+      "story": "As the maintainer I want gET_SNAPSHOT serves the latest sensor and motor records as a correlated SNAPSHOT so that the WP10 acceptance can be met before the arm is connected. Review findings: SPI-1, FW-1, PRM-8, VER-21 (kinds: Add, Defect; charter goals: 1, 1, 2, 1,2; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-1, FW-1, PRM-8, VER-21",
+        "Clauses: PRM-ACQ-01; SYS-ENC-001; SYS-ENC-001, SYS-SPI-001 (\"polling ... provides recovery\", \"correlated GET_SNAPSHOT responses\"); SYS-SPI-001",
+        "Files: Arm_Sensor_Hub/App/Src/app_init.c:135-163, Arm_Sensor_Hub/App/Src/spi_protocol.c:172-178, Arm_Sensor_Hub/App/Src/spi_slave_service.c:176-228, Arm_Sensor_Hub/App/Src/spi_slave_service.c:318-347, Arm_Sensor_Hub/App/Src/spi_slave_service.c:327-330, Arm_Sensor_Hub/App/Src/spi_slave_service.c:344-347, Arm_Sensor_Hub/Core/Src/main.c:441-456, Arm_Sensor_Hub/Core/Src/main.c:441-457, Arm_Sensor_Hub/Core/Src/main.c:447-455, Arm_Sensor_Hub/tests/host/service_test_main.c:1050-1096, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:61-66",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S9.2"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B66",
+      "title": "S10.2 SPI service re-arm, stall and NSS-resync fixes with one source of truth for armed",
+      "story": "As the maintainer I want sPI service re-arm, stall and NSS-resync fixes with one source of truth for armed so that the WP10 acceptance can be met before the arm is connected. Review findings: SPI-2, SPI-13, SPI-16 (kinds: Add, Change, Defect; charter goals: 1,2,3, 3; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-2, SPI-13, SPI-16",
+        "Clauses: SPI_SYSTEM_INTERFACE \u00a716 Stage 3, \u00a714; SPI_SYSTEM_INTERFACE \u00a77; SPI_SYSTEM_INTERFACE \u00a77, \u00a78",
+        "Files: Arm_Sensor_Hub/App/Src/spi_data_ready.c:20-44, Arm_Sensor_Hub/App/Src/spi_data_ready.c:38-44, Arm_Sensor_Hub/App/Src/spi_slave_service.c:100-118, Arm_Sensor_Hub/App/Src/spi_slave_service.c:100-133, Arm_Sensor_Hub/App/Src/spi_slave_service.c:272-316, Arm_Sensor_Hub/App/Src/spi_slave_service.c:296-306, Arm_Sensor_Hub/App/Src/spi_slave_service.c:396-409, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:101-103, Arm_Sensor_Hub/Core/Src/main.c:301-329",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B67",
+      "title": "S10.3 DATA_READY armed-then-assert on the STM32; fresh-edge wait and chip lookup fix on the Pi",
+      "story": "As the maintainer I want dATA_READY armed-then-assert on the STM32; fresh-edge wait and chip lookup fix on the Pi so that the WP10 acceptance can be met before the arm is connected. Review findings: SPI-3, HOST-7, HOST-8 (kinds: Defect; charter goals: 3; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-3, HOST-7, HOST-8",
+        "Clauses: C-1; SPI_SYSTEM_INTERFACE \u00a713; SPI_SYSTEM_INTERFACE \u00a77 and \u00a717 invariant 10",
+        "Files: Arm_Sensor_Hub/App/Src/spi_slave_service.c:120-133, Arm_Sensor_Hub/App/Src/spi_slave_service.c:332-337, Arm_Sensor_Hub/App/Src/spi_slave_service.c:396-404, RaspberryPi_Sensor_Hub/src/spi/data_ready.py:58-64, RaspberryPi_Sensor_Hub/src/spi/data_ready.py:95-109, RaspberryPi_Sensor_Hub/src/spi/timing.py:179-182",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R8(a): DATA_READY is LOW whenever no frame is armed (C-1), asserted by a host test",
+        "Depends on S10.2"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B68",
+      "title": "S10.4 Pi snapshot logger and probe output for Stage 1 evidence",
+      "story": "As the maintainer I want pi snapshot logger and probe output for Stage 1 evidence so that the WP10 acceptance can be met before the arm is connected. Review findings: SPI-6, HOST-3, VER-22 (kinds: Add; charter goals: 1, 5, 1,2,3, 2; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-6, HOST-3, VER-22",
+        "Clauses: HOST_SYSTEM_INTERFACE SD-09; SYS-ENC-001; SYS-SPI-001 acceptance",
+        "Files: RaspberryPi_Sensor_Hub/src/spi/spi_device.py:25-97, RaspberryPi_Sensor_Hub/src/spi/timing.py:189-244, RaspberryPi_Sensor_Hub/src/spi/timing.py:220-229, RaspberryPi_Sensor_Hub/src/spi/timing.py:64-100, RaspberryPi_Sensor_Hub/tests/spi/test_spi_link_probe.py:23-55, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:166-201, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:61-76",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S10.1"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B69",
+      "title": "S10.5 Sequence seeding across processes and a host resync rule",
+      "story": "As the maintainer I want sequence seeding across processes and a host resync rule so that the WP10 acceptance can be met before the arm is connected. Review findings: HOST-9, SPI-21 (kinds: Defect, Unknown; charter goals: 3; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: HOST-9, SPI-21",
+        "Clauses: SPI_SYSTEM_INTERFACE \u00a76; SPI_SYSTEM_INTERFACE \u00a76, \u00a714",
+        "Files: Arm_Sensor_Hub/App/Src/spi_protocol.c:145-147, Arm_Sensor_Hub/App/Src/spi_protocol.c:24, RaspberryPi_Sensor_Hub/src/spi/spi_device.py:28, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:59-102, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:65, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:68-97, RaspberryPi_Sensor_Hub/src/spi/timing.py:154, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:303",
+        "Ruling R3: after a DIAGNOSTIC the STM32 accepts the first seq and sets its high-water mark from it; one process-wide Pi sequencer with no stride; on BAD_SEQUENCE to its first request the Pi jumps forward once by a bounded step and reports it",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B70",
+      "title": "S10.6 GET request payload defined and validated; padding rule stated and applied on both sides",
+      "story": "As the maintainer I want gET request payload defined and validated; padding rule stated and applied on both sides so that the WP10 acceptance can be met before the arm is connected. Review findings: SPI-12, SPI-23 (kinds: Doc fault; charter goals: 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-12, SPI-23",
+        "Clauses: SPI_PAYLOAD_SCHEMA GET and Command Requests; SPI_SYSTEM_INTERFACE \u00a73",
+        "Files: Arm_Sensor_Hub/App/Src/spi_protocol.c:125-157, Arm_Sensor_Hub/tests/host/protocol_test_main.c:661, RaspberryPi_Sensor_Hub/src/spi/spi_device.py:40-45, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:142-145, RaspberryPi_Sensor_Hub/src/spi/timing.py:189",
+        "Ruling R1: every GET payload is schema_version plus three reserved zero bytes; BAD_LENGTH for another length, BAD_MESSAGE for another schema or non-zero reserved bytes; one Pi constant",
+        "Ruling R4: bytes after the CRC are zero on transmit and ignored on receive on both sides; the Python non-zero-tail check is removed",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B71",
+      "title": "S10.7 Snapshot flags bit and transport counters reported",
+      "story": "As the maintainer I want snapshot flags bit and transport counters reported so that the WP10 acceptance can be met before the arm is connected. Review findings: SPI-15, SPI-14 (kinds: Add, Change; charter goals: 2,5, 3,5; bench-blocking: no; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-15, SPI-14",
+        "Clauses: SPI_SYSTEM_INTERFACE \u00a77, \u00a78, \u00a714; SPI_SYSTEM_INTERFACE \u00a78",
+        "Files: Arm_Sensor_Hub/App/Src/health_monitor.c:119, Arm_Sensor_Hub/App/Src/snapshot_builder.c:58, Arm_Sensor_Hub/App/Src/snapshot_builder.c:75, Arm_Sensor_Hub/App/Src/snapshot_builder.c:89, Arm_Sensor_Hub/App/Src/spi_slave_service.c:208-209, Arm_Sensor_Hub/App/Src/spi_slave_service.c:341, Arm_Sensor_Hub/App/Src/spi_slave_service.c:406-409",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R5: flags bit 0 = an unread snapshot was replaced or dropped; dropped_snapshot_count_low counts snapshot drops and replacements only",
+        "Depends on S10.1"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B72",
+      "title": "S10.8 Sensor timestamp taken immediately after the angle read",
+      "story": "As the maintainer I want sensor timestamp taken immediately after the angle read so that the WP10 acceptance can be met before the arm is connected. Review findings: TIME-6, FW-9 (kinds: Change; charter goals: 2; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-6, FW-9",
+        "Clauses: SYS-TS-001",
+        "Files: Arm_Sensor_Hub/App/Src/as5600.c:199-241",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B73",
+      "title": "S10.9 Sensor path hardening: fewer I2C transactions, bus recovery, bring-up retry, timeout diagnostics",
+      "story": "As the maintainer I want sensor path hardening: fewer I2C transactions, bus recovery, bring-up retry, timeout diagnostics so that the WP10 acceptance can be met before the arm is connected. Review findings: FW-11, FW-12, FW-13, FW-15, GATE-21 (kinds: Add, Change; charter goals: 1, 3; bench-blocking: no; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-11, FW-12, FW-13, FW-15, GATE-21",
+        "Clauses: I2C_MANAGER_CONTRACT Diagnostics; I2C_MANAGER_CONTRACT Timeout and Error Policy; PRM-ACQ-03; SYS-REC-001",
+        "Files: Arm_Sensor_Hub/App/Src/app_init.c:144-148, Arm_Sensor_Hub/App/Src/as5600.c:36-61, Arm_Sensor_Hub/App/Src/i2c_manager.c:268-273, Arm_Sensor_Hub/App/Src/i2c_manager.c:285-335, Arm_Sensor_Hub/App/Src/i2c_manager.c:545-564, Arm_Sensor_Hub/App/Src/i2c_manager.c:74-130, Arm_Sensor_Hub/App/Src/sensor_task.c:107-115, Arm_Sensor_Hub/App/Src/sensor_task.c:312-315, Arm_Sensor_Hub/App/Src/sensor_task.c:62-71, Arm_Sensor_Hub/App/Src/sensor_task.c:62-72, Arm_Sensor_Hub/App/Src/tca9548a_mux.c:92-125, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:55-71",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B74",
+      "title": "S10.10 Sensor policy rulings applied: magnet warnings, processed-angle source, sweep measurement counter",
+      "story": "As the maintainer I want sensor policy rulings applied: magnet warnings, processed-angle source, sweep measurement counter so that the WP10 acceptance can be met before the arm is connected. Review findings: FW-17, FW-18, FW-10 (kinds: Unknown; charter goals: 1, 3; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-17, FW-18, FW-10",
+        "Clauses: PRM-ACQ-02; SPI_PAYLOAD_SCHEMA validity flags; SYSTEM_CONFIGURATION \u00a75",
+        "Files: Arm_Sensor_Hub/App/Src/as5600.c:101-125, Arm_Sensor_Hub/App/Src/as5600.c:199-241, Arm_Sensor_Hub/App/Src/i2c_manager.c:375-417, Arm_Sensor_Hub/App/Src/sensor_task.c:154-173, Arm_Sensor_Hub/App/Src/sensor_task.c:177-185, Arm_Sensor_Hub/tools/check-sensors.sh:97-130",
+        "Ruling R6: ML/MH are warnings (SAMPLE_VALID stays set); processed_angle_mdeg = RAW ANGLE x 360000 / 4096; PRM-ACQ-02 note 'method not recorded; believed to include the unpopulated channel'; TIM2 sweep counter readable over SWD",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B75",
+      "title": "S10.11 check-sensors.sh treats NOT_FITTED as expected",
+      "story": "As the maintainer I want check-sensors.sh treats NOT_FITTED as expected so that the WP10 acceptance can be met before the arm is connected. Review findings: FW-21 (kinds: Change; charter goals: 1; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-21",
+        "Clauses: SYS-ENC-002",
+        "Files: Arm_Sensor_Hub/tools/check-sensors.sh:150-155, Arm_Sensor_Hub/tools/check-sensors.sh:72-81",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B76",
+      "title": "S10.12 Stage 1 host tests: valid sample to the wire, NOT_FITTED raises no health fault, bad CRC rejected",
+      "story": "As the maintainer I want stage 1 host tests: valid sample to the wire, NOT_FITTED raises no health fault, bad CRC rejected so that the WP10 acceptance can be met before the arm is connected. Review findings: VER-30, VER-33, FW-31 (kinds: Add; charter goals: 1, 5; bench-blocking: no; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-30, VER-33, FW-31",
+        "Clauses: SYS-ENC-001; SYS-SPI-001 acceptance (\"a corrupted CRC is rejected\")",
+        "Files: Arm_Sensor_Hub/App/Src/health_monitor.c:49-63, Arm_Sensor_Hub/tests/host/protocol_test_main.c:654-681, Arm_Sensor_Hub/tests/host/service_test_main.c:1050-1096, Arm_Sensor_Hub/tests/host/service_test_main.c:744-865, RaspberryPi_Sensor_Hub/tests/spi/test_spi_protocol.py:39-80",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S9.7"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B77",
+      "title": "S10.13 ENCODER_BENCH_PROCEDURE covers SYS-ENC-002 and is linked from the index and matrix",
+      "story": "As the maintainer I want eNCODER_BENCH_PROCEDURE covers SYS-ENC-002 and is linked from the index and matrix so that the WP10 acceptance can be met before the arm is connected. Review findings: DOC-5, DOC-9 (kinds: Change; charter goals: 1, 5; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: DOC-5, DOC-9",
+        "Clauses: 00_INDEX map; SYS-ENC-002",
+        "Files: Documentation/00_INDEX.md:18, Documentation/05_VERIFICATION/ENCODER_BENCH_PROCEDURE.md, Documentation/05_VERIFICATION/ENCODER_BENCH_PROCEDURE.md:5,21,32, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:11, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:12",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B78",
+      "title": "S10.14 Retire or repurpose data_ready_analysis and its unbased verdicts",
+      "story": "As the maintainer I want retire or repurpose data_ready_analysis and its unbased verdicts so that the WP10 acceptance can be met before the arm is connected. Review findings: HOST-20, VER-19, PRM-15 (kinds: Remove, Unknown; charter goals: 3, 3, 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: HOST-20, VER-19, PRM-15",
+        "Clauses: DOCUMENTATION_RULES Numbers; SPI_SYSTEM_INTERFACE \u00a716; none in the baseline. It cites retired SYS-SPI-004, and its 5 ms bound has no PRM row.",
+        "Files: RaspberryPi_Sensor_Hub/src/spi/data_ready_analysis.py, RaspberryPi_Sensor_Hub/src/spi/data_ready_analysis.py:1-146, RaspberryPi_Sensor_Hub/src/spi/data_ready_analysis.py:7, RaspberryPi_Sensor_Hub/src/spi/data_ready_analysis.py:90, RaspberryPi_Sensor_Hub/src/spi/data_ready_analysis.py:96, RaspberryPi_Sensor_Hub/src/spi/timing.py:98-100, RaspberryPi_Sensor_Hub/tests/spi/test_data_ready_analysis.py",
+        "Ruling R7: remove data_ready_analysis.py, its tests and the three dead TransactionRecord fields",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B79",
+      "title": "S11.1 CAN bit timing set to the MKS rate; MKS commissioning facts and checksum constraint recorded",
+      "story": "As the maintainer I want cAN bit timing set to the MKS rate; MKS commissioning facts and checksum constraint recorded so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-1, PRM-1, CAN-3, CAN-25 (kinds: Change, Defect, Unknown; charter goals: 2; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-1, PRM-1, CAN-3, CAN-25",
+        "Clauses: MKS manual pp. 14, 25; SYS-CAN-001; SYSTEM_CONFIGURATION.md \u00a72.1",
+        "Files: Arm_Sensor_Hub/App/Src/app_init.c:26-28, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:178, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:5-10, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:5-7, Arm_Sensor_Hub/Core/Src/main.c:241-245, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/include/mksservo/protocol_core.hpp:11-17, Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md:51-56",
+        "Ruling R9(a): 1 Mbit/s on every drive; PRM-CAN-03 applied and PRM-CAN-02 updated to the applied rate",
+        "Bench prerequisite (R9b, R25a): before commissioning, Lenton Neale reads each drive's CAN ID, model, firmware (40H), work mode, response mode, FFH power-on auto-run and 85H En-pin mode and records them in SYSTEM_CONFIGURATION \u00a72.1",
+        "Ruling R9(d): an ID above 0xFF is commissioned only after its checksum rule is confirmed on a drive",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B80",
+      "title": "S11.2 Six motors commissioned from one validated table with a table version; registration rejects duplicates and ID 0",
+      "story": "As the maintainer I want six motors commissioned from one validated table with a table version; registration rejects duplicates and ID 0 so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-19, CAN-18, CAN-20, PRM-26, FW-20 (kinds: Add, Change, Defect, Unknown; charter goals: 1, 2, 5; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-19, CAN-18, CAN-20, PRM-26, FW-20",
+        "Clauses: CAN_SYSTEM_INTERFACE.md \u00a71, \u00a72; SYS-ENC-003; SYS-MAP-001; SYS-MOT-001; SYSTEM_CONFIGURATION section 2.1",
+        "Files: Arm_Sensor_Hub/App/Inc/joint_mapping.h:16, Arm_Sensor_Hub/App/Inc/joint_mapping.h:22-33, Arm_Sensor_Hub/App/Src/app_init.c:116, Arm_Sensor_Hub/App/Src/app_init.c:17-28, Arm_Sensor_Hub/App/Src/app_init.c:26-28, Arm_Sensor_Hub/App/Src/app_init.c:27, Arm_Sensor_Hub/App/Src/app_init.c:61-73, Arm_Sensor_Hub/App/Src/app_init.c:85-99, Arm_Sensor_Hub/App/Src/can_service.c:141-152, Arm_Sensor_Hub/App/Src/can_service.c:387-427, Arm_Sensor_Hub/App/Src/joint_mapping.c:23, Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S11.1"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B81",
+      "title": "S11.3 CAN scheduling and draining independent of the sensor sweep; queue sized and band-correct",
+      "story": "As the maintainer I want cAN scheduling and draining independent of the sensor sweep; queue sized and band-correct so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-17, PRM-4, FW-16, CAN-11 (kinds: Change, Defect; charter goals: 2, 3, 4; bench-blocking: yes; size: 5 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-17, PRM-4, FW-16, CAN-11",
+        "Clauses: CAN_SYSTEM_INTERFACE.md \u00a74; PRM-ACQ-05; SYS-MOT-001; SYSTEM_ARCHITECTURE Startup Flow",
+        "Files: Arm_Sensor_Hub/App/Inc/can_tx_policy.h:12, Arm_Sensor_Hub/App/Src/can_service.c:209-250, Arm_Sensor_Hub/App/Src/can_service.c:377-385, Arm_Sensor_Hub/App/Src/can_service.c:94-114, Arm_Sensor_Hub/App/Src/can_tx_policy.c:23, Arm_Sensor_Hub/App/Src/can_tx_policy.c:31-39, Arm_Sensor_Hub/App/Src/i2c_manager.c:82, Arm_Sensor_Hub/App/Src/sensor_task.c:317-345, Arm_Sensor_Hub/App/Src/spi_slave_service.c:272-316, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:34-35, Arm_Sensor_Hub/Core/Src/main.c:441-455, Arm_Sensor_Hub/Core/Src/main.c:441-457",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R15: sensor acquisition in its own lower-priority task with a lock or double buffer on the latest-value stores",
+        "Depends on S9.2 (B53) and S12.2 (B92)"
+      ],
+      "points": 5,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B82",
+      "title": "S11.4 CAN RX interrupt with reception-time capture and overrun counting",
+      "story": "As the maintainer I want cAN RX interrupt with reception-time capture and overrun counting so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-16, TIME-7 (kinds: Change, Defect; charter goals: 2; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-16, TIME-7",
+        "Clauses: SYS-TS-001",
+        "Files: Arm_Sensor_Hub/App/Src/can_service.c:157-204, Arm_Sensor_Hub/App/Src/i2c_manager.c:112, Arm_Sensor_Hub/App/Src/i2c_manager.c:83, Arm_Sensor_Hub/App/Src/sensor_task.c:317, Arm_Sensor_Hub/Core/Src/main.c:246, Arm_Sensor_Hub/Core/Src/main.c:250, Arm_Sensor_Hub/Core/Src/main.c:444-454, Arm_Sensor_Hub/Core/Src/main.c:447-455",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S11.3"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B83",
+      "title": "S11.5 Motor record keeps position separate from speed and acks; decoder status fixed; remote frames dropped",
+      "story": "As the maintainer I want motor record keeps position separate from speed and acks; decoder status fixed; remote frames dropped so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-14, CAN-15, CAN-29 (kinds: Defect; charter goals: 2; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-14, CAN-15, CAN-29",
+        "Clauses: CAN_SYSTEM_INTERFACE.md \u00a74; SYS-MOT-001; none (defect)",
+        "Files: Arm_Sensor_Hub/App/Src/can_service.c:160-176, Arm_Sensor_Hub/App/Src/can_service.c:183-198, Arm_Sensor_Hub/App/Src/can_service.c:238-245, Arm_Sensor_Hub/App/Src/motor_latest_value.c:41-84, Arm_Sensor_Hub/App/Src/motor_latest_value.c:68-71, Arm_Sensor_Hub/App/Src/spi_slave_service.c:163-174, Arm_Sensor_Hub/App/Src/spi_slave_service.c:166, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/include/mksservo/decoder.hpp:33-35, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/src/decoder.cpp:37-53",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R10(a): the record carries the raw 31H reply bytes and command code; speed replies and acks go to a separate diagnostics field",
+        "Depends on S9.5"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B84",
+      "title": "S11.6 Feedback timeout and miss escalation per PRM-MOT-01/02 with the feedback period registered",
+      "story": "As the maintainer I want feedback timeout and miss escalation per PRM-MOT-01/02 with the feedback period registered so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-12, CAN-13, GATE-22, PRM-12, PRM-3 (kinds: Add, Doc fault, Unknown; charter goals: 2; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-12, CAN-13, GATE-22, PRM-12, PRM-3",
+        "Clauses: PRM-CAN-05; PRM-MOT-01; SYS-MOT-002",
+        "Files: Arm_Sensor_Hub/App/Inc/motor_latest_value.h:18-23, Arm_Sensor_Hub/App/Inc/motor_latest_value.h:18-27, Arm_Sensor_Hub/App/Src/can_service.c:157-250, Arm_Sensor_Hub/App/Src/can_service.c:183-202, Arm_Sensor_Hub/App/Src/can_service.c:199-202, Arm_Sensor_Hub/App/Src/can_service.c:209-245, Arm_Sensor_Hub/App/Src/can_service.c:219-245, Arm_Sensor_Hub/App/Src/health_monitor.c:82-132, Arm_Sensor_Hub/App/Src/motor_latest_value.c:89, Arm_Sensor_Hub/App/Src/motor_latest_value.c:89-102, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:57",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R11(b): a per-motor position feedback period (new Provisional row via B101); PRM-MOT-01 becomes Derived from it; 32H speed read at a lower rate for the R22(c) moving rule",
+        "Depends on S11.3"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B85",
+      "title": "S11.7 Bus-off detected from hardware; lifecycle leaves ACTIVE; recovery judged by ESR; queue purged; reactivation path; window semantics ruled",
+      "story": "As the maintainer I want bus-off detected from hardware; lifecycle leaves ACTIVE; recovery judged by ESR; queue purged; reactivation path; window semantics ruled so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-4, CAN-5, CAN-6, CAN-7, CAN-8, GATE-17, GATE-18, GATE-19, PRM-23, DOC-7, GATE-20 (kinds: Add, Defect, Doc fault, Unknown; charter goals: 2, 3, 4; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-4, CAN-5, CAN-6, CAN-7, CAN-8, GATE-17, GATE-18, GATE-19, PRM-23, DOC-7, GATE-20",
+        "Clauses: CAN \u00a75, \u00a78; CAN_SYSTEM_INTERFACE \u00a75; D-3 CAN ACTIVE; PRM-CAN-07; PRM-CAN-08; SAFE-03; SAFE-04; SD-06; SYS-CAN-001",
+        "Files: Arm_Sensor_Hub/App/Inc/can_service.h:31-43, Arm_Sensor_Hub/App/Src/app_init.c:142-159, Arm_Sensor_Hub/App/Src/can_service.c:26-33, Arm_Sensor_Hub/App/Src/can_service.c:33, Arm_Sensor_Hub/App/Src/can_service.c:338, Arm_Sensor_Hub/App/Src/can_service.c:343-348, Arm_Sensor_Hub/App/Src/can_service.c:354-364, Arm_Sensor_Hub/App/Src/can_service.c:356-362, Arm_Sensor_Hub/App/Src/can_service.c:46-114, Arm_Sensor_Hub/App/Src/can_service.c:46-59, Arm_Sensor_Hub/App/Src/can_service.c:46-71, Arm_Sensor_Hub/App/Src/can_service.c:50",
+        "Ruling R12: no automatic retries while in ERROR; the system-activate message applies RECOVER then ACTIVATE; failure = BOFF still set after restart or bus-off again within a short interval (new row); safety frames rejected with an error while inhibited; PRM-CAN-08 sliding window held in a three-entry timestamp ring; bus-off inhibits the whole arm",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B86",
+      "title": "S11.8 TX completion checked or automatic retransmission enabled, per ruling",
+      "story": "As the maintainer I want tX completion checked or automatic retransmission enabled, per ruling so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-10 (kinds: Change; charter goals: 4; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-10",
+        "Clauses: CAN_SYSTEM_INTERFACE.md \u00a74, \u00a79",
+        "Files: Arm_Sensor_Hub/App/Src/can_service.c:306-311, Arm_Sensor_Hub/App/Src/can_service.c:94-114, Arm_Sensor_Hub/Core/Src/main.c:249",
+        "Ruling R13: bxCAN AutoRetransmission enabled through CubeMX; PRM-CAN-06 is the mailbox-full software retry only",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B87",
+      "title": "S11.9 CAN diagnostics counters per CAN \u00a79",
+      "story": "As the maintainer I want cAN diagnostics counters per CAN \u00a79 so that the WP11 acceptance can be met before the arm is connected. Review findings: CAN-27 (kinds: Add; charter goals: 3; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-27",
+        "Clauses: CAN_SYSTEM_INTERFACE.md \u00a79",
+        "Files: Arm_Sensor_Hub/App/Inc/can_service.h:78-102, Arm_Sensor_Hub/App/Src/can_service.c:247-249",
+        "Ruling R13: TX success and failure counters added",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B88",
+      "title": "S11.10 Pi motor-record decode; motor validity bits and status defined in the schema",
+      "story": "As the maintainer I want pi motor-record decode; motor validity bits and status defined in the schema so that the WP11 acceptance can be met before the arm is connected. Review findings: SPI-4, SPI-5, HOST-2, VER-38, PRM-21, DOC-4 (kinds: Add, Change, Doc fault, Unknown; charter goals: 2; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-4, SPI-5, HOST-2, VER-38, PRM-21, DOC-4",
+        "Clauses: SPI_PAYLOAD_SCHEMA Motor record; SPI_PAYLOAD_SCHEMA motor record; SYS-MOT-001; SYS-MOT-001 (acceptance on the bench reads motor records); Schema SNAPSHOT motor record",
+        "Files: Arm_Sensor_Hub/App/Inc/motor_latest_value.h:25-27, Arm_Sensor_Hub/App/Inc/motor_latest_value.h:25-38, Arm_Sensor_Hub/App/Src/motor_latest_value.c:67-98, Arm_Sensor_Hub/App/Src/spi_slave_service.c:163-174, Arm_Sensor_Hub/App/Src/spi_slave_service.c:166-167, Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md:62, Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md:62-75, RaspberryPi_Sensor_Hub/src/spi/spi_device.py:25-97, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:219-278, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:269-278, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:61-76",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R10(b): validity bits 0x0001 FEEDBACK_VALID, 0x0002 CONTROLLER_STATUS_VALID, 0x0004 reserved, 0x0008 STALE, 0x0010 FAULT; the Pi decodes the 31H signed int48 count",
+        "Depends on S10.1"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B89",
+      "title": "S11.11 DIAGNOSTIC v1 on message 0x03 and a Pi decoder; boot-frame form ruled",
+      "story": "As the maintainer I want dIAGNOSTIC v1 on message 0x03 and a Pi decoder; boot-frame form ruled so that the WP11 acceptance can be met before the arm is connected. Review findings: SPI-11, HOST-4, DOC-21 (kinds: Add, Change, Doc fault; charter goals: 2, 2,5, 5; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-11, HOST-4, DOC-21",
+        "Clauses: SPI \u00a74, \u00a75; SPI_PAYLOAD_SCHEMA DIAGNOSTIC; SPI_SYSTEM_INTERFACE \u00a74, \u00a75",
+        "Files: Arm_Sensor_Hub/App/Inc/spi_protocol.h:16, Arm_Sensor_Hub/App/Src/spi_protocol.c:80-83, Arm_Sensor_Hub/App/Src/spi_protocol.c:80-84, Arm_Sensor_Hub/App/Src/spi_slave_service.c:258, Arm_Sensor_Hub/App/Src/spi_slave_service.c:293, Arm_Sensor_Hub/App/Src/spi_slave_service.c:303, Documentation/01_SYSTEM/SYSTEM_OVERVIEW.md:36, Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md:113-131, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md:87,99, Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md:17, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:20-31, RaspberryPi_Sensor_Hub/src/spi/timing.py:39",
+        "Ruling R14: DIAGNOSTIC v1 payload = lifecycle state, counters, cause code; sent at boot and after every recovery; GET_DIAGNOSTIC = 0x15 requested and answered on both sides; an SWD health-snapshot read is acceptable Stage 2 evidence until it lands",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B90",
+      "title": "S11.12 Stage 2 host tests and MOTOR_BENCH_PROCEDURE.md",
+      "story": "As the maintainer I want stage 2 host tests and MOTOR_BENCH_PROCEDURE.md so that the WP11 acceptance can be met before the arm is connected. Review findings: VER-28, VER-29, VER-41 (kinds: Add; charter goals: 2, 3, 4; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-28, VER-29, VER-41",
+        "Clauses: SYS-CAN-001 acceptance; SYS-MOT-001; SYS-MOT-001, SYS-MOT-002",
+        "Files: Arm_Sensor_Hub/App/Src/can_service.c:157-204, Arm_Sensor_Hub/App/Src/can_service.c:46-70, Arm_Sensor_Hub/App/Src/motor_latest_value.c:89-101, Arm_Sensor_Hub/tests/host/protocol_test_main.c:478-513, Arm_Sensor_Hub/tests/host/protocol_test_main.c:741-749, Documentation/05_VERIFICATION/, SYSTEM_VERIFICATION_MATRIX.md:14-15, service_test_main.c:80,328-332, service_test_main.c:83,338-357",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S9.7"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B91",
+      "title": "S12.1 Clock-sync rulings: T4 definition, applicable replies, extension placement, Pi clock domain, reset detection",
+      "story": "As the maintainer I want clock-sync rulings: T4 definition, applicable replies, extension placement, Pi clock domain, reset detection so that the WP12 acceptance can be met before the arm is connected. Review findings: TIME-11, TIME-12, TIME-13, TIME-14, HOST-14, SPI-9 (kinds: Unknown; charter goals: 2, 2,3, 3; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-11, TIME-12, TIME-13, TIME-14, HOST-14, SPI-9",
+        "Clauses: Issue #12 item 1; Issue #12 item 2; SYS-SYNC-001; TIME_SYSTEM_INTERFACE \u00a73",
+        "Files: Arm_Sensor_Hub/App/Inc/spi_slave_service.h:27-35, Arm_Sensor_Hub/App/Src/spi_protocol.c:32, Arm_Sensor_Hub/App/Src/spi_protocol.c:74, Arm_Sensor_Hub/App/Src/spi_protocol.c:80-84, Arm_Sensor_Hub/App/Src/spi_slave_service.c:358-377, Arm_Sensor_Hub/App/Src/spi_slave_service.c:396-404, Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md, Documentation/07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md:29-42, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py, RaspberryPi_Sensor_Hub/src/spi/time_sync_session.py:75-78, RaspberryPi_Sensor_Hub/src/spi/timing.py, RaspberryPi_Sensor_Hub/src/spi/timing.py:197",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Done 2026-10-14 by ruling R16 (a) to (e), recorded in ARCHITECTURE_DECISIONS.md 2026-10-15"
+      ],
+      "points": 1,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
+      "package": "WP12"
+    },
+    {
+      "id": "B92",
+      "title": "S12.2 ISR raw TIM2 capture extended in task context with the PRM-TS-04 guard; extension made reentrancy-safe",
+      "story": "As the maintainer I want iSR raw TIM2 capture extended in task context with the PRM-TS-04 guard; extension made reentrancy-safe so that the WP12 acceptance can be met before the arm is connected. Review findings: TIME-1, TIME-16, PRM-11 (kinds: Add, Defect; charter goals: 2; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-1, TIME-16, PRM-11",
+        "Clauses: Issue #12 items 2, 3, 11; PRM-TS-03; none (defect)",
+        "Files: Arm_Sensor_Hub/App/Inc/time_service.h:16-25, Arm_Sensor_Hub/App/Src/spi_slave_service.c:272-284, Arm_Sensor_Hub/App/Src/spi_slave_service.c:396-404, Arm_Sensor_Hub/App/Src/time_service.c:54-70, Arm_Sensor_Hub/App/Src/time_service.c:54-71, Arm_Sensor_Hub/Core/Src/main.c:352",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R16(a), (f): T4 is the end of the transfer that carried the request; when the ISR-to-task gap exceeds PRM-TS-04 the reply goes without the field and a counter increments",
+        "Depends on S12.1"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP12"
+    },
+    {
+      "id": "B93",
+      "title": "S12.3 request_received_local_us on the wire in C and Python with golden vectors",
+      "story": "As the maintainer I want request_received_local_us on the wire in C and Python with golden vectors so that the WP12 acceptance can be met before the arm is connected. Review findings: TIME-2 (kinds: Add; charter goals: 2; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-2",
+        "Clauses: Issue #12 items 1, 5",
+        "Files: Arm_Sensor_Hub/App/Inc/spi_payload_layout.h, Arm_Sensor_Hub/App/Src/spi_protocol.c:26-72, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:160-190, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:316-335",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R16(b), (c): appended as the last 8 bytes of ACK, VERSION and the correlated SNAPSHOT, each schema_version 1 to 2; never on NACK",
+        "Depends on S12.2, S9.4"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP12"
+    },
+    {
+      "id": "B94",
+      "title": "S12.4 Pi ClockSync model and the TimingSession observation hook",
+      "story": "As the maintainer I want pi ClockSync model and the TimingSession observation hook so that the WP12 acceptance can be met before the arm is connected. Review findings: TIME-3, TIME-4, HOST-5 (kinds: Add; charter goals: 2, 3; bench-blocking: yes; size: 5 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-3, TIME-4, HOST-5",
+        "Clauses: Issue #12 item 4; Issue #12 items 2-10; SYS-SYNC-001",
+        "Files: RaspberryPi_Sensor_Hub/src/spi/, RaspberryPi_Sensor_Hub/src/spi/timing.py, RaspberryPi_Sensor_Hub/src/spi/timing.py:189-244, RaspberryPi_Sensor_Hub/src/spi/timing.py:198-207, RaspberryPi_Sensor_Hub/src/spi/timing.py:220-229, RaspberryPi_Sensor_Hub/src/spi/timing.py:24-27, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R16(d), (e), (h): CLOCK_MONOTONIC_RAW through one monotonic_us() helper; a decrease of STM32 time invalidates ClockSync; plausibility rejection is the single acceptance policy",
+        "Depends on S12.3"
+      ],
+      "points": 5,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP12"
+    },
+    {
+      "id": "B95",
+      "title": "S12.5 Record timestamps converted through ClockSync and marked on the Pi",
+      "story": "As the maintainer I want record timestamps converted through ClockSync and marked on the Pi so that the WP12 acceptance can be met before the arm is connected. Review findings: TIME-5 (kinds: Add; charter goals: 2; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-5",
+        "Clauses: SYS-TS-001",
+        "Files: RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:231-278",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R16(g): SYNCHRONIZED/UNSYNCHRONIZED is marked only on the Pi from ClockSync.is_valid()",
+        "Depends on S12.4, S11.10"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP12"
+    },
+    {
+      "id": "B96",
+      "title": "S12.6 Remove STM32 TIME_SYNC and the held offset; retire sync-quality bits; health GREEN no longer needs sync",
+      "story": "As the maintainer I want remove STM32 TIME_SYNC and the held offset; retire sync-quality bits; health GREEN no longer needs sync so that the WP12 acceptance can be met before the arm is connected. Review findings: TIME-8, TIME-9, GATE-24, FW-19 (kinds: Change, Doc fault, Remove; charter goals: 2, 5; bench-blocking: no; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-8, TIME-9, GATE-24, FW-19",
+        "Clauses: Issue #12 item 6; Issue #12 items 5, 7, 9; Issue #12 items 6, 7; SYS-TS-001",
+        "Files: Arm_Sensor_Hub/App/Inc/time_service.h:27-154, Arm_Sensor_Hub/App/Src/health_monitor.c:58-63, Arm_Sensor_Hub/App/Src/health_monitor.c:84-91, Arm_Sensor_Hub/App/Src/motor_latest_value.c:73-76, Arm_Sensor_Hub/App/Src/sensor_latest_value.c:55-59, Arm_Sensor_Hub/App/Src/sensor_latest_value.c:56-59, Arm_Sensor_Hub/App/Src/sensor_task.c:330, Arm_Sensor_Hub/App/Src/spi_protocol.c:39-154, Arm_Sensor_Hub/App/Src/spi_slave_service.c:230-391, Arm_Sensor_Hub/App/Src/time_service.c:73-388, Arm_Sensor_Hub/Documentation/HEALTH_MONITOR_CONTRACT.md:28, Arm_Sensor_Hub/tests/host/protocol_test_main.c:185-326",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R16(g): sensor validity bit 5 and motor bit 2 become reserved-zero",
+        "Depends on S12.4"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP12"
+    },
+    {
+      "id": "B97",
+      "title": "S12.7 Remove the legacy Pi TIME_SYNC chain; reshape session and analysis per Issue #12 item 9",
+      "story": "As the maintainer I want remove the legacy Pi TIME_SYNC chain; reshape session and analysis per Issue #12 item 9 so that the WP12 acceptance can be met before the arm is connected. Review findings: TIME-17, TIME-18, TIME-19, TIME-20, HOST-17, HOST-18, VER-18, VER-20, PRM-16 (kinds: Change, Defect, Remove; charter goals: 2, 2, 5, 3, 5; bench-blocking: no; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-17, TIME-18, TIME-19, TIME-20, HOST-17, HOST-18, VER-18, VER-20, PRM-16",
+        "Clauses: ISSUE_12 item 1; ISSUE_12 item 9; Issue #12 item 9; Issue #12 items 5, 9; PRM-TS-01; SYS-SYNC-001 (Issue #12 removes the STM32-held offset and TIME_SYNC); TIME_SYNC_VALIDATION method for SYS-SYNC-001; none in the baseline. They test the legacy TIME_SYNC model, which `SPI_PAYLOAD_SCHEMA.md` \"TIME_SYNC\" marks deprecated.",
+        "Files: RaspberryPi_Sensor_Hub/src/spi/measurement_report.py, RaspberryPi_Sensor_Hub/src/spi/measurement_report.py:254, RaspberryPi_Sensor_Hub/src/spi/measurement_report.py:254-326, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:281-366, RaspberryPi_Sensor_Hub/src/spi/time_sync_analysis.py:178-180, RaspberryPi_Sensor_Hub/src/spi/time_sync_analysis.py:50-152, RaspberryPi_Sensor_Hub/src/spi/time_sync_analysis.py:50-199, RaspberryPi_Sensor_Hub/src/spi/time_sync_session.py:15-215, RaspberryPi_Sensor_Hub/src/spi/time_sync_session.py:241-245, RaspberryPi_Sensor_Hub/src/spi/time_sync_session.py:64-215, RaspberryPi_Sensor_Hub/src/spi/time_sync_session.py:64-71, RaspberryPi_Sensor_Hub/tests/spi/test_measurement_report.py",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R16(h), (j): the legacy drift check is dropped; TIME_SYNC_VALIDATION.md and TIME_SYNC_CHARACTERISATION_EVIDENCE.md are deleted with a provenance pointer to git history",
+        "Depends on S12.6"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP12"
+    },
+    {
+      "id": "B98",
+      "title": "S12.8 Gate A clock-sync tests on both sides",
+      "story": "As the maintainer I want gate A clock-sync tests on both sides so that the WP12 acceptance can be met before the arm is connected. Review findings: VER-31 (kinds: Add; charter goals: 2; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-31",
+        "Clauses: SYS-SYNC-001 acceptance",
+        "Files: Arm_Sensor_Hub/App/Src/spi_slave_service.c:395-403, Arm_Sensor_Hub/App/Src/time_service.c:330-388, RaspberryPi_Sensor_Hub/src/spi/",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S12.4"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP12"
+    },
+    {
+      "id": "B99",
+      "title": "S12.9 DIAGNOSTIC v2 content ruled: Pi-side record or wire content",
+      "story": "As the maintainer I want dIAGNOSTIC v2 content ruled: Pi-side record or wire content so that the WP12 acceptance can be met before the arm is connected. Review findings: TIME-10 (kinds: Unknown; charter goals: 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-10",
+        "Clauses: Issue #12 item 8",
+        "Files: Arm_Sensor_Hub/App/Src/spi_protocol.c:148-151, Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md:113-133",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Done 2026-10-14 by ruling R14(d): ClockSync fields are a Pi-side record; the wire DIAGNOSTIC carries STM32 facts only"
+      ],
+      "points": 1,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
+      "package": "WP12"
+    },
+    {
+      "id": "B100",
+      "title": "S13.1 Timing harness: poll sweep, error classes, effective clock, rig fields, link-loss mode; worker scheduling fix",
+      "story": "As the maintainer I want timing harness: poll sweep, error classes, effective clock, rig fields, link-loss mode; worker scheduling fix so that the WP13 acceptance can be met before the arm is connected. Review findings: HOST-6, HOST-10 (kinds: Add, Defect; charter goals: 3; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: HOST-6, HOST-10",
+        "Clauses: Charter goal 3",
+        "Files: RaspberryPi_Sensor_Hub/Documentation/README.md:93-94, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:133-141, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:153-160, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:281-320, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:381-394, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:417-442, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:445-452, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:49-53",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S10.4"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP13"
+    },
+    {
+      "id": "B101",
+      "title": "S13.2 Register rows and notes for Stage 3: PRM-SPI-03 split, host polling period, SPI working clock, I2C timeouts, skew target, sweep note",
+      "story": "As the maintainer I want register rows and notes for Stage 3: PRM-SPI-03 split, host polling period, SPI working clock, I2C timeouts, skew target, sweep note so that the WP13 acceptance can be met before the arm is connected. Review findings: PRM-13, PRM-5, PRM-7, HOST-15, DOC-17, PRM-6, FW-23, TIME-25, TIME-26 (kinds: Add, Doc fault, Unknown; charter goals: 1, 2, 3; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: PRM-13, PRM-5, PRM-7, HOST-15, DOC-17, PRM-6, FW-23, TIME-25, TIME-26",
+        "Clauses: DOCUMENTATION_RULES Numbers; PARAMETER_REGISTER rules; PRM-ACQ-05; PRM-SPI-03; PRM-TS-02; SYS-TS-001",
+        "Files: Arm_Sensor_Hub/App/Src/as5600.c:14, Arm_Sensor_Hub/App/Src/as5600.c:239, Arm_Sensor_Hub/App/Src/sensor_task.c:17, Arm_Sensor_Hub/App/Src/sensor_task.c:336-345, Arm_Sensor_Hub/App/Src/spi_slave_service.c:308-315, Arm_Sensor_Hub/App/Src/spi_slave_service.c:40,308-312, Arm_Sensor_Hub/App/Src/tca9548a_mux.c:5-6, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md:137, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:16, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:33, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:36, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:45",
+        "Ruling R2: PRM-SPI-03 retitled the STM32 staged-frame recheck period; new row for the Pi polling period (Provisional 10 ms, at most the liveness interval)",
+        "Ruling R16(i): PRM-TS-02 restated as Derived from PRM-ACQ-02 for sensor records",
+        "Ruling R17(c), (d): new row for the working SPI clock (Provisional 1 MHz); the Pi DATA_READY wait mirrors PRM-SPI-04",
+        "New Provisional rows from the rulings: stop acceleration 4 and stop-complete timeout 500 ms (R21a, b); gated-move speed 100 RPM, gated-move acceleration 4, bench speed ceiling 300 RPM (R21f); MKS heartbeat time 500 ms (R23b); IWDG timeout 1 s (R24a); liveness expected-message interval 20 ms (R22b); PRM-LINK-02 N_moving 5, N_idle 25 (R22a); per-motor feedback period 20 ms (R11b); bus-off recovery-failure interval (R12b); PRM-MOT-01 Derived 100 ms",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP13"
+    },
+    {
+      "id": "B102",
+      "title": "S13.3 LINK_MEASUREMENT_PROCEDURE.md and CAN_BUS_OFF_BENCH_PROCEDURE.md against the named instruments",
+      "story": "As the maintainer I want lINK_MEASUREMENT_PROCEDURE.md and CAN_BUS_OFF_BENCH_PROCEDURE.md against the named instruments so that the WP13 acceptance can be met before the arm is connected. Review findings: VER-46, VER-43, VER-47 (kinds: Add, Unknown; charter goals: 3, 3, 4; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-46, VER-43, VER-47",
+        "Clauses: SYS-CAN-001 (bitrate and load), SYS-SPI-001 (DATA_READY electrical), SAFE-02 timing; SYS-CAN-001, SAFE-03; charter goal 3",
+        "Files: Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md:60-68, Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md:66, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:100, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R17(a), (b): procedures written for a USB-CAN adapter or CAN analyser, a logic analyser or oscilloscope, an SPI link cut and a forced bus-off; bus load from the analyser with the STM32 counters as cross-check",
+        "Depends on S13.1"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP13"
+    },
+    {
+      "id": "B103",
+      "title": "S13.4 DATA_READY assignment status narrowed to what is unresolved; Stage 3 electrical check planned",
+      "story": "As the maintainer I want dATA_READY assignment status narrowed to what is unresolved; Stage 3 electrical check planned so that the WP13 acceptance can be met before the arm is connected. Review findings: FW-25, DOC-16 (kinds: Change, Unknown; charter goals: 3; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-25, DOC-16",
+        "Clauses: SYS-SPI-001 status",
+        "Files: Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:104-107, Arm_Sensor_Hub/Core/Inc/main.h:60-61, Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md:25, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md:137, Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md:59, RaspberryPi_Sensor_Hub/Documentation/RASPBERRY_PI_BRINGUP_V1.md:42,708, RaspberryPi_Sensor_Hub/Documentation/README.md:76",
+        "Ruling R17(e): DATA_READY is PA8 (STM32) and GPIO25 (Pi); only the Stage 3 electrical check remains",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP13"
+    },
+    {
+      "id": "B104",
+      "title": "S13.5 Host joint-state API in radians with the SYS-IF-001 fields; calibration-version carriage ruled",
+      "story": "As the maintainer I want host joint-state API in radians with the SYS-IF-001 fields; calibration-version carriage ruled so that the WP13 acceptance can be met before the arm is connected. Review findings: HOST-12, SPI-24, FW-8 (kinds: Add, Unknown; charter goals: 1, 5; bench-blocking: no; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: HOST-12, SPI-24, FW-8",
+        "Clauses: SYS-IF-001",
+        "Files: Arm_Sensor_Hub/App/Inc/sensor_latest_value.h, Arm_Sensor_Hub/App/Inc/sensor_latest_value.h:45, Arm_Sensor_Hub/App/Src/spi_slave_service.c:146-161, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:231-266, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:232-266",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R26(e): the joint-state API reports no calibration version until WP18 decides where it travels",
+        "Depends on S11.10"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP13"
+    },
+    {
+      "id": "B105",
+      "title": "S14.1 Stage 4 rulings: reason codes, lifecycle and reactivation, motor_ready and global inhibit, controlled stop and disable, liveness values, prerequisites, E-stop and MKS power-on facts",
+      "story": "As the maintainer I want stage 4 rulings: reason codes, lifecycle and reactivation, motor_ready and global inhibit, controlled stop and disable, liveness values, prerequisites, E-stop and MKS power-on facts so that the WP14 acceptance can be met before the arm is connected. Review findings: GATE-5, GATE-8, GATE-9, GATE-11, GATE-12, GATE-13, GATE-16, SPI-8, CAN-22, DOC-6, PRM-22, PRM-28, GATE-4 (kinds: Add, Doc fault, Unknown; charter goals: 3, 4; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: GATE-5, GATE-8, GATE-9, GATE-11, GATE-12, GATE-13, GATE-16, SPI-8, CAN-22, DOC-6, PRM-22, PRM-28, GATE-4",
+        "Clauses: D-3; PRM-LINK-01; SAFE-02; SAFE-04; SPI_PAYLOAD_SCHEMA.md SET_MOTOR_COMMAND mapping; SYS-GATE-001; SYS-GATE-001 acceptance; SYS-LINK-001; SYS-LINK-002; SYS-MOT-001; SYS-REC-001; register \u00a72",
+        "Files: Arm_Sensor_Hub/App/Inc/motion_permission.h:19-26, Arm_Sensor_Hub/App/Inc/motion_permission.h:37-38, Arm_Sensor_Hub/App/Inc/motion_permission.h:45, Arm_Sensor_Hub/App/Src/app_init.c:142-173, Arm_Sensor_Hub/App/Src/can_service.c:516-533, Arm_Sensor_Hub/App/Src/can_service.c:516-575, Arm_Sensor_Hub/App/Src/can_service.c:538-557, Arm_Sensor_Hub/App/Src/spi_slave_service.c:380-391, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/src/protocol_core.cpp:18, Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md:19, Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md, Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md:217-236",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Done 2026-10-14 by rulings R18 to R24 and R26, recorded in ARCHITECTURE_DECISIONS.md 2026-10-15"
+      ],
+      "points": 1,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
+      "package": "WP14"
+    },
+    {
+      "id": "B106",
+      "title": "S14.2 Gate module built and simplified to D-3: per motor, side-effect free, single motion authority",
+      "story": "As the maintainer I want gate module built and simplified to D-3: per motor, side-effect free, single motion authority so that the WP14 acceptance can be met before the arm is connected. Review findings: GATE-1, GATE-2, GATE-10, GATE-27 (kinds: Change, Defect, Remove; charter goals: 4; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: GATE-1, GATE-2, GATE-10, GATE-27",
+        "Clauses: D-3 / SYS-GATE-001; SYS-GATE-001; none (defect)",
+        "Files: Arm_Sensor_Hub/App/Inc/can_service.h:54-64, Arm_Sensor_Hub/App/Inc/motion_permission.h:28-55, Arm_Sensor_Hub/App/Src/can_service.c:76-89, Arm_Sensor_Hub/App/Src/motion_permission.c:1-3, Arm_Sensor_Hub/App/Src/motion_permission.c:5-33, Arm_Sensor_Hub/App/Src/motion_permission.c:96-127, Arm_Sensor_Hub/CMakeLists.txt:61-82, Arm_Sensor_Hub/tests/host/CMakeLists.txt:1-46",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R18: detail codes 0 ALLOWED to 6 CAN_QUEUE_FULL in that precedence, latched flag in the upper byte; ruling R20: motor_ready and global_motion_inhibit as defined",
+        "Depends on S9.3, S14.1"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B107",
+      "title": "S14.3 Count-based link_stale on STM32 local time with Provisional N symbols",
+      "story": "As the maintainer I want count-based link_stale on STM32 local time with Provisional N symbols so that the WP14 acceptance can be met before the arm is connected. Review findings: GATE-3, TIME-15, PRM-10 (kinds: Add; charter goals: 4; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: GATE-3, TIME-15, PRM-10",
+        "Clauses: PRM-LINK-01; SYS-LINK-001",
+        "Files: Arm_Sensor_Hub/App/Src/motion_permission.c:5, Arm_Sensor_Hub/App/Src/motion_permission.c:5-26, Arm_Sensor_Hub/App/Src/spi_slave_service.c:349-394, Arm_Sensor_Hub/App/Src/spi_slave_service.c:371-379, Arm_Sensor_Hub/CMakeLists.txt:61-82, Arm_Sensor_Hub/CMakeLists.txt:63-81, Arm_Sensor_Hub/Core/Src/main.c:447-455, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:73",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R22: N_moving and N_idle from PRM-LINK-02; fixed STM32 expected-message interval; moving = non-zero MKS speed, unknown speed counts as moving; link_stale true from reset until the first valid message",
+        "Depends on S11.6 (B84) for the speed poll"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B108",
+      "title": "S14.4 SET_MOTOR_COMMAND on both sides with per-input gate reasons and golden vectors",
+      "story": "As the maintainer I want sET_MOTOR_COMMAND on both sides with per-input gate reasons and golden vectors so that the WP14 acceptance can be met before the arm is connected. Review findings: SPI-7, HOST-1, SPI-17 (kinds: Add, Doc fault; charter goals: 4, 4,5; bench-blocking: yes; size: 5 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-7, HOST-1, SPI-17",
+        "Clauses: SPI_SYSTEM_INTERFACE \u00a714; SYS-CMD-001",
+        "Files: Arm_Sensor_Hub/App/Inc/spi_protocol.h:15-23, Arm_Sensor_Hub/App/Inc/spi_protocol.h:24-26, Arm_Sensor_Hub/App/Src/spi_protocol.c:148-151, Arm_Sensor_Hub/App/Src/spi_protocol.c:170, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:28, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:316-335, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:34-49",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Pi client support for the system-activate message (R19b)",
+        "Depends on S14.2, S14.3, S9.4"
+      ],
+      "points": 5,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B109",
+      "title": "S14.5 Motor command module: MKS mapping per kind, unit conversion, registered speed and acceleration, motor firmware version read",
+      "story": "As the maintainer I want motor command module: MKS mapping per kind, unit conversion, registered speed and acceleration, motor firmware version read so that the WP14 acceptance can be met before the arm is connected. Review findings: CAN-21, CAN-24 (kinds: Add; charter goals: 4; bench-blocking: yes; size: 5 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-21, CAN-24",
+        "Clauses: CAN_SYSTEM_INTERFACE.md \u00a711; SYS-CMD-001",
+        "Files: Arm_Sensor_Hub/App/Inc/can_service.h:51-72, Arm_Sensor_Hub/App/Src/app_init.c:68-71, Arm_Sensor_Hub/App/Src/can_service.c:516-555, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/include/mks_api.h:72-86, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/include/mks_api.h:72-89, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/include/mksservo/encoder.hpp:32-37, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/src/encoder.cpp:140-142",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Rulings R11, R21(a), (e), (f): F5H absolute position in the 31H unit, F6H signed RPM, mode-matched controlled stop, F7H fallback; speeds and accelerations from the B101 rows; bench speed ceiling enforced; drive firmware read by 40H",
+        "Depends on S14.1, S11.5"
+      ],
+      "points": 5,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B110",
+      "title": "S14.6 Fail-closed supervisor: controlled stop then hold on a gate-closed edge, queue purge, stop at boot, MKS heartbeat",
+      "story": "As the maintainer I want fail-closed supervisor: controlled stop then disable on a gate-closed edge, queue purge, stop and disable at boot, MKS heartbeat if ruled so that the WP14 acceptance can be met before the arm is connected. Review findings: GATE-6, GATE-7, GATE-14, CAN-23 (kinds: Add, Defect; charter goals: 4; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: GATE-6, GATE-7, GATE-14, CAN-23",
+        "Clauses: SAFE-02; SAFE-04; SYS-LINK-002",
+        "Files: Arm_Sensor_Hub/App/Src/app_init.c:104-137, Arm_Sensor_Hub/App/Src/app_init.c:104-173, Arm_Sensor_Hub/App/Src/can_service.c, Arm_Sensor_Hub/App/Src/can_service.c:432-449, Arm_Sensor_Hub/App/Src/can_service.c:516-533, Arm_Sensor_Hub/App/Src/can_service.c:76-114, Arm_Sensor_Hub/App/Src/can_tx_policy.c:19-47, Arm_Sensor_Hub/Core/Src/main.c:447-455, Arm_Sensor_Hub/Core/Src/main.c:485-494, Arm_Sensor_Hub/Core/Src/stm32f4xx_it.c:73-145, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/include/mksservo/encoder.hpp:96, icm-project/references/mks-servo42d-57d-can/frame-and-checksum.md:39-41",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R21(d): the sequence ends stopped and enabled (shaft held), never disabled; motor_ready cleared so a new ENABLE is needed",
+        "Ruling R23: controlled stop to every registered motor at boot and on every CAN activation before polling, with a host test that no other motion frame precedes it; 98H heartbeat configured at CAN activation",
+        "Depends on S14.5 (B109), S11.7 (B85) and the WP17 requirements amendment"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B111",
+      "title": "S14.7 System-activate SPI message; producers for motor_ready and global_motion_inhibit",
+      "story": "As the maintainer I want one explicit system-activate SPI message so that motion, CAN recovery and fault clearing all start from one deliberate host action. Rulings R19(b), R12(d), R20(b), R27; review finding DOC-20.",
+      "acceptance": [
+        "A new SPI message type (value proposed 0x16) with ACK/NACK, defined in SPI_SYSTEM_INTERFACE.md and SPI_PAYLOAD_SCHEMA.md and implemented in C and Python with golden vectors",
+        "It activates the services in dependency order (CAN RECOVER then ACTIVATE first after an escalated bus-off), then the motion lifecycle; NACKed CAN_NOT_ACTIVE if CAN recovery fails",
+        "It clears global_motion_inhibit and the health YELLOW latch; SET_MOTOR_COMMAND ENABLE then enables one motor only",
+        "Producers: motor_ready per R20(a); global_motion_inhibit set by bus-off escalation and by a host command, latched until this message",
+        "Files: Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md, Arm_Sensor_Hub/App/Src/spi_slave_service.c, Arm_Sensor_Hub/App/Src/spi_protocol.c, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B112",
+      "title": "S14.8 Fault visibility: health snapshot fields, debug mirror, SWD readout, lifecycle timestamps, clear semantics",
+      "story": "As the maintainer I want fault visibility: health snapshot fields, debug mirror, SWD readout, lifecycle timestamps, clear semantics so that the WP14 acceptance can be met before the arm is connected. Review findings: GATE-23, GATE-25, GATE-26, VER-14, DOC-25 (kinds: Add, Change, Unknown; charter goals: 4, 5, 5; bench-blocking: yes; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: GATE-23, GATE-25, GATE-26, VER-14, DOC-25",
+        "Clauses: HEALTH_MONITOR_CONTRACT open decisions; SAFE-03, SAFE-05; SAFE-05; SAFE-05 (\"until then the health monitor state read over SWD or the bench tool\"); SYSTEM_LIFECYCLE \u00a73, \u00a78",
+        "Files: Arm_Sensor_Hub/App/Inc/health_monitor.h:28-55, Arm_Sensor_Hub/App/Inc/lifecycle.h:35-53, Arm_Sensor_Hub/App/Src/health_monitor.c:49-63, Arm_Sensor_Hub/App/Src/health_monitor.c:8, Arm_Sensor_Hub/App/Src/health_monitor.c:8,134-142, Arm_Sensor_Hub/App/Src/lifecycle.c:38-74, Arm_Sensor_Hub/App/Src/spi_slave_service.c:208, Arm_Sensor_Hub/Documentation/SWD_READOUT_PROCEDURES.md, Arm_Sensor_Hub/tools/check-sensors.sh:97-99, Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md:15,17, Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md:17, Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md",
+        "Ruling R27: YELLOW = a fault since boot not yet cleared; cleared only by system-activate; counters keep counting",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B113",
+      "title": "S14.9 Watchdog and reset cause per ruling",
+      "story": "As the maintainer I want watchdog and reset cause per ruling so that the WP14 acceptance can be met before the arm is connected. Review findings: GATE-15, FW-26 (kinds: Unknown; charter goals: 4; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: GATE-15, FW-26",
+        "Clauses: SAFETY_REQUIREMENTS open item (watchdog); SAFETY_REQUIREMENTS open items",
+        "Files: Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:43-52, Arm_Sensor_Hub/Core/Inc/FreeRTOSConfig.h:154, Arm_Sensor_Hub/Core/Inc/stm32f4xx_hal_conf.h:58, Arm_Sensor_Hub/Core/Src/main.c:485-494, Arm_Sensor_Hub/Core/Src/stm32f4xx_it.c:78-83",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R24: IWDG through CubeMX with the B101 timeout, refreshed only when every task has run that pass; reset cause latched from RCC CSR into the health snapshot and DIAGNOSTIC v1",
+        "Depends on S14.1"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B114",
+      "title": "S14.10 Calibration storage, transfer and reporting if ruled needed before gated motion; selection and CRC defects fixed",
+      "story": "As the maintainer I want calibration storage, transfer and reporting if ruled needed before gated motion; selection and CRC defects fixed so that the WP14 acceptance can be met before the arm is connected. Review findings: FW-5, FW-6, FW-7, HOST-13 (kinds: Add, Change, Unknown; charter goals: 4, 5; bench-blocking: no; size: 5 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-5, FW-6, FW-7, HOST-13",
+        "Clauses: SYS-CAL-001; SYS-CAL-001 acceptance vs SYSTEM_CONFIGURATION \u00a73",
+        "Files: Arm_Sensor_Hub/App/Inc/calibration_record.h:20-67, Arm_Sensor_Hub/App/Src/calibration_record.c:104-145, Arm_Sensor_Hub/App/Src/calibration_record.c:31-145, Arm_Sensor_Hub/App/Src/calibration_record.c:64-67, Arm_Sensor_Hub/App/Src/sensor_task.c:16, Arm_Sensor_Hub/App/Src/sensor_task.c:179-185, Arm_Sensor_Hub/tests/host/protocol_test_main.c:332-333, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md, RaspberryPi_Sensor_Hub/src/spi/",
+        "Moved from WP14 to WP18 by ruling R26(b); selection rule per R26(d); version carriage and transfer message decided in WP18 (R26e, R26f)",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 5,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP18"
+    },
+    {
+      "id": "B115",
+      "title": "S14.11 Stage 4 host tests and bench procedures: gate per input, liveness, link-loss stop, command per kind, boot queues no motion, session safety",
+      "story": "As the maintainer I want stage 4 host tests and bench procedures: gate per input, liveness, link-loss stop, command per kind, boot queues no motion, session safety so that the WP14 acceptance can be met before the arm is connected. Review findings: VER-25, VER-26, VER-27, VER-32, VER-42, VER-44, VER-45, GATE-29 (kinds: Add; charter goals: 4, 5; bench-blocking: yes; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-25, VER-26, VER-27, VER-32, VER-42, VER-44, VER-45, GATE-29",
+        "Clauses: Joint X, Y and Z verified motion; SAFE-01, SAFE-04, SYS-REC-001; SAFE-04; SYS-CMD-001; SYS-GATE-001 acceptance (\"with each input removed in turn ... NACKed with that input's reason code\"); SYS-LINK-001, SYS-LINK-002, SAFE-02; SYSTEM_VERIFICATION_MATRIX SYS-GATE-001, SYS-LINK-001/002, SYS-REC-001, SAFE-03, SAFE-04",
+        "Files: Arm_Sensor_Hub/App/Inc/motion_permission.h:21-26, Arm_Sensor_Hub/App/Src/app_init.c:104-173, Arm_Sensor_Hub/App/Src/motion_permission.c:1-127, Arm_Sensor_Hub/App/Src/spi_protocol.c:148-151, Arm_Sensor_Hub/App/Src/spi_slave_service.c, Arm_Sensor_Hub/tests/host/CMakeLists.txt, Arm_Sensor_Hub/tests/host/CMakeLists.txt:1-57, Arm_Sensor_Hub/tests/host/protocol_test_main.c:751-814, Arm_Sensor_Hub/tests/host/service_test_main.c, Arm_Sensor_Hub/tests/host/service_test_main.c:1098-1104, Arm_Sensor_Hub/tests/host/service_test_main.c:328-332, Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md:13,16",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "SAFE-02 bench evidence: stop observed, shaft held, no later move (R21d); prerequisites before the first gated motion: SAFE-01, SAFE-02 and the gate evidence (R26a); the session-safety procedure names the E-stop and the FFH/85H checks (R25)",
+        "Depends on S14.4, S14.6"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B116",
+      "title": "S15.1 Status text matches the code: NOT_FITTED implemented, gate not built, caveats overtaken, CLAUDE.md and README corrected",
+      "story": "As the maintainer I want status text matches the code: NOT_FITTED implemented, gate not built, caveats overtaken, CLAUDE.md and README corrected so that the WP15 acceptance can be met before the arm is connected. Review findings: DOC-8, DOC-2, DOC-24, SPI-22, FW-22, VER-2, VER-1, DOC-34 (kinds: Change, Doc fault; charter goals: 1, 1, 5, 1,5, 4, 4, 5, 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: DOC-8, DOC-2, DOC-24, SPI-22, FW-22, VER-2, VER-1, DOC-34",
+        "Clauses: CLAUDE.md accuracy; SPI_PAYLOAD_SCHEMA NOT_FITTED implementation status; SYS-ENC-002; SYS-ENC-002 status; SYS-GATE-001 (D-3); SYS-GATE-001, SYS-LINK-001, SYS-LINK-002, SAFE-02, the joint rows; sign-off 2026-10-04",
+        "Files: Arm_Sensor_Hub/App/Src/motion_permission.c:1-127, Arm_Sensor_Hub/CMakeLists.txt:61-82, Arm_Sensor_Hub/CMakeLists.txt:63-81, Arm_Sensor_Hub/tests/host/CMakeLists.txt, Arm_Sensor_Hub/tests/host/CMakeLists.txt:1-57, CLAUDE.md:10,16,41,45,76, CLAUDE.md:45, Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md:39, Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md:39,93, Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md:153, Documentation/01_SYSTEM/SYSTEM_OVERVIEW.md:23, Documentation/01_SYSTEM/SYSTEM_OVERVIEW.md:23,39",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B117",
+      "title": "S15.2 Retired requirement IDs replaced; restated requirement text and pin tables reduced to references",
+      "story": "As the maintainer I want retired requirement IDs replaced; restated requirement text and pin tables reduced to references so that the WP15 acceptance can be met before the arm is connected. Review findings: DOC-12, DOC-13, VER-10, TIME-23, GATE-28, DOC-14, DOC-39 (kinds: Change, Doc fault; charter goals: 4, 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: DOC-12, DOC-13, VER-10, TIME-23, GATE-28, DOC-14, DOC-39",
+        "Clauses: D-3; DOCUMENTATION_RULES; DOCUMENTATION_RULES component boundary; SAFE-02..05; SYSTEM_LIFECYCLE \u00a78; SYSTEM_REQUIREMENTS retired table; SYSTEM_REQUIREMENTS retired-ID table",
+        "Files: Arm_Sensor_Hub/App/Src/app_init.c:151-170, Arm_Sensor_Hub/Documentation/HEALTH_MONITOR_CONTRACT.md:28, Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md:51-61, Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md:60, Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md:120-130, Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md:153, Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md:79,113, Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md:82, Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md:95,129, Documentation/01_SYSTEM/SYSTEM_SYNCHRONIZATION.md:14,21,23,27, Documentation/01_SYSTEM/SYSTEM_SYNCHRONIZATION.md:9-17, Documentation/02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md:11,13",
+        "The SAFETY_REQUIREMENTS.md retired IDs are replaced in WP17 (B126), not here (R29f)",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B118",
+      "title": "S15.3 Timestamp semantics stated once; every time document marked as-built or target",
+      "story": "As the maintainer I want timestamp semantics stated once; every time document marked as-built or target so that the WP15 acceptance can be met before the arm is connected. Review findings: DOC-3, DOC-10, DOC-11, TIME-22 (kinds: Change, Doc fault; charter goals: 2, 5; bench-blocking: no; size: 2 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: DOC-3, DOC-10, DOC-11, TIME-22",
+        "Clauses: CLAUDE.md as-built rule; Issue #12 items 1, 7; SPI \u00a73, \u00a79; as-built TIME_SYNC (PRM-TS-05)",
+        "Files: Arm_Sensor_Hub/App/Inc/spi_payload_layout.h:30, Arm_Sensor_Hub/App/Src/sensor_latest_value.c:56-58, Arm_Sensor_Hub/App/Src/spi_protocol.c:33, Arm_Sensor_Hub/App/Src/time_service.c:248-254, Arm_Sensor_Hub/Documentation/HEALTH_MONITOR_CONTRACT.md:28, Documentation/01_SYSTEM/SYSTEM_ARCHITECTURE.md:83-85, Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md:60, Documentation/01_SYSTEM/SYSTEM_LIFECYCLE.md:60,75-79, Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md:29, Documentation/01_SYSTEM/SYSTEM_SYNCHRONIZATION.md:9-17, Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md:63-64, Documentation/02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md:11",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S12.1"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B119",
+      "title": "S15.4 CAN documents corrected: as-built bitrate, eight-versus-six motors, the ERROR recovery clause",
+      "story": "As the maintainer I want cAN documents corrected: as-built bitrate, eight-versus-six motors, the ERROR recovery clause so that the WP15 acceptance can be met before the arm is connected. Review findings: CAN-2, CAN-9, CAN-28, PRM-2, DOC-1 (kinds: Change, Doc fault; charter goals: 2, 3; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: CAN-2, CAN-9, CAN-28, PRM-2, DOC-1",
+        "Clauses: CAN_SYSTEM_INTERFACE.md \u00a71; CAN_SYSTEM_INTERFACE.md \u00a75 vs \u00a78; PRM-CAN-02",
+        "Files: Arm_Sensor_Hub/App/Inc/joint_mapping.h:17, Arm_Sensor_Hub/App/Src/can_service.c:399-401, Arm_Sensor_Hub/App/Src/can_service.c:61-69, Arm_Sensor_Hub/App/Src/spi_slave_service.c:218, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:5-9, Arm_Sensor_Hub/Core/Src/main.c:241-245, Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md:104, Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md:16, Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md:80, Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md:39-42, Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md:10-13,44, Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md:12",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Ruling R12(a): CAN \u00a78 rewritten so ERROR waits for the system-activate message; ruling R29(h): PRM-CAN-02 corrected to the as-built 187.5 kbit/s with commit 8ad5fbe as source",
+        "Depends on S11.1"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B120",
+      "title": "S15.5 Matrix trail corrections and joint rows named",
+      "story": "As the maintainer I want matrix trail corrections and joint rows named so that the WP15 acceptance can be met before the arm is connected. Review findings: VER-4, VER-5, VER-6, VER-7, VER-8, VER-9, DOC-26, HOST-29, TIME-24 (kinds: Change, Doc fault, Unknown; charter goals: 2, 5, 4, 5, 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-4, VER-5, VER-6, VER-7, VER-8, VER-9, DOC-26, HOST-29, TIME-24",
+        "Clauses: SYS-CMD-001, SYS-IF-001; SYS-LINK-001; SYS-MOT-001, SYS-MOT-002; SYS-TS-001, SYS-SYNC-001; SYSTEM_VERIFICATION_MATRIX SYS-TS-001, SYS-SYNC-001; VERIFICATION_STRATEGY Chain; VERIFICATION_STRATEGY chain rule; `VERIFICATION_STRATEGY.md` \"Status vocabulary\"; charter goal 4",
+        "Files: Arm_Sensor_Hub/App/Src/can_service.c:157-204, Arm_Sensor_Hub/App/Src/health_monitor.c:82-132, Arm_Sensor_Hub/App/Src/spi_slave_service.c:163-175, Arm_Sensor_Hub/tests/host/service_test_main.c:867-879, Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md:90, Documentation/03_COMPONENTS/RASPBERRY_SENSOR_HUB.md:13, Documentation/03_COMPONENTS/RASPBERRY_SENSOR_HUB.md:14, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:14, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:15,22,24,27, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:16, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:22, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:24",
+        "Ruling R29(a): SYS-ENC-002, SYS-SPI-001, SYS-MAP-001 and the SYS-CAN-001 policy part move to COMPONENT_EVIDENCE, naming the tests",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B121",
+      "title": "S15.6 Register Used-by and notes, numbers outside the register, the Numbers rule",
+      "story": "As the maintainer I want register Used-by and notes, numbers outside the register, the Numbers rule so that the WP15 acceptance can be met before the arm is connected. Review findings: DOC-36, DOC-18, DOC-19, PRM-27 (kinds: Change, Doc fault; charter goals: 3, 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: DOC-36, DOC-18, DOC-19, PRM-27",
+        "Clauses: DOCUMENTATION_RULES Numbers; PARAMETER_REGISTER columns; PRM-ACQ-01",
+        "Files: Arm_Sensor_Hub/Documentation/HEALTH_MONITOR_CONTRACT.md:28, Documentation/01_SYSTEM/SYSTEM_OVERVIEW.md:28, Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md:16-29, Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md:22,30-31,39-40,61,77, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:17, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:32,37,43,45,56,57,73,80,82,90, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:36, Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md:24, Documentation/DOCUMENTATION_RULES.md:18-22, RaspberryPi_Sensor_Hub/Documentation/RASPBERRY_PI_BRINGUP_V1.md:104,699,708,738,742-744,750,840, RaspberryPi_Sensor_Hub/Documentation/RASPBERRY_PI_BRINGUP_V1.md:763,821, RaspberryPi_Sensor_Hub/Documentation/README.md:76",
+        "Ruling R29(g): the Numbers rule names four homes: contract constants, register rows, commissioning-table facts, cited vendor references; doc_check uses the same classification",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B122",
+      "title": "S15.7 SPI contract gaps: NACK status table, GET payload, padding, boot frame, PRM-SPI-03 wording",
+      "story": "As the maintainer I want sPI contract gaps: NACK status table, GET payload, padding, boot frame, PRM-SPI-03 wording so that the WP15 acceptance can be met before the arm is connected. Review findings: SPI-20, DOC-22, DOC-15, DOC-23 (kinds: Change, Doc fault; charter goals: 3, 4; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-20, DOC-22, DOC-15, DOC-23",
+        "Clauses: SPI \u00a714; SYS-CMD-001; SYS-LINK-001; SYS-SPI-001",
+        "Files: Arm_Sensor_Hub/App/Src/spi_slave_service.c:308-315, Arm_Sensor_Hub/App/Src/spi_slave_service.c:40, Documentation/02_INTERFACES/HOST/HOST_SYSTEM_INTERFACE.md:11, Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md:193,224, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md:105, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md:231-239, Documentation/03_COMPONENTS/ARM_SENSOR_HUB.md:61, Documentation/03_COMPONENTS/RASPBERRY_SENSOR_HUB.md:12, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:17, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:73, Documentation/07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md:16, RaspberryPi_Sensor_Hub/Documentation/RASPBERRY_PI_BRINGUP_V1.md:58,847",
+        "Ruling R8(b): the 'exercised on target' sentence is withdrawn until the Stage 3 SYS-SPI-001 record exists; rulings R1, R4 and R14(a) written into the contract",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B123",
+      "title": "S15.8 Component documents match the code: Pi README and bring-up guide, BUILD_CONTRACT, SWD and instrumentation, health contract, service contracts",
+      "story": "As the maintainer I want component documents match the code: Pi README and bring-up guide, BUILD_CONTRACT, SWD and instrumentation, health contract, service contracts so that the WP15 acceptance can be met before the arm is connected. Review findings: HOST-26, HOST-27, HOST-28, DOC-28, DOC-29, DOC-30, DOC-31, DOC-35, DOC-40, VER-11, VER-12, VER-13, VER-15, FW-24, FW-30, TIME-21, TIME-27, DOC-27, DOC-32, DOC-37 (kinds: Change, Doc fault, Unknown; charter goals: 3, 3, 5, 5; bench-blocking: no; size: 3 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: HOST-26, HOST-27, HOST-28, DOC-28, DOC-29, DOC-30, DOC-31, DOC-35, DOC-40, VER-11, VER-12, VER-13, VER-15, FW-24, FW-30, TIME-21, TIME-27, DOC-27, DOC-32, DOC-37",
+        "Clauses: 00_INDEX status vocabulary; BUILD_CONTRACT Verification; DOCUMENTATION_RULES; HOST_SYSTEM_INTERFACE; PROJECT_CHARTER non-goal ROS 2; RASPBERRY_SENSOR_HUB System responsibilities; RASPBERRY_SENSOR_HUB responsibilities; SAFE-05 (interim fault visibility \"read over SWD\"); SYS-SYNC-001; SYS-SYNC-001 (as-built evidence); SYSTEM_CONFIGURATION \u00a72; SYSTEM_LIFECYCLE \u00a712; `BUILD_CONTRACT.md` \"Verification\";",
+        "Files: .github/ISSUE_CONTRACT.md:184-186, .github/ISSUE_FRAMEWORK.md:237,328, Arm_Sensor_Hub/App/Inc/health_monitor.h:22-25, Arm_Sensor_Hub/App/Inc/spi_slave_service.h:27-35, Arm_Sensor_Hub/App/Inc/time_service.h:50-58, Arm_Sensor_Hub/App/Src/app_init.c:142-173, Arm_Sensor_Hub/App/Src/sensor_task.c:211-219, Arm_Sensor_Hub/App/Src/time_service.c:189, Arm_Sensor_Hub/CMakeLists.txt:92-133, Arm_Sensor_Hub/CMakePresets.json, Arm_Sensor_Hub/Documentation/BUILD_CONTRACT.md:34,48,73, Arm_Sensor_Hub/Documentation/BUILD_CONTRACT.md:48-55",
+        "Rulings R29(d), (e), R26(b), R16(j): erratum banner on the two as-built TIME_SYNC documents and SWD_READOUT_PROCEDURES.md corrected; a header comment per App/Inc module replaces separate contract documents; SYSTEM_CONFIGURATION \u00a73 amended for deferred calibration",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B124",
+      "title": "S15.9 Plan and lifecycle records: CHARTER_ALIGNMENT_PLAN disposition, WP2 and WP7 waivers recorded",
+      "story": "As the maintainer I want plan and lifecycle records: CHARTER_ALIGNMENT_PLAN disposition, WP2 and WP7 waivers recorded so that the WP15 acceptance can be met before the arm is connected. Review findings: DOC-33, DOC-38, VER-3 (kinds: Doc fault, Unknown; charter goals: 1, 5, 5; bench-blocking: no; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: DOC-33, DOC-38, VER-3",
+        "Clauses: `lifecycle.json` WP2 acceptance; lifecycle.json WP2/WP7 acceptance; plan S6.5",
+        "Files: Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md:104, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md:11,60, Documentation/07_DECISIONS/KARETAO_DECISIONS_QUESTIONS_ISSUES_REGISTER.md:13, Documentation/CHARTER_ALIGNMENT_PLAN.md:7,57-62,85,205,392-398, lifecycle.json",
+        "Ruling R29(b), (c): WP2 reopened (done in lifecycle.json 2026-10-15); CHARTER_ALIGNMENT_PLAN.md \u00a72.4 and \u00a711 replaced by one paragraph pointing at the review and WP9 to WP18; WP7's GET_DIAGNOSTIC item closed by R14(b) (dated line in ARCHITECTURE_DECISIONS.md, done 2026-10-15)",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 1,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP15"
+    },
+    {
+      "id": "B125",
+      "title": "S16.1 Bench questions answered: instruments, Stage 2 motion source, Pi dirty-tree rule",
+      "story": "As the maintainer I want bench questions answered: instruments, Stage 2 motion source, Pi dirty-tree rule so that the WP16 acceptance can be met before the arm is connected. Review findings: VER-47, VER-48, VER-49 (kinds: Unknown; charter goals: 2, 3, 5; bench-blocking: yes; size: 1 points).",
+      "acceptance": [
+        "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: VER-47, VER-48, VER-49",
+        "Clauses: SYS-CAN-001 (bitrate and load), SYS-SPI-001 (DATA_READY electrical), SAFE-02 timing; SYS-MOT-001 acceptance (\"its position follows commanded motion\"); `EVIDENCE_RECORD_FORMAT.md` \"Firmware identity\" (Pi commit hash)",
+        "Files: Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md:16, Documentation/05_VERIFICATION/CAN_INTEGRATION_EVIDENCE.md:66, Documentation/05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md:13,22",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Done 2026-10-14 by rulings R17(a) instruments, R28(c) Stage 2 motion source and R28(b) Pi dirty-tree rule"
+      ],
+      "points": 1,
+      "status": "done",
+      "sprint": null,
+      "created": "2026-10-14T00:00:00+00:00",
+      "done_at": "2026-10-14T23:32:08.099507+00:00",
+      "package": "WP16"
+    },
+    {
+      "id": "B126",
+      "title": "S17.1 Amend SAFE-02, SYS-LINK-002 and SYS-GATE-001 for stop-and-hold; replace retired IDs in the safety requirements",
+      "story": "As the maintainer I want the requirements to say that link loss ends with the shafts held, not disabled, so that the fail-closed code in WP14 implements the baseline instead of contradicting it. Rulings R21(d) and R29(f).",
+      "acceptance": [
+        "SAFE-02, SYS-LINK-002 and SYS-GATE-001 state: controlled stop, then every joint stopped and enabled (shaft held); disable only on an operator DISABLE",
+        "SAFE-02 acceptance reads: stop observed, shaft held, no later move; the matrix row matches",
+        "Retired IDs in SAFETY_REQUIREMENTS.md replaced with their successors",
+        "Files: Documentation/01_SYSTEM/SYSTEM_REQUIREMENTS.md, Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md, Documentation/05_VERIFICATION/SYSTEM_VERIFICATION_MATRIX.md",
+        "doc_check is clean; the Requirements gate re-passes and tags baseline/requirements/v2"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T23:32:08.099507+00:00",
+      "done_at": null,
+      "package": "WP17"
+    },
+    {
+      "id": "B127",
+      "title": "S16.2 Fit and record the SAFE-01 E-stop hardware",
+      "story": "As the maintainer I want the two-pole E-stop fitted between the rocker switch and VMOT_SW and recorded so that SAFE-01 can be evidenced before any motion session. Ruling R25(b).",
+      "acceptance": [
+        "E-stop fitted as drawn in Hardware/bench-wiring (rev 0.3); BRING_UP.md phase 8 passed and recorded where its Record-to column says",
+        "SAFETY_REQUIREMENTS.md open item on the E-stop hardware closed with a link to the record",
+        "The session-safety procedure names the E-stop check as a precondition of every motion session"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-14T23:32:08.099507+00:00",
+      "done_at": null,
+      "package": "WP16"
     }
   ]
 }

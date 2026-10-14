@@ -71,7 +71,45 @@ Full record: [`ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md`](ISSUE_12_CLOCK_SYNC
 - STM32 link liveness (`link_stale`) and ClockSync validity are independent;
 - Pi link loss is detected by a count-based check with an interim 500 ms limit.
 
-Open: `N_moving`/`N_idle`, the expected-message-interval source, the motion-state input, counter-extension-gap recovery, and the DIAGNOSTIC v2 field layout.
+Open: `N_moving`/`N_idle`, the expected-message-interval source, the motion-state input, counter-extension-gap recovery, and the DIAGNOSTIC v2 field layout. All five were answered on 2026-10-14 (rulings R14, R16 and R22 in the next section).
+
+## Code-review rulings (2026-10-14)
+
+**Status:** Decided 2026-10-14, Lenton Neale, answering the 29 questions of the 2026-10-14 full code review (R1 to R29); recorded here 2026-10-15. None is applied to the code or the interface documents yet. Each is implemented by the work-package story named in the last column (`icm-project/backlog.json`). The motion-command choices of R11 and R21 are in "MKS motion commands" above. The question-and-answer record itself is kept with the Portal run data, outside this repository.
+
+Where a ruling creates a value, the value is a new Provisional row in [`PARAMETER_REGISTER.md`](../06_CONFIGURATION/PARAMETER_REGISTER.md), added by story B101. Wire changes follow the lockstep rule: C, Python and the shared golden vectors change in one commit.
+
+| Ruling | Decision | Story |
+|---|---|---|
+| R1 | Every GET request payload is the schema version followed by three reserved zero bytes. Any other length is NACKed BAD_LENGTH; another schema or non-zero reserved bytes, BAD_MESSAGE. | B70 |
+| R2 | PRM-SPI-03 becomes the STM32 staged-frame recheck period. A new row holds the Pi polling period, the single default for the Pi library and every tool. | B101 |
+| R3 | Request-seq stays monotonic. After a DIAGNOSTIC (boot or recovery) the STM32 accepts the first seq that arrives. The Pi has one process-wide sequencer and, on BAD_SEQUENCE to its first request, jumps forward once by a bounded step. | B69 |
+| R4 | Bytes after the CRC are zero on transmit and ignored on receive, on both sides. | B70 |
+| R5 | Snapshot flags bit 0 means an unread snapshot was replaced or dropped; the dropped count counts snapshots only. | B71 |
+| R6 | AS5600 ML/MH are warnings, not invalidity; only MD clear or a bus error invalidates. `processed_angle_mdeg` is the RAW ANGLE scaled to millidegrees. PRM-ACQ-02 keeps its basis with a note that the method was not recorded, and is re-measured with a sweep counter. | B74 |
+| R7 | `data_ready_analysis.py`, its tests and the dead record fields are removed. | B78 |
+| R8 | SPI §7: the STM32 *shall* deassert DATA_READY when no frame is armed; the "exercised on target" sentence is withdrawn until a record exists. | B67, B122 |
+| R9 | CAN runs at 1 Mbit/s (PRM-CAN-01, timing PRM-CAN-03) on every drive. Lenton reads each drive's CAN ID, model, firmware, work mode and response mode before CAN commissioning. The earlier X/Y/Z movements came from an earlier firmware build. An ID above 0xFF is commissioned only after its checksum rule is confirmed on a drive. | B79 |
+| R10 | The snapshot motor record carries the raw 31H reply bytes, decoded on the Pi; speed and acknowledgements go to a separate field. Motor validity bits: FEEDBACK_VALID, CONTROLLER_STATUS_VALID, reserved, STALE, FAULT. | B83, B88 |
+| R11 | Position feedback is polled with 31H every feedback period (new row); PRM-MOT-01 becomes Derived from it. | B84 |
+| R12 | After bus-off escalates to ERROR, automatic recovery stops until the system-activate message (R19). Recovery is judged by the bus-off flag, not the HAL return. While inhibited, a safety frame is rejected with an error, never queued. The escalation window (PRM-CAN-08) is sliding. Bus-off inhibits the whole arm; one motor's FAULT clears only that motor's `motor_ready`. | B85 |
+| R13 | bxCAN automatic retransmission is enabled; PRM-CAN-06 covers a full mailbox only; TX counters are added. | B86, B87 |
+| R14 | Message 0x03 becomes DIAGNOSTIC v1 (lifecycle state, counters, cause), sent at boot and after recovery. GET_DIAGNOSTIC is 0x15, in Stage 2. Until v1 exists, an SWD read of the health snapshot is acceptable Stage 2 evidence. ClockSync fields stay in a Pi-side record. | B89 |
+| R15 | Sensor acquisition moves to its own lower-priority task, with the latest-value stores protected. | B81 |
+| R16 | Issue #12 details: T4 is the end of the transfer that carried the request; `request_received_local_us` is appended to ACK, VERSION and SNAPSHOT (schema version 2), never to NACK; the Pi uses one raw monotonic clock; a backwards STM32 time means a reset. The sync-quality validity bits are retired. The legacy drift check and the two as-built TIME_SYNC documents are retired with TIME_SYNC. Sensor skew is judged against PRM-ACQ-02. | B92 to B98, B101 |
+| R17 | Bench instruments: a USB-CAN adapter or CAN analyser, a logic analyser or oscilloscope, a way to cut the SPI link and a way to force bus-off. The working SPI clock is a new row; the Pi DATA_READY wait is PRM-SPI-04. DATA_READY is PA8 on the STM32 and GPIO25 on the Pi; only its electrical check remains. | B101 to B103 |
+| R18 | SET_MOTOR_COMMAND NACK detail: 0 ALLOWED, 1 LIFECYCLE_NOT_ACTIVE, 2 CAN_NOT_ACTIVE, 3 LINK_STALE, 4 GLOBAL_MOTION_INHIBIT, 5 MOTOR_NOT_READY, 6 CAN_QUEUE_FULL, in that precedence, with a latched flag in the upper byte. | B106, B108 |
+| R19 | A system motion lifecycle starts INACTIVE after every reset while the sensing services keep auto-activating. A new system-activate SPI message (value proposed 0x16) activates the services in dependency order, then the motion lifecycle; ENABLE then enables one motor only. After `link_stale` clears, each motor needs a new ENABLE. | B111 |
+| R20 | `motor_ready` = registered, an ENABLE accepted since the last disable or reset, and no MKS fault. `global_motion_inhibit` is set by bus-off escalation or a host command, latches, and is cleared only by system-activate. | B106, B111 |
+| R21 | Controlled stop is the running command's own stop form; F7H is the fallback. The stop completes on the drive's reply or a Provisional timeout. **The link-loss sequence ends stopped and enabled (shaft held), not disabled**; this changes SAFE-02, SYS-LINK-002 and SYS-GATE-001 and takes effect only when WP17 amends them. Gated-move speed, acceleration and a bench speed ceiling are new rows. | B110, B126 |
+| R22 | `N_moving` and `N_idle` get Provisional values (PRM-LINK-02); the expected-message interval is a fixed STM32 constant (new row). "Moving" means the drive reports non-zero speed, and unknown speed counts as moving. `link_stale` is true from reset until the first valid SPI message. | B107 |
+| R23 | At boot and on every CAN activation the firmware sends the controlled stop to every registered motor before polling. The MKS 98H heartbeat is configured on every drive as the backstop for an STM32 hang (new row). | B110 |
+| R24 | The IWDG is enabled through CubeMX (new row) and refreshed only when every task has run. The reset cause is latched at boot into the health snapshot and DIAGNOSTIC v1. | B113 |
+| R25 | FFH power-on auto-run and the 85H En-pin mode are read on every drive and recorded in [`SYSTEM_CONFIGURATION.md`](../06_CONFIGURATION/SYSTEM_CONFIGURATION.md) §2.1 before the arm first runs this firmware. No E-stop is fitted yet; it is fitted before Stage 4, and SAFE-01 cannot be evidenced until then. | B79, B127 |
+| R26 | Before the first gated motion on X, Y, Z: SAFE-01, SAFE-02 and the gate evidence. Calibration (SYS-CAL-001) is deferred after Stage 4 to its own package; gated motion uses raw shaft angles until then. | B114, B115 |
+| R27 | Health YELLOW means a fault since boot not yet cleared; only system-activate clears it. | B112 |
+| R28 | CubeMX stays the configuration tool. Evidence firmware is built by the CLI preset with the system `arm-none-eabi-gcc`, pinned in CI, and the compiler version joins the build identity. A dirty Pi tree disqualifies an evidence record. Stage 2 records show positions at rest and turned by hand; "follows commanded motion" is evidenced in Stage 4. | B52, B57, B60 |
+| R29 | Matrix rows with passing component tests move to component evidence. WP2 is reopened at Verification. `CHARTER_ALIGNMENT_PLAN.md` stays as a dated record. Module headers are the component documentation. Retired IDs in the safety requirements are replaced in the WP17 change. The Numbers rule gains commissioning-table facts and cited vendor references. PRM-CAN-02 is corrected to the as-built rate. | B117, B120, B121, B123, B124, B126 |
 
 ## Documentation conflicts resolved during the 2026-09 refactor
 
@@ -94,7 +132,7 @@ Documentation aligned with charter, 2026-10-04 — Lenton Neale.
 
 Accepted exceptions (`CHARTER_ALIGNMENT_PLAN.md` §14):
 
-- **3.4:** the `GET_DIAGNOSTIC` message value stays open and is scoped to a later stage.
+- **3.4:** the `GET_DIAGNOSTIC` message value stays open and is scoped to a later stage. Closed 2026-10-14 by ruling R14: 0x15, Stage 2.
 - **3.5:** the GitHub changes are held for a later run.
 - **3.7:** provenance lines that `doc_check` allows are accepted.
 - **3.8:** issue numbers are cited once the issues exist.

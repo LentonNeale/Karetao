@@ -1,7 +1,7 @@
 {
   "version": 1,
   "next_id": {
-    "package": 9,
+    "package": 19,
     "decision": 4
   },
   "packages": [
@@ -43,11 +43,12 @@
         "Encoder-fitted flag in the app_init.c commissioning table; the sensor task skips unfitted axes without raising a fault",
         "Commissioning table in SYSTEM_CONFIGURATION.md section 2.1 filled by Lenton Neale: joint names, which axes have an encoder; app_init.c matches it (SYS-ENC-003)",
         "One evidence record per fitted axis (EVIDENCE_RECORD_FORMAT.md, VERSION identity) accepted in SYSTEM_VERIFICATION_MATRIX.md (SYS-ENC-001)",
-        "Register item LIVE-17 and its GitHub issues closed"
+        "Register item LIVE-17 and its GitHub issues closed",
+        "Reopened 2026-10-14 by ruling R29(b): still unmet are one accepted evidence record per fitted axis and LIVE-17 closed; the records are taken in WP16 Stage 1 and filed against this package; no waiver recorded"
       ],
-      "status": "closed",
+      "status": "open",
       "created": "2026-10-03T17:48:59.658991+00:00",
-      "closed": "2026-10-05T23:17:47.546554+00:00",
+      "closed": null,
       "definition": "2026-10-06-fix-version-lines-bad-frames/brief.md"
     },
     {
@@ -160,10 +161,220 @@
         "CHARTER_ALIGNMENT_PLAN.md sections 2.4 and 11 point at the WP8 stories instead of holding their own list",
         "Ends with the code-alignment packages re-cut from the bench-blocking stories, each targeting Implementation (host tests and Debug build pass, bench procedure and empty evidence record ready), plus one Bench bring-up and verification package for when the arm is connected"
       ],
-      "status": "open",
+      "status": "closed",
       "created": "2026-10-06T00:02:04.701957+00:00",
-      "closed": null,
+      "closed": "2026-10-14T23:32:08.099507+00:00",
       "definition": "2026-10-06-new-request-2/brief.md"
+    },
+    {
+      "id": "WP9",
+      "title": "Foundation and trail integrity (Stage 0: before any bench run)",
+      "type": "feature",
+      "entry": "design",
+      "target": "implementation",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "Firmware identity taken at build time, including the compiler version; a dirty tree always reports dirty (SPI-19, FW-3, VER-39; R28a)",
+        "Default task stack sized from measured usage with overflow checking on (FW-2, PRM-9)",
+        "Shared golden-frame vectors in shared/test-vectors asserted by both the C and Python suites (SPI-10, VER-23)",
+        "MksServo codec host tests restored and checked against the vendor manual (CAN-26, VER-24)",
+        "Evidence-record tool writes a record per EVIDENCE_RECORD_FORMAT.md with VERSION identity and Pi commit (VER-40)",
+        "One firmware parameter header and one Pi config module mirror the register; CubeMX-owned values checked at init (PRM-24, PRM-25)",
+        "CI runs doc_check, cross-triggers on lockstep files, uploads .map, fails on App warnings, pins the system arm-none-eabi-gcc used for evidence builds (VER-50, VER-52, VER-53, FW-27, FW-28; R28a)",
+        "Dead Pi tests and dead codec removed; host-test harness fixes landed (VER-16, VER-17, VER-34 to VER-37)",
+        "HostTests and Debug build pass"
+      ],
+      "status": "open",
+      "created": "2026-10-14T00:00:00+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP10",
+      "title": "Stage 1 code: fitted encoders on the wire",
+      "type": "feature",
+      "entry": "design",
+      "target": "implementation",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "GET_SNAPSHOT is answered with a correlated SNAPSHOT carrying the six sensor records and registered motor records (SPI-1, FW-1, VER-21)",
+        "SPI service never wedges after stage-while-armed, HAL arm failure or stall-abort race; stall re-arms the same frame (SPI-2, SPI-13)",
+        "DATA_READY follows C-1 armed-then-assert on the STM32 and the Pi waits for a fresh edge (SPI-3, HOST-7, HOST-8)",
+        "Pi snapshot logger streams GET_SNAPSHOT at the registered period, rejects duplicates, files records with Pi receive times (SPI-6, HOST-3)",
+        "Sequence seeding no longer locks later processes out (HOST-9)",
+        "Sensor timestamp taken immediately after the angle read (TIME-6, FW-9)",
+        "Stage 1 host and Pi tests listed in the A7 plan pass; ENCODER_BENCH_PROCEDURE covers SYS-ENC-002 and is indexed (VER-22, VER-30, VER-33, DOC-5, DOC-9)",
+        "HostTests, Debug build and Pi tests pass; empty evidence records ready for the five fitted axes"
+      ],
+      "status": "open",
+      "created": "2026-10-14T00:00:00+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP11",
+      "title": "Stage 2 code: six motor positions over CAN",
+      "type": "feature",
+      "entry": "design",
+      "target": "implementation",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "CAN bit timing set to 1 Mbit/s (PRM-CAN-03 applied, R9a), one symbol checked at init; each drive's CAN ID, model, firmware (40H), work mode, response mode, FFH and 85H settings read by Lenton Neale and recorded in SYSTEM_CONFIGURATION \u00a72.1 before commissioning (CAN-1, CAN-3, PRM-1; R9b, R25a)",
+        "Six motors registered from one validated table with duplicate/broadcast rejection and a table version (CAN-18, CAN-19, CAN-20)",
+        "CAN polling and draining independent of the sensor sweep; every registered motor polled each cycle (CAN-17, PRM-4, FW-16)",
+        "RX interrupt captures reception time; motor record keeps position separate from speed and acks; decoder status fixed (CAN-14, CAN-15, CAN-16)",
+        "Feedback timeout and miss escalation per PRM-MOT-01/02 with the feedback period registered (CAN-12, CAN-13, GATE-22)",
+        "Bus-off detected from hardware, lifecycle leaves ACTIVE, recovery judged by ESR, queue purged; after escalation to ERROR no automatic retry until the system-activate message (CAN-4 to CAN-8, GATE-17 to GATE-19; R12)",
+        "Pi decodes motor records (31H int48), DIAGNOSTIC v1 and GET_DIAGNOSTIC (0x15); motor validity bits and status defined in the schema (SPI-4, SPI-5, SPI-11, HOST-2, HOST-4, DOC-4; R10, R14)",
+        "Stage 2 host tests pass and MOTOR_BENCH_PROCEDURE.md is written (VER-28, VER-29, VER-41)",
+        "HostTests, Debug build and Pi tests pass"
+      ],
+      "status": "open",
+      "created": "2026-10-14T00:00:00+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP12",
+      "title": "Stage 2 code: clock synchronisation per Issue #12",
+      "type": "feature",
+      "entry": "design",
+      "target": "implementation",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "Implements ruling R16 (a) to (j): T4, applicable replies, extension placement, Pi clock domain and reset detection (TIME-11 to TIME-14, SPI-9)",
+        "ISR raw TIM2 capture extended in task context with the PRM-TS-04 guard; request_received_local_us on the wire in C and Python (TIME-1, TIME-2)",
+        "Pi ClockSync model fed by TimingSession; record timestamps converted and marked (TIME-3, TIME-4, TIME-5, HOST-5)",
+        "STM32 TIME_SYNC, held offset and legacy Pi chain removed in one lockstep change; sync-quality bits and health GREEN re-sourced (TIME-8, TIME-9, TIME-19, HOST-17, GATE-24)",
+        "Gate A tests pass (VER-31); HostTests, Debug build and Pi tests pass"
+      ],
+      "status": "open",
+      "created": "2026-10-14T00:00:00+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP13",
+      "title": "Stage 3 code and tooling: links measured",
+      "type": "feature",
+      "entry": "design",
+      "target": "implementation",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "Timing harness sweeps poll period, classifies errors, derives the effective clock, records rig fields and link-loss timing; load workers scheduled correctly (HOST-6, HOST-10)",
+        "Register rows exist for every quantity Stage 3 measures, with PRM-SPI-03 split and the host polling period named (PRM-13, PRM-5, PRM-7, HOST-15)",
+        "LINK_MEASUREMENT_PROCEDURE.md and CAN_BUS_OFF_BENCH_PROCEDURE.md written against the instruments Lenton Neale names (VER-46, VER-43, VER-47)",
+        "Pi tests pass; empty evidence records ready for each PRM row in the register's Measurement stages list"
+      ],
+      "status": "open",
+      "created": "2026-10-14T00:00:00+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP14",
+      "title": "Stage 4 code: gated motion X, Y, Z",
+      "type": "feature",
+      "entry": "design",
+      "target": "implementation",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "Implements rulings R18 to R24 and R26(a): NACK reason codes per D-3 input, system motion lifecycle, motor_ready and global inhibit, stop policy, liveness values, prerequisites before gated motion (GATE-5, GATE-8, GATE-9, GATE-11 to GATE-13, SPI-8, CAN-22, DOC-6)",
+        "motion_permission.c built, simplified to D-3, per motor, side-effect free, the single motion authority (GATE-1, GATE-2, GATE-10, GATE-27, FW-4)",
+        "Count-based link_stale on STM32 local time with Provisional N symbols (GATE-3, TIME-15, PRM-10)",
+        "SET_MOTOR_COMMAND decoded, gated, mapped to MKS frames, ACKed or NACKed with the gate reason, in C, Python and golden vectors (SPI-7, CAN-21, HOST-1)",
+        "Fail-closed supervisor: controlled stop, then hold (stopped and enabled), on a gate-closed edge; queue purge; stop at boot and on CAN activation; MKS 98H heartbeat configured (GATE-6, GATE-7, GATE-14, CAN-23; R21d after WP17, R23)",
+        "Fault visibility: health snapshot fields and SWD readout for SAFE-05 (GATE-23, VER-14)",
+        "New system-activate SPI message (value proposed 0x16) with ACK/NACK in C, Python and golden vectors: activates services in dependency order, then the motion lifecycle; clears the global inhibit and the health YELLOW latch (R19b, R12d, R20b, R27)",
+        "Calibration is not part of this package (R26b): gated motion uses raw shaft angles; the calibration stories are in WP18",
+        "Stage 4 host tests pass; link-loss, gated-command and session-safety procedures written (VER-25 to VER-27, VER-32, VER-42, VER-44, VER-45)",
+        "HostTests, Debug build and Pi tests pass"
+      ],
+      "status": "open",
+      "created": "2026-10-14T00:00:00+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP15",
+      "title": "Documentation aligned with the code and the rulings",
+      "type": "documentation",
+      "entry": "architecture",
+      "target": "architecture",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "Status text matches the code: NOT_FITTED implemented, gate not built, CAN 187.5 kbps as built, caveats overtaken (DOC-1, DOC-2, DOC-8, DOC-24)",
+        "No retired requirement ID is cited as live outside the retired table and As-built banners (DOC-12, VER-10, TIME-23)",
+        "Timestamp semantics stated once; every time document marked as-built or target (DOC-3, DOC-10, DOC-11, TIME-22)",
+        "Matrix rows name only modules and tests that cover the row, or say none yet (VER-1, VER-4 to VER-9, DOC-26, HOST-29, TIME-24)",
+        "Register notes, Used-by and the Numbers rule corrected (PRM-6, DOC-36, DOC-19, PRM-27)",
+        "SPI contract gaps closed: NACK status table, request payload, padding, boot frame, motor flags (SPI-17, SPI-20, SPI-23, DOC-21, DOC-22)",
+        "Component documents match the code (HOST-26 to HOST-28, DOC-28 to DOC-31, DOC-35, DOC-40, VER-11 to VER-15)",
+        "doc_check clean; architecture gate re-passed and baseline/architecture/v2 tagged"
+      ],
+      "status": "open",
+      "created": "2026-10-14T00:00:00+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP16",
+      "title": "Bench bring-up and verification (when the arm is connected)",
+      "type": "feature",
+      "entry": "bringup",
+      "target": "verification",
+      "methodology": "bench",
+      "affects": [],
+      "acceptance": [
+        "Bench questions answered by rulings R17(a) instruments, R28(b) Pi dirty-tree rule and R28(c) Stage 2 motion source (VER-47 to VER-49)",
+        "Stage 1: WP2 holds the Stage 1 evidence; the records are taken here and filed against WP2 (VER-3, DOC-38; R29b)",
+        "Stage 2: motor position and feedback-interruption records accepted for SYS-MOT-001/002 and SYS-TS-001",
+        "Stage 3: every register row in the Measurement stages list moves to Measured with a linked record; PRM-CAN-02 recorded as applied",
+        "Stage 4: E-stop fitted and recorded first (R25b); SAFE-01 session check, link-loss stop with the shaft held and no later move, gated command per joint X, Y, Z; matrix rows reach SYSTEM_VERIFIED by Lenton Neale",
+        "Every record carries the VERSION identity from a clean build"
+      ],
+      "status": "open",
+      "created": "2026-10-14T00:00:00+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP17",
+      "title": "Requirements amendment: hold on link loss and retired IDs",
+      "type": "change",
+      "entry": "requirements",
+      "target": "requirements",
+      "methodology": "agile",
+      "affects": [
+        "requirements"
+      ],
+      "acceptance": [
+        "SAFE-02, SYS-LINK-002 and SYS-GATE-001 say the link-loss sequence ends with every joint stopped and enabled (shaft held); disable only on an operator DISABLE (R21d)",
+        "Retired IDs in SAFETY_REQUIREMENTS.md replaced with their successors in the same change (R29f)",
+        "SAFE-02 acceptance reads: stop observed, shaft held, no later move",
+        "doc_check clean; the Requirements gate re-passes and tags baseline/requirements/v2",
+        "Must pass before WP14 story B110 (fail-closed supervisor) is merged"
+      ],
+      "status": "open",
+      "created": "2026-10-14T23:32:08.099507+00:00",
+      "closed": null
+    },
+    {
+      "id": "WP18",
+      "title": "Calibration path (after the bench)",
+      "type": "feature",
+      "entry": "design",
+      "target": "implementation",
+      "methodology": "agile",
+      "affects": [],
+      "acceptance": [
+        "Starts after WP16 (R26b); SYSTEM_CONFIGURATION \u00a73 no longer requires calibration before gated motion",
+        "Calibration storage, transfer and reporting built; selection per SYS-CAL-001: the valid copy when one is valid, the newer when both are, fail only when neither is (FW-5 to FW-8, HOST-13; R26d)",
+        "Where the calibration version travels and the calibration transfer message are decided in this package (R26e, R26f)",
+        "HostTests, Debug build and Pi tests pass"
+      ],
+      "status": "open",
+      "created": "2026-10-14T23:32:08.099507+00:00",
+      "closed": null
     }
   ],
   "decisions": [
