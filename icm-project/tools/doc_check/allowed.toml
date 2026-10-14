@@ -78,3 +78,8 @@ terms = ["differential"]
 path = "Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md"
 heading = "deferred"
 terms = ["differential"]
+
+[[allowed]]   # README future note: ROS 2 named as later work, not a goal
+path = "README.md"
+heading = "Why Karetao"
+terms = ["ROS 2"]

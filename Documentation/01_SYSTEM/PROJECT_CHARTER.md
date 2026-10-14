@@ -24,6 +24,7 @@ Karetao is a hobby-level robotic arm platform (STM32 sensor hub, MKS CAN servos,
 - No differential end effector until the hardware exists.
 - No gripper integration for now (not never; added 2026-10-15). The parts exist: a servo that drives the gripper jaws, and an Arduino Nano with an MCP2515 CAN controller that turns CAN commands into jaw movements. The STM32 would send those commands on a separate CAN bus, possibly through a second TJA1050 transceiver. They are recorded as hardware only; no requirement, parameter or test covers them.
 - No Pi-side trajectory or motion planning. Single gated commands from the Pi are in scope.
+- No custom PCB yet (added 2026-10-15). A carrier board for the STM32F405 and a Raspberry Pi Compute Module 5 is planned, to be developed only after the prototype bench hardware has been tested and signed off by Lenton Neale.
 - No calendar commitments. Milestones are stages, not dates.
 - No numeric requirement without a stated basis.
 

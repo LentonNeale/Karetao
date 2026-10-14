@@ -40,4 +40,4 @@ Not yet:
 
 ## Future, not now
 
-These are charter non-goals for now and are named only here: ROS 2 integration, a state estimator, the differential end effector, trajectory or motion planning, and the gripper (jaw servo, and an Arduino Nano with an MCP2515 that turns CAN commands into jaw movements, likely on a separate CAN bus from the STM32).
+These are charter non-goals for now and are named only here: ROS 2 integration, a state estimator, the differential end effector, trajectory or motion planning, and the gripper (jaw servo, and an Arduino Nano with an MCP2515 that turns CAN commands into jaw movements, likely on a separate CAN bus from the STM32), and a custom carrier PCB for the STM32F405 and a Raspberry Pi Compute Module 5, developed after the prototype hardware is signed off.

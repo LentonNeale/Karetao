@@ -4,6 +4,14 @@ Karetao is my control system for a six-axis robotic arm, built as a one-person h
 
 **The arm is not my design.** It is the [Arctos](https://arctosrobotics.com/) V2 six-axis robotic arm by Arctos Robotics ([GitHub](https://github.com/Arctos-Robotics)), which I built. Its mechanics, the MKS drives and the drive and switch wiring come from the Arctos V2 design, and the joint names follow its convention. Karetao is my own work on top of it: the STM32 sensor hub and its firmware, the Raspberry Pi host software, the bench wiring schematic and the documentation. It does not use the Arctos firmware or Arctos Studio.
 
+## Why Karetao
+
+I've always been interested in robotics. When I went looking for a personal project, I found the Arctos arm: a capable six-axis design at a reasonable price. I'm using it as a platform to develop my embedded software and electronics design skills, with an STM32 as the hardware interface between the arm and the host computer.
+
+The aim is to run a hobby project the way a professional embedded team would, at a size one person can maintain. Every requirement traces to code, tests and recorded evidence. Numbers such as bus rates and timeouts are measured before they're specified, and design decisions are written down with their reasons.
+
+The first milestone is a sensor and motion platform I can trust: reliable joint-encoder and motor-position readings with coherent timestamps, measured link performance, and verified, gated motion on the first three joints. ROS 2 integration, motion planning and the gripper come later. Once the prototype hardware is tested and signed off, the next step is a custom carrier PCB for the STM32 and a Raspberry Pi Compute Module 5.
+
 The project is **work in progress**. The status table below lists what runs today and what doesn't.
 
 ## System
