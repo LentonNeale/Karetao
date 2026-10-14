@@ -42,26 +42,52 @@ The mapping model defines a one-to-one relationship between:
 - SensorTask uses the validated record's logical joint and AS5600 IDs to keep latest-value records at stable positions.
 - Future MotorService uses the matching logical joint, motor index, CAN ID, direction, offset, and transmission ratio when translating logical commands and feedback.
 
-### 2.1 Commissioning table (as built, 2026-09-17; recorded 2026-10-03; joint names and encoders fitted 2026-10-04)
+### 2.1 Commissioning table (as built, 2026-09-17; recorded 2026-10-03; joint names and encoders fitted 2026-10-04; updated 2026-10-15)
 
 This table is the only statement of which axes carry an encoder, which TCA9548A channel each uses and which MKS motor each maps to (SYS-ENC-003). The tables in `Arm_Sensor_Hub/App/Src/app_init.c` implement it and must match it; a mismatch is a defect in whichever side was changed without the other.
 
 | Axis (logical ID) | Joint name | Encoder fitted | Mux channel | Motor index | CAN ID | MKS model | MKS firmware | Direction | Zero offset | Ratio | Basis |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 0 | Joint X | yes | 2 | 0 | 0x001 | SERVO42 (CAN_SERVICE_MKS_SERVO42) | unknown | +1 | 0 | 1/1 | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04 |
+| 0 | Joint X | no | 2 | 0 | 0x001 | SERVO57D (CAN_SERVICE_MKS_SERVO57) | unknown | +1 | 0 | 1/1 | as built (app_init.c); joint name: commissioning fact, Lenton Neale 2026-10-04; encoder not fitted (a sensor is on hand) and drive model: commissioning facts, Lenton Neale 2026-10-15 |
 | 1 | Joint Y | yes | 3 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04 |
 | 2 | Joint Z | yes | 4 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04 |
 | 3 | Wrist Joint 1 | no | 5 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04 |
-| 4 | Differential Motor 1 | yes | 6 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04; coupled-joint meaning deferred (SD-26) |
-| 5 | Differential Motor 2 | yes | 7 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04; coupled-joint meaning deferred (SD-26) |
+| 4 | Wrist Joint 2 (differential motor 1) | yes | 6 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04; coupled-joint meaning deferred (SD-26) |
+| 5 | Wrist Joint 3 (differential motor 2) | yes | 7 | none registered | none registered | none registered | unknown | none registered | none registered | none registered | as built (app_init.c); joint name and encoder fitted: commissioning fact, Lenton Neale 2026-10-04; coupled-joint meaning deferred (SD-26) |
 
 Logical axis N maps to mux channel N+2. Channel SD0 carries the bench sensor and is excluded; SD1 is unpopulated.
 
-Axes 4 and 5 report the raw angle of each motor shaft; no end-effector or coupled-joint meaning is given (SD-26 deferred).
+Axes 4 and 5 are the two differential motors. Their names follow the original Arctos V2 project's convention (Lenton Neale, 2026-10-15). They report the raw angle of each motor shaft; no end-effector or coupled-joint meaning is given (SD-26 deferred).
 
 The Encoder fitted column is implemented by `s_sensor_encoder_fitted` in `Arm_Sensor_Hub/App/Src/app_init.c`. An axis marked no is published as NOT_FITTED (validity bit 6) and is never a fault (SYS-ENC-002). Cells still marked unknown are facts only the maintainer can supply; they are filled in the sprint that needs them.
 
 Full commissioning is required before gated motion on an axis (charter goal 4).
+
+### 2.2 Joint, motor and drive hardware (commissioning facts, Lenton Neale 2026-10-15)
+
+Physical facts about the fitted hardware, recorded from [`Hardware/bench-wiring/JOINT_SHEET.md`](../../Hardware/bench-wiring/JOINT_SHEET.md). They are not firmware configuration. Where §2.1's as-built firmware values differ (the ratio column is 1/1 for axis 0, and motors 1 to 5 are not registered), the firmware is updated when motor commissioning needs it (WP11).
+
+| Axis | Role | Gear ratio (motor turns per joint turn) | Transmission | Travel range | Home or limit switches | Drops unpowered |
+|---|---|---|---|---|---|---|
+| 0 | Base | 13.5 | Belt reduction | 360° (Provisional, to be confirmed) | 1 × WSH231 (home) | No |
+| 1 | Shoulder | 150 | Cycloidal | 200° (Provisional, to be confirmed) | 2 × KY-003 (left, right) | Maybe |
+| 2 | Elbow | 150 | Cycloidal | 180° (Provisional, to be confirmed) | 2 × KY-003 (left, right) | Maybe |
+| 3 | Wrist 1 | 48 | Compound planetary | 360° (Provisional, to be confirmed) | 1 × WSH231 (home) | Unsure |
+| 4 | Wrist 2 (see §2.1 on axes 4 and 5) | 67.82 | Compound planetary | unknown | 2 × KY-003 (left, right) | Maybe |
+| 5 | Wrist 3 (see §2.1 on axes 4 and 5) | 67.82 | Compound planetary | unknown | 1 × WSH231 (home) | Maybe |
+
+| Axis | Motor frame | Rated current per phase | Holding torque | MKS drive (label) | CAN ID set on the drive |
+|---|---|---|---|---|---|
+| 0 | NEMA 23, 76 mm | 2.8 A | 1.8 N·m | SERVO57D | 0x001 |
+| 1 | NEMA 23, 76 mm | 2.8 A | 1.8 N·m | SERVO57D | 0x002 |
+| 2 | NEMA 17, 60 mm | 2.1 A | 0.65 N·m | SERVO42D | 0x003 |
+| 3 | NEMA 17, 34 mm | 1.3 A | not given | SERVO42D | 0x004 |
+| 4 | NEMA 17, 23 mm | 1.2 A | 0.24 N·m | SERVO42D | 0x005 |
+| 5 | NEMA 17, 23 mm | 1.2 A | 0.24 N·m | SERVO42D | 0x006 |
+
+The switch modules connect to the drives, not to the hub: on the 57D to IN_1 and IN_2, on the 42D to En and Dir with 9EH port mapping on and COM at the drive's EVCC (MKS manual p. 12). The wiring per axis is drawn from the original Arctos design in the bench schematic and confirmed at the bench (`BRING_UP.md` phases 1 and 6).
+
+Not recorded yet: motor make and model, step angle, drive firmware versions, recalibration history, the worst gravity pose per joint, and the as-found drive settings (`BRING_UP.md` phase 6).
 
 ---
 

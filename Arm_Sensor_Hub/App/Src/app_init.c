@@ -24,7 +24,7 @@ typedef struct {
 
 /* Update this table as motors are commissioned on the CAN bus. */
 static const App_MksMotorConfig s_mks_motors[] = {
-    {0u, 0u, JOINT_MAPPING_SCHEMA_VERSION, CAN_SERVICE_MKS_SERVO42, 0x001u}
+    {0u, 0u, JOINT_MAPPING_SCHEMA_VERSION, CAN_SERVICE_MKS_SERVO57, 0x001u}
 };
 
 /*
@@ -40,22 +40,22 @@ static const uint8_t s_sensor_mux_channels[SENSOR_TASK_AXIS_COUNT] = {
     3u,  /* 1 Joint Y */
     4u,  /* 2 Joint Z */
     5u,  /* 3 Wrist Joint 1 */
-    6u,  /* 4 Differential Motor 1 */
-    7u   /* 5 Differential Motor 2 */
+    6u,  /* 4 Wrist Joint 2 (differential motor 1) */
+    7u   /* 5 Wrist Joint 3 (differential motor 2) */
 };
 
 /*
- * Encoder-fitted table, commissioning facts 2026-10-04 (Lenton Neale). It must
+ * Encoder-fitted table, commissioning facts 2026-10-04 and 2026-10-15 (Lenton Neale). It must
  * match SYSTEM_CONFIGURATION.md section 2.1. An unfitted axis is never read and
  * is reported NOT_FITTED, not as a fault. Axes 4 and 5 are raw motor-shaft angles.
  */
 static const bool s_sensor_encoder_fitted[SENSOR_TASK_AXIS_COUNT] = {
-    true,   /* 0 Joint X */
+    false,  /* 0 Joint X: sensor on hand, not fitted */
     true,   /* 1 Joint Y */
     true,   /* 2 Joint Z */
     false,  /* 3 Wrist Joint 1 */
-    true,   /* 4 Differential Motor 1 */
-    true    /* 5 Differential Motor 2 */
+    true,   /* 4 Wrist Joint 2 (differential motor 1) */
+    true    /* 5 Wrist Joint 3 (differential motor 2) */
 };
 
 static const JointMapping_Record s_joint_mapping[] = {
