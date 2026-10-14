@@ -2,6 +2,8 @@
 
 `karetao_bench_wiring.kicad_sch` is the system wiring of the Karetao bench at connector level: the STM32F405 hub, the TCA9548A mux and the AS5600 encoders on I2C1, the CAN transceiver and the six MKS drives, the SPI and DATA_READY lines to the Raspberry Pi 5, the motor supply through the rocker switch and the E-stop, and at each drive its motor and its home or limit switch modules. It is a KiCad schematic (KiCad 8 file format, checked with KiCad 10.0.7). Its symbols are in the project library `karetao.kicad_sym`, registered by the project's `sym-lib-table`, and are also embedded in the schematic. Open `karetao_bench_wiring.kicad_pro` in KiCad; `karetao_bench_wiring.pdf` is the same sheet for reading without KiCad.
 
+The arm is the [Arctos](https://arctosrobotics.com/) V2 by Arctos Robotics; its drive, motor and switch wiring here is taken from the original Arctos V2 wiring and marked Provisional until confirmed on the bench. The hub, transceiver, encoders and Pi connections are Karetao's own.
+
 To bring the bench up against this sheet, follow [BRING_UP.md](BRING_UP.md): phased checks from unpowered wiring to the E-stop, and where each fact it finds is recorded.
 
 The file is generated. Edit `generate_schematic.py`, not the schematic, then run:

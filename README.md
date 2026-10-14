@@ -1,6 +1,8 @@
 # Karetao
 
-Karetao is a six-axis robotic arm I'm building as a one-person hobby project, aiming for professional embedded engineering practice. An STM32F405 sensor hub reads magnetic joint encoders and polls closed-loop stepper drives over CAN. A Raspberry Pi 5 reads that state over a CRC-checked SPI link.
+Karetao is my control system for a six-axis robotic arm, built as a one-person hobby project and aiming for professional embedded engineering practice. An STM32F405 sensor hub reads magnetic joint encoders and polls closed-loop stepper drives over CAN. A Raspberry Pi 5 reads that state over a CRC-checked SPI link.
+
+**The arm is not my design.** It is the [Arctos](https://arctosrobotics.com/) V2 six-axis robotic arm by Arctos Robotics ([GitHub](https://github.com/Arctos-Robotics)), which I built. Its mechanics, the MKS drives and the drive and switch wiring come from the Arctos V2 design, and the joint names follow its convention. Karetao is my own work on top of it: the STM32 sensor hub and its firmware, the Raspberry Pi host software, the bench wiring schematic and the documentation. It does not use the Arctos firmware or Arctos Studio.
 
 The project is **work in progress**. The status table below lists what runs today and what doesn't.
 

@@ -1,6 +1,6 @@
 # MksServo — MKS Servo CAN protocol library (C++17, embedded)
 
-Pure protocol/codec library for MKS Servo42/57 CAN bus servos. Ported from a Python reference implementation that is not in this repository; the MKS protocol documents are in `icm-project/references/mks-servo42d-57d-can/`.
+Pure protocol/codec library for MKS Servo42/57 CAN bus servos. Ported from Lenton Neale's own earlier Python implementation, which is not in this repository; the MKS protocol documents are in `icm-project/references/mks-servo42d-57d-can/`.
 
 ## What it does
 - Encodes MKS command frames (`[cmd][payload][checksum8]`).
@@ -32,4 +32,4 @@ Application (C11) → Motor Service (C11) → mks_api.h (C boundary) → MksServ
 
 ## Reference (source of truth)
 - MKS protocol documents: `icm-project/references/mks-servo42d-57d-can/` (command codes, enums, response formats)
-- The C++ sources above (`include/mksservo/enums.hpp`, `command.hpp`, `decoder.hpp`, `protocol_core.hpp`) are the implementation of record; the Python reference named in earlier revisions is not in this repository
+- The C++ sources above (`include/mksservo/enums.hpp`, `command.hpp`, `decoder.hpp`, `protocol_core.hpp`) are the implementation of record; the earlier Python implementation (Lenton Neale's own) is not in this repository
