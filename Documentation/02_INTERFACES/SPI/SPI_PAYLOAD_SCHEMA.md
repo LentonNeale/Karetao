@@ -89,7 +89,7 @@ Motor record size: 24 bytes. Unused payload bytes must be zero. `payload_length`
 
 **NOT_FITTED (added 2026-10-03, D-10):** an axis without an encoder in the commissioning table (SYSTEM_CONFIGURATION.md §2.1) is serialised at its stable logical ID with validity bit 6 set, bit 0 clear, bits 1-4 clear, `status` 0, and zero in `raw_angle`, `processed_angle_mdeg`, `magnitude` and `agc`; `measurement_timestamp_us` is the time the record was last refreshed. It is never a communication error and never a fault (SYS-ENC-002). This addition is compatible with schema v1 because bit 6 was reserved; `schema_version` stays 1. A decoder that predates it treats the record as not valid, which is acceptable.
 
-**Implementation status:** not yet implemented on either side (2026-10-03); tracked as the lockstep issue '[LIVE-17] Implement NOT_FITTED sensor status (C, Python, tests)'. The firmware freshness state (`Sensor_Freshness`: INVALID, FRESH, STALE in `sensor_latest_value.h`) is not on the wire today; whether to serialise it is a separate, versioned schema decision and is not part of LIVE-17.
+**Implementation status:** implemented on both sides (checked 2026-10-15: `SPI_SENSOR_VALIDITY_NOT_FITTED` in the firmware payload layout, `SENSOR_VALIDITY_NOT_FITTED` in the Pi decoder, decode tests in both suites); the outstanding NOT_FITTED behaviour test and tooling are GitHub #66 (LIVE-17). The firmware freshness state (`Sensor_Freshness`: INVALID, FRESH, STALE in `sensor_latest_value.h`) is not on the wire today; whether to serialise it is a separate, versioned schema decision and is not part of LIVE-17.
 
 ---
 

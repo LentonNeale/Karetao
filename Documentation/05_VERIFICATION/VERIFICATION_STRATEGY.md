@@ -7,7 +7,7 @@ This document defines how Karetao verification is recorded. `SYSTEM_VERIFICATION
 ## Chain
 
 Requirement (`SYSTEM_REQUIREMENTS.md`) -> code module -> test (host test, Pi test or bench procedure) -> evidence record -> matrix row -> accepted by Lenton Neale.
-Every matrix row names its code module and its test, or says "none yet (issue: LIVE-xx)".
+Every matrix row names its code module and its test, or says "none yet (GitHub #n)", naming the issue that will add it.
 
 ## Status vocabulary
 
