@@ -31,7 +31,9 @@ typedef enum
     SNAPSHOT_BUILD_NOT_READY,
     SNAPSHOT_BUILD_INVALID_ARGUMENT,
     SNAPSHOT_BUILD_NO_BUFFER,
-    SNAPSHOT_BUILD_SERIALIZATION_FAILED
+    SNAPSHOT_BUILD_SERIALIZATION_FAILED,
+    /** Another caller is staging a frame; nothing was staged, try again later. */
+    SNAPSHOT_BUILD_BUSY
 } SnapshotBuild_Result;
 
 /**

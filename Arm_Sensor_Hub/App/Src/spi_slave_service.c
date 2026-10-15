@@ -175,12 +175,15 @@ static void SpiSlaveService_SerializeMotorRecord(uint8_t *record_buffer, const M
 }
 
 /* The snapshot payload is assembled here, not on the calling task's stack: it is
- * larger than the rest of the deepest call path together (PRM-9). The serializer
- * is reachable through the public SpiSlaveService_StageSnapshot API, so the
- * buffer is claimed with a flag; a caller that finds it in use gets no frame
- * rather than one mixing two snapshots under a valid CRC. */
+ * larger than the rest of the deepest call path together (PRM-9). It is used only
+ * inside SpiSlaveService_StageAndPublish, whose guard also covers the frame pool. */
 static uint8_t s_snapshot_payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
-static atomic_flag s_snapshot_payload_busy = ATOMIC_FLAG_INIT;
+
+/* Staging writes the frame pool, and for a snapshot the shared payload buffer, so
+ * one stage-and-publish runs at a time. SpiSlaveService_StageSnapshot is public;
+ * a caller that arrives while another is staging gets SNAPSHOT_BUILD_BUSY, never a
+ * frame mixing two snapshots under a valid CRC. */
+static atomic_flag s_staging_busy = ATOMIC_FLAG_INIT;
 
 static bool SpiSlaveService_BuildLatestSnapshot(uint8_t *payload,
                                                 uint8_t *frame_buffer,
@@ -239,13 +242,8 @@ static bool SpiSlaveService_SerializeLatestSnapshot(uint8_t *frame_buffer,
                                                     uint16_t *frame_length,
                                                     void *context)
 {
-    bool built;
-
     (void)context;
-    if (atomic_flag_test_and_set(&s_snapshot_payload_busy)) return false;
-    built = SpiSlaveService_BuildLatestSnapshot(s_snapshot_payload, frame_buffer, frame_capacity, frame_length);
-    atomic_flag_clear(&s_snapshot_payload_busy);
-    return built;
+    return SpiSlaveService_BuildLatestSnapshot(s_snapshot_payload, frame_buffer, frame_capacity, frame_length);
 }
 
 static bool SpiSlaveService_RequestAllowed(uint8_t request_type)
@@ -255,13 +253,30 @@ static bool SpiSlaveService_RequestAllowed(uint8_t request_type)
     return state == LIFECYCLE_STATE_ACTIVE;
 }
 
-static void SpiSlaveService_StageResponseFrame(void)
+/* Every stage-and-publish in this service runs through here (see s_staging_busy).
+ * SpiSlaveService_Init stages its boot frame directly: no other caller exists yet. */
+static SnapshotBuild_Result SpiSlaveService_StageAndPublish(SnapshotBuilder_SerializeCallback serialize,
+                                                            void *context,
+                                                            bool record_staged_time)
 {
-    if (SnapshotBuilder_Stage(&s_frame_pool, SpiSlaveService_SerializeResponse, NULL) == SNAPSHOT_BUILD_OK) {
-        /* Capture response staged time when frame is staged. */
-        g_spi_timing_dbg.response_staged_us = TimeService_NowUs();
+    SnapshotBuild_Result result;
+
+    if (atomic_flag_test_and_set(&s_staging_busy)) return SNAPSHOT_BUILD_BUSY;
+    result = SnapshotBuilder_Stage(&s_frame_pool, serialize, context);
+    if (result == SNAPSHOT_BUILD_OK) {
+        if (record_staged_time) {
+            /* Capture response staged time when frame is staged. */
+            g_spi_timing_dbg.response_staged_us = TimeService_NowUs();
+        }
         (void)SpiSlaveService_PublishStagedFrame();
     }
+    atomic_flag_clear(&s_staging_busy);
+    return result;
+}
+
+static void SpiSlaveService_StageResponseFrame(void)
+{
+    (void)SpiSlaveService_StageAndPublish(SpiSlaveService_SerializeResponse, NULL, true);
 }
 
 void SpiSlaveService_Init(void)
@@ -312,8 +327,7 @@ void SpiSlaveService_Process(void)
         }
         SpiSlaveService_SetDataReadyPin(false);
         (void)SpiProtocol_BuildBootStatus(&s_protocol, s_response_frame);
-        (void)SnapshotBuilder_Stage(&s_frame_pool, SpiSlaveService_SerializeResponse, NULL);
-        (void)SpiSlaveService_PublishStagedFrame();
+        (void)SpiSlaveService_StageAndPublish(SpiSlaveService_SerializeResponse, NULL, false);
     } else if (s_dma_active && ((now - s_dma_start_tick) >= SPI_SERVICE_HOST_STALL_MS)) {
         (void)HAL_SPI_Abort(&hspi3);
         if (s_dma_active) {
@@ -322,8 +336,7 @@ void SpiSlaveService_Process(void)
         }
         SpiSlaveService_SetDataReadyPin(false);
         (void)SpiProtocol_BuildBootStatus(&s_protocol, s_response_frame);
-        (void)SnapshotBuilder_Stage(&s_frame_pool, SpiSlaveService_SerializeResponse, NULL);
-        (void)SpiSlaveService_PublishStagedFrame();
+        (void)SpiSlaveService_StageAndPublish(SpiSlaveService_SerializeResponse, NULL, false);
     }
 
     if ((now - s_last_poll_tick) >= s_poll_period_ms) {
@@ -338,11 +351,8 @@ void SpiSlaveService_Process(void)
 
 SnapshotBuild_Result SpiSlaveService_StageSnapshot(SnapshotBuilder_SerializeCallback serialize, void *context)
 {
-    SnapshotBuild_Result result;
     if (!Lifecycle_IsActive(&s_lifecycle)) return SNAPSHOT_BUILD_NOT_READY;
-    result = SnapshotBuilder_Stage(&s_frame_pool, serialize, context);
-    if (result == SNAPSHOT_BUILD_OK) (void)SpiSlaveService_PublishStagedFrame();
-    return result;
+    return SpiSlaveService_StageAndPublish(serialize, context, false);
 }
 
 SnapshotBuild_Result SpiSlaveService_StageLatestSnapshot(void)

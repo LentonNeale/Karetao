@@ -32,7 +32,7 @@ if(GIT_EXECUTABLE)
     execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
         WORKING_DIRECTORY ${SOURCE_DIR}
         OUTPUT_VARIABLE git_hash OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET RESULT_VARIABLE git_hash_result)
+        ERROR_VARIABLE git_hash_error ERROR_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE git_hash_result)
     execute_process(COMMAND ${GIT_EXECUTABLE} log -1 --format=%ct
         WORKING_DIRECTORY ${SOURCE_DIR}
         OUTPUT_VARIABLE git_epoch OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -40,7 +40,22 @@ if(GIT_EXECUTABLE)
     execute_process(COMMAND ${GIT_EXECUTABLE} status --porcelain -- ${dirty_paths}
         WORKING_DIRECTORY ${SOURCE_DIR}
         OUTPUT_VARIABLE git_status OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET RESULT_VARIABLE git_status_result)
+        ERROR_VARIABLE git_status_error ERROR_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE git_status_result)
+
+    # A git that cannot read the tree is not a dirty tree, so say which it is. The
+    # identity stays conservative (dirty set, hash zero), but the reason is named.
+    if(NOT git_hash_result EQUAL 0 OR NOT git_status_result EQUAL 0)
+        set(git_failed TRUE)
+        set(git_error "${git_hash_error}")
+        if(git_error STREQUAL "")
+            set(git_error "${git_status_error}")
+        endif()
+        message(WARNING
+            "git could not read the source tree, so the firmware identity is unknown "
+            "(hash 0, dirty bit set): ${git_error}\n"
+            "If git reports 'dubious ownership', the checkout belongs to another user (common in "
+            "CI containers): allow it with `git config --global --add safe.directory <repository>`.")
+    endif()
 
     if(git_hash_result EQUAL 0 AND git_hash MATCHES "^[0-9a-f]+$")
         string(SUBSTRING "${git_hash}" 0 8 git_hash)
@@ -85,7 +100,7 @@ set(content "/* Generated on every build by cmake/firmware_identity.cmake. Do no
 # that includes the header) is left alone for an unchanged tree.
 file(CONFIGURE OUTPUT "${OUTPUT}" CONTENT "${content}" @ONLY)
 
-if(dirty)
+if(dirty AND NOT git_failed)
     message(WARNING
         "Building from a dirty working tree: VERSION frames will report build_flags bit 0 "
         "and must not be used as integration-gate evidence.")

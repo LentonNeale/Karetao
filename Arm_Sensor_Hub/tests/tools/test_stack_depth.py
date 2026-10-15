@@ -173,6 +173,15 @@ class StackDepthTest(unittest.TestCase):
         self.assertEqual(stack_depth.main(args), 1)
         self.assertFalse(stamp.exists())
 
+    def test_a_caller_in_two_entries_is_an_error(self):
+        """Otherwise one entry's targets would silently replace the other's."""
+        ioc, cfg = self.write([node("Entry", 8)],
+                              config="indirect Entry 1 Deep\nindirect Other,Entry 1 none\n")
+        with self.assertRaises(ValueError) as caught:
+            stack_depth.load_config(cfg)
+        self.assertIn("line 1", str(caught.exception))
+        self.assertEqual(stack_depth.main(["--ioc", str(ioc), "--ci-dir", str(self.ci), "--config", str(cfg)]), 2)
+
     def test_unreadable_config_line_is_an_error(self):
         ioc, cfg = self.write([node("Entry", 8)], config="indirect Entry none\n")  # no site count
         self.assertEqual(stack_depth.main(["--ioc", str(ioc), "--ci-dir", str(self.ci), "--config", str(cfg)]), 2)

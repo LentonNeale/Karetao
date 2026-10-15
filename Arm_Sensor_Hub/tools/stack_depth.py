@@ -149,6 +149,7 @@ def load_config(path: Path | None) -> tuple[list[Indirect], dict[str, int]]:
     """`indirect <caller>[,<caller>...] <sites> <target>...` and `external <function> <bytes>`."""
     indirect: list[Indirect] = []
     external: dict[str, int] = {}
+    caller_line: dict[str, int] = {}  # each caller may be in one entry only
     if path is None:
         return indirect, external
     for number, raw in enumerate(path.read_text().splitlines(), 1):
@@ -157,7 +158,13 @@ def load_config(path: Path | None) -> tuple[list[Indirect], dict[str, int]]:
             continue
         words = line.split()
         if words[0] == "indirect" and len(words) >= 4 and words[2].isdigit():
-            indirect.append(Indirect(tuple(words[1].split(",")), int(words[2]), tuple(words[3:])))
+            callers = tuple(words[1].split(","))
+            for caller in callers:
+                if caller in caller_line:
+                    raise ValueError(f"{path}:{number}: {caller} is already in the indirect entry on line "
+                                     f"{caller_line[caller]}; one caller belongs to one entry, so merge them")
+                caller_line[caller] = number
+            indirect.append(Indirect(callers, int(words[2]), tuple(words[3:])))
         elif words[0] == "external" and len(words) == 3 and words[2].isdigit():
             external[words[1]] = int(words[2])
         else:

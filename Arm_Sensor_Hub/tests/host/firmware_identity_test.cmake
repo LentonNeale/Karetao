@@ -132,4 +132,31 @@ file(WRITE "${repo}/fw/new.c" "int z;\n")
 run_identity()
 expect("#define FIRMWARE_BUILD_DIRTY 1" "untracked firmware file")
 
+# A git that cannot read the tree (as in a CI container that owns the checkout under
+# another user) is reported as such, not as a dirty tree, and the identity stays
+# conservative: hash zero, dirty set.
+set(fake_git "${WORK_DIR}/fake-git")
+file(WRITE "${fake_git}" "#!/bin/sh\necho \"fatal: detected dubious ownership in repository\" >&2\nexit 128\n")
+file(CHMOD "${fake_git}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+execute_process(COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${repo}/fw -DOUTPUT=${header}
+                        -DGIT_EXECUTABLE=${fake_git} "-DC_COMPILER=GNU 0.0.0" "-DCXX_COMPILER=GNU 0.0.1"
+                        -P ${SCRIPT}
+    RESULT_VARIABLE result OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "identity script failed with an unusable git:\n${out}\n${err}")
+endif()
+foreach(text "git could not read the source tree" "dubious ownership" "safe.directory")
+    string(FIND "${err}" "${text}" at)
+    if(at EQUAL -1)
+        message(FATAL_ERROR "unusable git: expected '${text}' in the warning:\n${err}")
+    endif()
+endforeach()
+string(FIND "${err}" "Building from a dirty working tree" at)
+if(NOT at EQUAL -1)
+    message(FATAL_ERROR "unusable git: reported as a dirty tree:\n${err}")
+endif()
+file(READ "${header}" header_text)
+expect("#define FIRMWARE_GIT_HASH_ABBREV UINT32_C(0)" "unusable git: hash")
+expect("#define FIRMWARE_BUILD_DIRTY 1" "unusable git: dirty")
+
 message(STATUS "firmware identity script: all checks passed")

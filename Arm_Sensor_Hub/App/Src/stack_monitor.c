@@ -16,7 +16,10 @@
  * period rather than on every loop pass. */
 #define STACK_MONITOR_REFRESH_MS 1000u
 
-/* The kernel's idle task name (tasks.c, configIDLE_TASK_NAME default). */
+/* Task names: the application task from the .ioc (FREERTOS.Tasks01), and the
+ * kernel's idle task (tasks.c, configIDLE_TASK_NAME default). Looking the tasks up
+ * by name keeps each figure tied to its task, whichever task calls this module. */
+#define STACK_MONITOR_DEFAULT_TASK_NAME "defaultTask"
 #define STACK_MONITOR_IDLE_TASK_NAME "IDLE"
 
 volatile StackMonitor_DebugMirror g_stack_monitor_dbg = {
@@ -26,6 +29,7 @@ volatile StackMonitor_DebugMirror g_stack_monitor_dbg = {
 };
 
 static uint32_t s_last_refresh_ms;
+static TaskHandle_t s_default_task;
 static TaskHandle_t s_idle_task;
 static TaskHandle_t s_timer_task;
 
@@ -45,6 +49,9 @@ void StackMonitor_Process(void)
     s_last_refresh_ms = now_ms;
 
     /* xTaskGetHandle walks every task list, so the handles are looked up once. */
+    if (s_default_task == NULL) {
+        s_default_task = xTaskGetHandle(STACK_MONITOR_DEFAULT_TASK_NAME);
+    }
     if (s_idle_task == NULL) {
         s_idle_task = xTaskGetHandle(STACK_MONITOR_IDLE_TASK_NAME);
     }
@@ -52,7 +59,9 @@ void StackMonitor_Process(void)
         s_timer_task = xTimerGetTimerDaemonTaskHandle();
     }
 
-    g_stack_monitor_dbg.default_task_min_free_bytes = StackMonitor_FreeBytes(NULL);
+    if (s_default_task != NULL) {
+        g_stack_monitor_dbg.default_task_min_free_bytes = StackMonitor_FreeBytes(s_default_task);
+    }
     if (s_idle_task != NULL) {
         g_stack_monitor_dbg.idle_task_min_free_bytes = StackMonitor_FreeBytes(s_idle_task);
     }
