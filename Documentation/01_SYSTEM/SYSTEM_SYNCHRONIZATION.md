@@ -18,10 +18,10 @@ This document defines Karetao system synchronization requirements. Component imp
 
 ## Motion-permission integration
 
-The synchronization rule is one prerequisite of the motion gate (SYS-GATE-001, ARCHITECTURE_DECISIONS.md, 2026-10-03; ClockSync validity is not a gate input for single gated commands). Loss of synchronization must be propagated to the single normal-motion permission authority rather than independently interpreted by each motion-producing subsystem.
+The synchronization rule is one prerequisite of the motion gate (SYS-GATE-001, ARCHITECTURE_DECISIONS.md, 2026-10-03; ClockSync validity is not a gate input for single gated commands). Loss of synchronization is reported to the motion gate, the single decider, rather than interpreted independently by each motion-producing subsystem.
 
-SD-19, SD-21 and SD-22 are modified by [Issue #12](../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) as stated above; the motion-permission proposal does not change them further. The exact scope of time-dependent motion and any additional freshness limits remain open for system decision.
+SD-19, SD-21 and SD-22 are modified by [Issue #12](../07_DECISIONS/ISSUE_12_CLOCK_SYNCHRONIZATION_DECISIONS.md) as stated above; the motion-permission proposal does not change them further. The scope of time-dependent motion was resolved by SYS-GATE-001 (ARCHITECTURE_DECISIONS.md, 2026-10-03): single gated commands are not time-dependent motion, and none exists in the current scope. Additional freshness limits remain open for system decision.
 
 ## Integration obligations
 
-The system must define exactly which operations constitute time-dependent motion and ensure one motion-permission authority enforces the rule consistently. All timestamp consumers must not treat unsynchronized timestamps as valid. Validation uses two sequential gates: Gate A (ClockSync model characterized by synthetic and integration tests) and then Gate B (PRM-TS-01 accuracy validated on hardware against an independent reference). Passing Gate A does not imply Gate B (Issue #12 item 10).
+No time-dependent motion exists in the current scope (SYS-GATE-001). If one is added, its definition and its enforcement by the motion gate are decided before it is implemented. All timestamp consumers must not treat unsynchronized timestamps as valid. Validation uses two sequential gates: Gate A (ClockSync model characterized by synthetic and integration tests) and then Gate B (PRM-TS-01 accuracy validated on hardware against an independent reference). Passing Gate A does not imply Gate B (Issue #12 item 10).

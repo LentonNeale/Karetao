@@ -38,8 +38,11 @@ Component implementation documents are in `Arm_Sensor_Hub/Documentation/` and `R
 | Requirements | Approved, Retired, Deferred, Withdrawn |
 | Parameters | Measured, Datasheet, Derived, Provisional |
 | Verification | OPEN, COMPONENT_EVIDENCE, SYSTEM_VERIFIED |
+| Design descriptions | As-built (describes the code as it is now), Target (decided, not yet implemented) |
 
 Items still marked proposed or open are not normative.
+
+Terms for the arm's parts (joint, axis, motor, drive, joint encoder) for the data path (sample, feedback, latest value, record, snapshot, message, frame, transaction, exchange, publish) for time (TIME_SYNC, clock sync, ClockSync, observation, offset, acquisition and synchronized timestamps, spread) and for gating (motion gate, fault, error, retry, recovery, reactivation, stale, E-stop, controlled stop): [`SYSTEM_OVERVIEW.md`](01_SYSTEM/SYSTEM_OVERVIEW.md) § Vocabulary.
 
 ## Who decides
 
