@@ -185,3 +185,8 @@ if(ARM_SENSOR_HUB_STACK_CHECK)
     )
     add_custom_target(stack_check ALL DEPENDS ${CMAKE_BINARY_DIR}/stack_depth.txt)
 endif()
+
+# Every App/Src module must be in the firmware source list above or exempted with a
+# reason (B54); tests/host/CMakeLists.txt checks the host-test side the same way.
+include(cmake/app_source_check.cmake)
+arm_sensor_hub_check_app_sources("firmware" ${CMAKE_PROJECT_NAME})

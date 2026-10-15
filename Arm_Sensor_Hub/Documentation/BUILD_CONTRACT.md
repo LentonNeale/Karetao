@@ -33,9 +33,19 @@ The project should enforce baseline warnings, produce compile commands, report F
 
 Memory budgets, compiler version range, HAL/FreeRTOS version pins, artifact version metadata, and release signing are open decisions and must be approved before being enforced.
 
+### App source list check
+
+The firmware and the host tests list their `App/Src` sources by hand. At configure time, `cmake/app_source_check.cmake` compares every `App/Src/*.c` file with the sources of the targets each preset builds: the firmware target, or the host-test executables (story B54, finding FW-4). Configure fails when:
+
+- a module is in neither its build nor `cmake/app_source_exemptions.cmake`;
+- an exempted module is built anyway;
+- an exemption names a module that no longer exists.
+
+Each exemption carries its reason; today the only one is `motion_permission.c`, until WP14. CI configures both presets, so both lists are checked.
+
 ### Task stack check
 
-Task stack budgets are enforced (story B53, review findings FW-2 and PRM-9):
+Task stack budgets are enforced (story B53, review findings FW-2 and PRM-9; approved by Lenton Neale, 2026-10-15):
 
 - **Where the sizes live.** The application tasks' stack sizes are set in the CubeMX `.ioc` (`FREERTOS.TasksNN`). The kernel's idle and timer task sizes are set in `FreeRTOSConfig.h` (`configMINIMAL_STACK_SIZE`, `configTIMER_TASK_STACK_DEPTH`), which CubeMX generates from the `.ioc`.
 - **How the check works.** Every C and C++ firmware object is compiled with `-fcallgraph-info=su`. After the link, `tools/stack_depth.py` reads the call graphs of the objects actually linked; CMake lists them in `build/<preset>/stack_objects.txt`. For each task it adds the frames along the deepest call path, plus the allowance derived in the tool for an exception and a context switch. The build fails if the total exceeds the stack.

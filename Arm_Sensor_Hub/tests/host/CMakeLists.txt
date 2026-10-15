@@ -84,3 +84,20 @@ if(Python3_Interpreter_FOUND)
 else()
     message(WARNING "python3 not found: the stack_depth_tool host test is skipped")
 endif()
+
+# The App/Src source-list check (B54): its comparison logic, then this side's lists.
+add_test(NAME app_source_check
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/app_source_check_test.cmake
+)
+# Every executable defined in this directory counts, so a new test executable is
+# covered without being named here.
+include(${CMAKE_SOURCE_DIR}/cmake/app_source_check.cmake)
+get_property(host_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+set(host_executables "")
+foreach(target IN LISTS host_targets)
+    get_target_property(type ${target} TYPE)
+    if(type STREQUAL "EXECUTABLE")
+        list(APPEND host_executables ${target})
+    endif()
+endforeach()
+arm_sensor_hub_check_app_sources("host tests" ${host_executables})
