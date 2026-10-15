@@ -29,7 +29,7 @@ The generator refuses to write a sheet in which a label, no-connect or power sym
 | Rocker switch fitted in the motor supply; the E-stop goes in line after it, before the drives | Lenton Neale, 2026-10-15 |
 | Drive switch inputs: 57D IN_1 home or left limit, IN_2 right limit; 42D IN_1 only, so two switches need 9EH port mapping (left to En, right to Dir, COM at the high level); EVCC/EGND 5 V, 20 mA (57D with DIP 2 and 3 ON) | MKS manual pp. 10, 12, 19, 56 |
 | 57D DIP switches set; 42D switch inputs configured | Lenton Neale, 2026-10-15 (exact settings recorded in `BRING_UP.md` phases 1 and 6) |
-| PB8 (CAN1_RX) and PB9 (CAN1_TX) are FT (5 V tolerant) pins, so the TJA1050's 5 V RXD connects directly, provided the STM32 is powered; PB8 has no internal pull (`GPIO_NOPULL`, `Core/Src/stm32f4xx_hal_msp.c`) | Reported 2026-10-15 from the STM32F405 datasheet; matches the STM32F412 pin table. Cite the F405 pin-table row when a copy of the datasheet is added to `icm-project/references/` |
+| PB8 (CAN1_RX) and PB9 (CAN1_TX) are FT (5 V tolerant) pins, so the TJA1050's 5 V RXD connects directly, provided the STM32 is powered; PB8 has no internal pull (`GPIO_NOPULL`, `Core/Src/stm32f4xx_hal_msp.c`) | Datasheet: STM32F405xx/STM32F407xx, DS8626 Rev 12, Table 7 "pin and ball definitions" (p. 60, PB8 and PB9 rows: I/O structure FT) and its note 5 (p. 61: "FT = 5 V tolerant except when in analog mode or oscillator mode"). Checked 2026-10-15 |
 | Pi header pins 19, 21, 23, 24 (SPI0 CE0) and 22 (GPIO25 DATA_READY) | `RaspberryPi_Sensor_Hub/Documentation/README.md` |
 | Drive supply 12 to 24 V DC; host and drives share a ground | MKS manual via `icm-project/references/mks-servo42d-57d-can/` |
 
@@ -37,7 +37,8 @@ The generator refuses to write a sheet in which a label, no-connect or power sym
 
 - The STM32 board type and whether it takes 5 V in and regulates 3.3 V (drawn that way).
 - The TJA1050's S pin tied low (high-speed mode).
-- I2C pull-ups (4k7 on the main bus) and whether the breakout boards carry their own.
+- I2C pull-ups (4k7 on the main bus, drawn to +3V3) and whether the breakout boards carry their own.
+- The sensor and mux rails. Lenton reports the AS5600s run on 5 V (2026-10-15), and they are drawn on +5V. The mux is drawn on +3V3, and the rail of the channel (SCx/SDx) pull-ups is not recorded. In 5 V mode an AS5600 needs a logic high of about 0.7 × VDD, so a channel pulled only to 3.3 V would read unreliably. Measure all of them in `BRING_UP.md` phase 2 (B3).
 - The mux RESET pull-up (10k); no MCU line drives it (review finding FW-12).
 - AS5600 DIR tied low on every sensor.
 - CAN termination at both ends (R1 at the hub, R2 at the last drive), with every drive's own terminator off.

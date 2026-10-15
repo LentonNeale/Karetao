@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 128,
+  "next_id": 129,
   "stories": [
     {
       "id": "B1",
@@ -1130,6 +1130,25 @@
       "package": "WP9"
     },
     {
+      "id": "B128",
+      "title": "S9.14 Check the main (interrupt) stack depth at build time",
+      "story": "As the maintainer I want the main stack (MSP), which every interrupt handler and nested interrupt uses, checked against its worst case after every build, like the task stacks (B53), so that an interrupt-side overflow cannot pass unnoticed. Found in the 2026-10-15 STM32 configuration review.",
+      "acceptance": [
+        "tools/stack_depth.py also checks the main stack: the deepest path of each enabled exception and IRQ handler (from the vector table in startup_stm32f405xx.s and stm32f4xx_it.c), combined across NVIC preemption levels (one handler per level can nest), plus the exception frame each nesting level pushes",
+        "The main stack size comes from the linker script (_Min_Stack_Size in STM32F405xx_FLASH.ld); the pre-scheduler path from main() is checked against it too (FreeRTOS resets MSP when the scheduler starts)",
+        "Handler priorities are read from the generated code or the .ioc, not restated; a handler whose priority cannot be read fails the check",
+        "Function-pointer calls in HAL IRQ handlers (HAL callbacks) are resolved through stack_depth.cfg with site counts, as for tasks",
+        "Host tests for the nesting arithmetic; the Debug and Release builds report the main-stack headroom in stack_depth.txt",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-15T01:32:00.738938+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
       "id": "B65",
       "title": "S10.1 GET_SNAPSHOT serves the latest sensor and motor records as a correlated SNAPSHOT",
       "story": "As the maintainer I want gET_SNAPSHOT serves the latest sensor and motor records as a correlated SNAPSHOT so that the WP10 acceptance can be met before the arm is connected. Review findings: SPI-1, FW-1, PRM-8, VER-21 (kinds: Add, Defect; charter goals: 1, 1, 2, 1,2; bench-blocking: yes; size: 3 points).",
@@ -1300,6 +1319,7 @@
         "Clauses: PRM-ACQ-02; SPI_PAYLOAD_SCHEMA validity flags; SYSTEM_CONFIGURATION \u00a75",
         "Files: Arm_Sensor_Hub/App/Src/as5600.c:101-125, Arm_Sensor_Hub/App/Src/as5600.c:199-241, Arm_Sensor_Hub/App/Src/i2c_manager.c:375-417, Arm_Sensor_Hub/App/Src/sensor_task.c:154-173, Arm_Sensor_Hub/App/Src/sensor_task.c:177-185, Arm_Sensor_Hub/tools/check-sensors.sh:97-130",
         "Ruling R6: ML/MH are warnings (SAMPLE_VALID stays set); processed_angle_mdeg = RAW ANGLE x 360000 / 4096; PRM-ACQ-02 note 'method not recorded; believed to include the unpopulated channel'; TIM2 sweep counter readable over SWD",
+        "PRM-ACQ-02 note also records: measured on a Debug build, values read over the debug terminal (Lenton Neale, 2026-10-15); the Stage 3 re-measurement names the build type",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
       ],
       "points": 1,
@@ -1537,6 +1557,7 @@
         "Clauses: CAN_SYSTEM_INTERFACE.md \u00a79",
         "Files: Arm_Sensor_Hub/App/Inc/can_service.h:78-102, Arm_Sensor_Hub/App/Src/can_service.c:247-249",
         "Ruling R13: TX success and failure counters added",
+        "RX FIFO overflow count (CAN_SYSTEM_INTERFACE.md \u00a79) added: RX is polled, so the overrun flags (bxCAN RF0R/RF1R FOVR) are read and cleared in the CAN service each cycle and counted, and the count is exported with the other \u00a79 diagnostics (added 2026-10-15 from the STM32 configuration review)",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
       ],
       "points": 1,

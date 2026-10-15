@@ -7,6 +7,6 @@
   "net_settings": {"classes": [{"name": "Default", "wire_width": 6, "bus_width": 12, "clearance": 0.2, "track_width": 0.2, "via_diameter": 0.6, "via_drill": 0.3}], "meta": {"version": 3}},
   "pcbnew": {"page_layout_descr_file": ""},
   "schematic": {"legacy_lib_dir": "", "legacy_lib_list": []},
-  "sheets": [["0213c3ca-735f-41c3-8793-0bd40aeb7a3a", "Root"]],
+  "sheets": [["380d0504-fa01-5b92-94e5-7170c4fdc533", "Root"]],
   "text_variables": {}
 }
