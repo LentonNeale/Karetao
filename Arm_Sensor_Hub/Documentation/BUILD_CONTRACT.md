@@ -31,7 +31,21 @@ The repository now has CI coverage for `HostTests`, Debug firmware, and Release 
 
 The project should enforce baseline warnings, produce compile commands, report Flash/RAM usage, and retain the ELF/map files needed for debug. CI now builds Debug and Release, runs host protocol and service smoke tests, records firmware size/checksum information, and uploads the firmware artifacts. Documentation-link validation and static analysis remain future CI improvements.
 
-Memory budgets, stack budgets, compiler version range, HAL/FreeRTOS version pins, artifact version metadata, and release signing are open decisions and must be approved before being enforced.
+Memory budgets, compiler version range, HAL/FreeRTOS version pins, artifact version metadata, and release signing are open decisions and must be approved before being enforced.
+
+### Task stack check
+
+Task stack budgets are enforced (story B53, review findings FW-2 and PRM-9):
+
+- **Where the sizes live.** The application tasks' stack sizes are set in the CubeMX `.ioc` (`FREERTOS.TasksNN`). The kernel's idle and timer task sizes are set in `FreeRTOSConfig.h` (`configMINIMAL_STACK_SIZE`, `configTIMER_TASK_STACK_DEPTH`), which CubeMX generates from the `.ioc`.
+- **How the check works.** Every C and C++ firmware object is compiled with `-fcallgraph-info=su`. After the link, `tools/stack_depth.py` reads the call graphs of the objects actually linked; CMake lists them in `build/<preset>/stack_objects.txt`. For each task it adds the frames along the deepest call path, plus the allowance derived in the tool for an exception and a context switch. The build fails if the total exceeds the stack.
+- **Weak functions.** When a weak function and its strong override both exist (HAL callbacks), the deeper of the two is counted.
+- **When the depth can't be known, the build fails too:** recursion, an unbounded dynamic frame, an unaccounted function-pointer call or a library function without a size.
+  - `tools/stack_depth.cfg` lists the function-pointer calls and the library sizes, each with its source.
+  - Each function-pointer entry states the exact number of call sites it covers. A new callback, or a call moved by inlining, changes that number, and the build fails until someone reviews the entry.
+- **Turning it off.** The check needs GCC and python3. If either is missing, configure fails, unless the build is configured with `-DARM_SENSOR_HUB_STACK_CHECK=OFF`, which prints a warning.
+- **Output.** A passing build writes its report to `build/<preset>/stack_depth.txt`.
+- **At run time,** `configCHECK_FOR_STACK_OVERFLOW 2` is on. An overflow masks every interrupt, stops the SPI3 DMA and pending CAN transmissions, and halts in `StackMonitor_OnOverflow`. The least free stack since reset of the default, idle and timer tasks is in `g_stack_monitor_dbg` ([SWD procedure 6](SWD_READOUT_PROCEDURES.md#procedure-6-read-task-stack-headroom)).
 
 ## Configuration Ownership
 
@@ -67,7 +81,7 @@ The current CI evidence establishes that the runner can install the ARM GNU tool
 - supported toolchain/CMake version range;
 - warning flags and static-analysis tools;
 - CI runner and artifact retention;
-- Flash/RAM/stack limits;
+- Flash/RAM limits (task stacks are checked, see "Task stack check");
 - dependency version pinning;
 - CubeMX regeneration review process;
 - firmware version and reproducibility metadata.

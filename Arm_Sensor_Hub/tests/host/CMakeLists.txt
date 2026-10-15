@@ -42,6 +42,7 @@ add_executable(service_smoke_tests
     ${CMAKE_SOURCE_DIR}/App/Src/spi_data_ready.c
     ${CMAKE_SOURCE_DIR}/App/Src/spi_protocol.c
     ${CMAKE_SOURCE_DIR}/App/Src/spi_slave_service.c
+    ${CMAKE_SOURCE_DIR}/App/Src/stack_monitor.c
     ${CMAKE_SOURCE_DIR}/App/Src/tca9548a_mux.c
 )
 
@@ -53,6 +54,7 @@ target_include_directories(service_smoke_tests PRIVATE
 
 target_compile_definitions(service_smoke_tests PRIVATE
     TIME_SERVICE_HOST_TEST
+    STACK_MONITOR_HOST_TEST
 )
 
 add_test(NAME service_smoke_tests COMMAND service_smoke_tests)
@@ -71,4 +73,14 @@ if(GIT_FOUND)
     )
 else()
     message(WARNING "git not found: the firmware_identity_script host test is skipped")
+endif()
+
+# The task stack check the firmware build runs (tools/stack_depth.py).
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+    add_test(NAME stack_depth_tool
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/tools/test_stack_depth.py
+    )
+else()
+    message(WARNING "python3 not found: the stack_depth_tool host test is skipped")
 endif()

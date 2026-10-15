@@ -42,6 +42,26 @@ endif()
 # Enable CMake support for ASM, C, and C++ languages
 enable_language(C CXX ASM)
 
+# The task stack check (end of this file) needs GCC's call-graph output and python3.
+# It is required unless turned off on purpose.
+option(ARM_SENSOR_HUB_STACK_CHECK "Fail the build when a task stack cannot hold its worst-case call path" ON)
+if(ARM_SENSOR_HUB_STACK_CHECK)
+    if(NOT CMAKE_C_COMPILER_ID STREQUAL "GNU" OR NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        message(FATAL_ERROR "The task stack check needs GCC (-fcallgraph-info). "
+                            "Configure with -DARM_SENSOR_HUB_STACK_CHECK=OFF to build without it.")
+    endif()
+    find_package(Python3 COMPONENTS Interpreter)
+    if(NOT Python3_Interpreter_FOUND)
+        message(FATAL_ERROR "The task stack check needs python3. "
+                            "Configure with -DARM_SENSOR_HUB_STACK_CHECK=OFF to build without it.")
+    endif()
+    # Every firmware object (App, HAL, FreeRTOS, MksServo) writes a .ci call graph
+    # beside it, with the stack frame of each function.
+    add_compile_options(-fcallgraph-info=su)
+else()
+    message(WARNING "ARM_SENSOR_HUB_STACK_CHECK is OFF: task stacks are not checked in this build")
+endif()
+
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
 
@@ -79,6 +99,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     App/Src/can_service.c
     App/Src/spi_slave_service.c
     App/Src/health_monitor.c
+    App/Src/stack_monitor.c
 )
 
 # Add include paths
@@ -135,3 +156,32 @@ add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
             $<TARGET_FILE:${CMAKE_PROJECT_NAME}> $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/${CMAKE_PROJECT_NAME}.hex
     COMMENT "Generating ${CMAKE_PROJECT_NAME}.bin and .hex for flashing"
 )
+
+# Fail the build when a task's worst-case call path, plus the context-switch
+# allowance, no longer fits its stack (FW-2, PRM-9): the .ioc tasks and the
+# kernel's idle and timer tasks. Only the .ci files of the objects actually
+# linked are read, so files left by removed sources cannot leak in. It reruns
+# when the firmware, the .ioc, FreeRTOSConfig.h, the tool or its config changes.
+if(ARM_SENSOR_HUB_STACK_CHECK)
+    set(STACK_CHECK_OBJECTS ${CMAKE_BINARY_DIR}/stack_objects.txt)
+    file(GENERATE OUTPUT ${STACK_CHECK_OBJECTS} CONTENT
+        "$<JOIN:$<TARGET_OBJECTS:${CMAKE_PROJECT_NAME}>;$<TARGET_OBJECTS:STM32_Drivers>;$<TARGET_OBJECTS:FreeRTOS>;$<TARGET_OBJECTS:mksservo>,\n>\n")
+    set(STACK_CHECK_INPUTS
+        ${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}.ioc
+        ${CMAKE_SOURCE_DIR}/Core/Inc/FreeRTOSConfig.h
+        ${CMAKE_SOURCE_DIR}/tools/stack_depth.py
+        ${CMAKE_SOURCE_DIR}/tools/stack_depth.cfg
+        ${STACK_CHECK_OBJECTS})
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/stack_depth.txt
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/stack_depth.py
+                --ioc ${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}.ioc
+                --freertos-config ${CMAKE_SOURCE_DIR}/Core/Inc/FreeRTOSConfig.h
+                --objects ${STACK_CHECK_OBJECTS}
+                --config ${CMAKE_SOURCE_DIR}/tools/stack_depth.cfg
+                --report ${CMAKE_BINARY_DIR}/stack_depth.txt
+        DEPENDS ${CMAKE_PROJECT_NAME} ${STACK_CHECK_INPUTS}
+        COMMENT "Checking task stack sizes against the worst-case call paths"
+        VERBATIM
+    )
+    add_custom_target(stack_check ALL DEPENDS ${CMAKE_BINARY_DIR}/stack_depth.txt)
+endif()

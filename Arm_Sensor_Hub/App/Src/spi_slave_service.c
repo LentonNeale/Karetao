@@ -1,5 +1,6 @@
 #include "spi_slave_service.h"
 
+#include <stdatomic.h>
 #include <string.h>
 
 #include "can_service.h"
@@ -173,24 +174,30 @@ static void SpiSlaveService_SerializeMotorRecord(uint8_t *record_buffer, const M
     memcpy(&record_buffer[SPI_MOTOR_RECORD_OFFSET_PAYLOAD], record->payload, record->payload_length);
 }
 
-static bool SpiSlaveService_SerializeLatestSnapshot(uint8_t *frame_buffer,
-                                                    uint16_t frame_capacity,
-                                                    uint16_t *frame_length,
-                                                    void *context)
+/* The snapshot payload is assembled here, not on the calling task's stack: it is
+ * larger than the rest of the deepest call path together (PRM-9). The serializer
+ * is reachable through the public SpiSlaveService_StageSnapshot API, so the
+ * buffer is claimed with a flag; a caller that finds it in use gets no frame
+ * rather than one mixing two snapshots under a valid CRC. */
+static uint8_t s_snapshot_payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
+static atomic_flag s_snapshot_payload_busy = ATOMIC_FLAG_INIT;
+
+static bool SpiSlaveService_BuildLatestSnapshot(uint8_t *payload,
+                                                uint8_t *frame_buffer,
+                                                uint16_t frame_capacity,
+                                                uint16_t *frame_length)
 {
     const Sensor_LatestValue *sensor_records;
     const Motor_LatestValue *motor_records;
     const SnapshotFrame_Diagnostics *diagnostics;
     size_t sensor_record_count = 0u;
     size_t motor_record_count = 0u;
-    uint8_t payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
     uint16_t payload_length;
     uint8_t published_motor_count;
     size_t sensor_index;
     size_t motor_index;
     uint8_t published_motor_index = 0u;
 
-    (void)context;
     if ((frame_buffer == NULL) || (frame_length == NULL) || (frame_capacity < SPI_FRAME_MAX_BYTES)) return false;
     sensor_records = SensorTask_GetLatestValues(&sensor_record_count);
     motor_records = CanService_GetLatestMotorValues(&motor_record_count);
@@ -200,7 +207,7 @@ static bool SpiSlaveService_SerializeLatestSnapshot(uint8_t *frame_buffer,
     payload_length = SPI_SNAPSHOT_PAYLOAD_BYTES(published_motor_count);
     if ((payload_length > SPI_SNAPSHOT_MAX_PAYLOAD_BYTES) || (payload_length > SPI_PAYLOAD_MAX_BYTES)) return false;
 
-    memset(payload, 0, sizeof(payload));
+    memset(payload, 0, SPI_SNAPSHOT_MAX_PAYLOAD_BYTES);
     payload[SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION] = 1u;
     payload[SPI_SNAPSHOT_OFFSET_SENSOR_COUNT] = (uint8_t)SPI_SNAPSHOT_SENSOR_RECORD_COUNT;
     payload[SPI_SNAPSHOT_OFFSET_MOTOR_COUNT] = published_motor_count;
@@ -225,6 +232,20 @@ static bool SpiSlaveService_SerializeLatestSnapshot(uint8_t *frame_buffer,
     if (SpiProtocol_BuildSnapshotFrame(&s_protocol, payload, payload_length, frame_buffer) != SPI_PROTOCOL_OK) return false;
     *frame_length = (uint16_t)(SPI_FRAME_HEADER_BYTES + payload_length + SPI_FRAME_CRC_BYTES);
     return true;
+}
+
+static bool SpiSlaveService_SerializeLatestSnapshot(uint8_t *frame_buffer,
+                                                    uint16_t frame_capacity,
+                                                    uint16_t *frame_length,
+                                                    void *context)
+{
+    bool built;
+
+    (void)context;
+    if (atomic_flag_test_and_set(&s_snapshot_payload_busy)) return false;
+    built = SpiSlaveService_BuildLatestSnapshot(s_snapshot_payload, frame_buffer, frame_capacity, frame_length);
+    atomic_flag_clear(&s_snapshot_payload_busy);
+    return built;
 }
 
 static bool SpiSlaveService_RequestAllowed(uint8_t request_type)
