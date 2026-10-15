@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 128,
+  "next_id": 134,
   "stories": [
     {
       "id": "B1",
@@ -1086,7 +1086,8 @@
         "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: HOST-22, HOST-23, HOST-24, HOST-25, HOST-21",
         "Clauses: VERIFICATION_STRATEGY Chain; external: linux-spidev py-spidev-api Bus number stability; none (defect); none (duplication); none (maintainability)",
         "Files: RaspberryPi_Sensor_Hub/src/spi/data_ready.py:83-90, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:39, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:66-68, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:66-72, RaspberryPi_Sensor_Hub/src/spi/spi_bus.py:87-95, RaspberryPi_Sensor_Hub/src/spi/spi_device.py:85-91, RaspberryPi_Sensor_Hub/src/spi/timing.py:58-61, RaspberryPi_Sensor_Hub/tests/spi/, RaspberryPi_Sensor_Hub/tests/spi/test_spi_protocol.py:6, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:126-128, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:155-157, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:27",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: the shared sequencer is the process-wide Sequencer in spi_protocol.py built by S9.14 (B130); this story points at it. Depends on S9.14 (B130)"
       ],
       "points": 2,
       "status": "open",
@@ -1138,7 +1139,7 @@
         "Clauses: PRM-ACQ-01; SYS-ENC-001; SYS-ENC-001, SYS-SPI-001 (\"polling ... provides recovery\", \"correlated GET_SNAPSHOT responses\"); SYS-SPI-001",
         "Files: Arm_Sensor_Hub/App/Src/app_init.c:135-163, Arm_Sensor_Hub/App/Src/spi_protocol.c:172-178, Arm_Sensor_Hub/App/Src/spi_slave_service.c:176-228, Arm_Sensor_Hub/App/Src/spi_slave_service.c:318-347, Arm_Sensor_Hub/App/Src/spi_slave_service.c:327-330, Arm_Sensor_Hub/App/Src/spi_slave_service.c:344-347, Arm_Sensor_Hub/Core/Src/main.c:441-456, Arm_Sensor_Hub/Core/Src/main.c:441-457, Arm_Sensor_Hub/Core/Src/main.c:447-455, Arm_Sensor_Hub/tests/host/service_test_main.c:1050-1096, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:61-66",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
-        "Depends on S9.2"
+        "Depends on S9.2 and S10.15 (B128): the SNAPSHOT is built from the latest-value store's coherent copy"
       ],
       "points": 3,
       "status": "open",
@@ -1155,7 +1156,8 @@
         "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: SPI-2, SPI-13, SPI-16",
         "Clauses: SPI_SYSTEM_INTERFACE \u00a716 Stage 3, \u00a714; SPI_SYSTEM_INTERFACE \u00a77; SPI_SYSTEM_INTERFACE \u00a77, \u00a78",
         "Files: Arm_Sensor_Hub/App/Src/spi_data_ready.c:20-44, Arm_Sensor_Hub/App/Src/spi_data_ready.c:38-44, Arm_Sensor_Hub/App/Src/spi_slave_service.c:100-118, Arm_Sensor_Hub/App/Src/spi_slave_service.c:100-133, Arm_Sensor_Hub/App/Src/spi_slave_service.c:272-316, Arm_Sensor_Hub/App/Src/spi_slave_service.c:296-306, Arm_Sensor_Hub/App/Src/spi_slave_service.c:396-409, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:101-103, Arm_Sensor_Hub/Core/Src/main.c:301-329",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: the armed truth is the frame pool's DMA state and s_dma_active is deleted by S10.16 (B132); this story keeps the stall, re-arm and NSS-resync fixes. Depends on S10.16 (B132)"
       ],
       "points": 3,
       "status": "open",
@@ -1174,9 +1176,15 @@
         "Files: Arm_Sensor_Hub/App/Src/spi_slave_service.c:120-133, Arm_Sensor_Hub/App/Src/spi_slave_service.c:332-337, Arm_Sensor_Hub/App/Src/spi_slave_service.c:396-404, RaspberryPi_Sensor_Hub/src/spi/data_ready.py:58-64, RaspberryPi_Sensor_Hub/src/spi/data_ready.py:95-109, RaspberryPi_Sensor_Hub/src/spi/timing.py:179-182",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R8(a): DATA_READY is LOW whenever no frame is armed (C-1), asserted by a host test",
-        "Depends on S10.2"
+        "Depends on S10.2",
+        "Design 2026-10-15 (architecture review candidate 5): spi_data_ready owns the C-1 rule instead of the service's call order. Today the module models 'high while staged, low once consumed into DMA' (spi_data_ready.c:20-31) while the contract says high exactly while armed, and the service writes the pin high after the module has cleared its state (spi_slave_service.c:120-131); the module's flag and the pin disagree while a frame is armed",
+        "SpiDataReady_Init(pin setter, context, stall timeout, poll period): the pin setter is injected (HAL_GPIO_WritePin in production, a recording function in tests; two adapters). Timeouts from PRM-SPI-03 and PRM-SPI-04, converted to microseconds once at init",
+        "One call, SpiDataReady_Tick(armed, staged, now_us): armed and staged come from the frame pool (the single truth after B132); the level written is exactly armed; the module keeps no 'high' flag of its own, only the last level written and the time it rose. Returns a verdict: none; re-arm when staged and nothing armed (poll recovery); abort when an armed frame has sat longer than the stall timeout (host stall). Counts assertions, poll recoveries and host stalls; exposes the last rising-edge time (the g_spi_timing_dbg data_ready fields are not reproduced; they go with the TIME_SYNC instrumentation in WP12)",
+        "The service executes the verdicts and deletes SetDataReadyPin, s_dma_start_tick, its own stall branch and the OnFrameStaged/OnFrameConsumed ordering; it reads one clock per Process pass and passes now down",
+        "Tests: protocol_test_main.c with a recording pin: level follows armed through stage, arm, complete and abort; the two timers give their verdicts at the right instants. service_test_main.c: the DMA-loop test asserts the recorded pin follows the pool's state end to end, which is R8(a)'s host-test assertion",
+        "Depends on S10.2 (B66) and S10.16 (B132) for the single armed truth"
       ],
-      "points": 2,
+      "points": 3,
       "status": "open",
       "sprint": null,
       "created": "2026-10-14T00:00:00+00:00",
@@ -1192,7 +1200,8 @@
         "Clauses: HOST_SYSTEM_INTERFACE SD-09; SYS-ENC-001; SYS-SPI-001 acceptance",
         "Files: RaspberryPi_Sensor_Hub/src/spi/spi_device.py:25-97, RaspberryPi_Sensor_Hub/src/spi/timing.py:189-244, RaspberryPi_Sensor_Hub/src/spi/timing.py:220-229, RaspberryPi_Sensor_Hub/src/spi/timing.py:64-100, RaspberryPi_Sensor_Hub/tests/spi/test_spi_link_probe.py:23-55, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:166-201, RaspberryPi_Sensor_Hub/tools/spi_link_probe.py:61-76",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
-        "Depends on S10.1"
+        "Depends on S10.1",
+        "Design 2026-10-15: the logger is a stream over ExchangeSession.transact (B130), one GET_SNAPSHOT per transaction, each reply correlated to the request before it. Depends on S9.14 (B130)"
       ],
       "points": 3,
       "status": "open",
@@ -1210,7 +1219,8 @@
         "Clauses: SPI_SYSTEM_INTERFACE \u00a76; SPI_SYSTEM_INTERFACE \u00a76, \u00a714",
         "Files: Arm_Sensor_Hub/App/Src/spi_protocol.c:145-147, Arm_Sensor_Hub/App/Src/spi_protocol.c:24, RaspberryPi_Sensor_Hub/src/spi/spi_device.py:28, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:59-102, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:65, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:68-97, RaspberryPi_Sensor_Hub/src/spi/timing.py:154, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:303",
         "Ruling R3: after a DIAGNOSTIC the STM32 accepts the first seq and sets its high-water mark from it; one process-wide Pi sequencer with no stride; on BAD_SEQUENCE to its first request the Pi jumps forward once by a bounded step and reports it",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: the single bounded jump on BAD_SEQUENCE lives in the Sequencer (B130). Depends on S9.14 (B130)"
       ],
       "points": 1,
       "status": "open",
@@ -1229,7 +1239,8 @@
         "Files: Arm_Sensor_Hub/App/Src/spi_protocol.c:125-157, Arm_Sensor_Hub/tests/host/protocol_test_main.c:661, RaspberryPi_Sensor_Hub/src/spi/spi_device.py:40-45, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:142-145, RaspberryPi_Sensor_Hub/src/spi/timing.py:189",
         "Ruling R1: every GET payload is schema_version plus three reserved zero bytes; BAD_LENGTH for another length, BAD_MESSAGE for another schema or non-zero reserved bytes; one Pi constant",
         "Ruling R4: bytes after the CRC are zero on transmit and ignored on receive on both sides; the Python non-zero-tail check is removed",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: the R1 payload rule is a validation step in SpiProtocol_ProcessRequest (B132), tested in protocol_test_main.c. Depends on S10.16 (B132)"
       ],
       "points": 1,
       "status": "open",
@@ -1265,7 +1276,8 @@
         "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: TIME-6, FW-9",
         "Clauses: SYS-TS-001",
         "Files: Arm_Sensor_Hub/App/Src/as5600.c:199-241",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: satisfied by S10.17 (B133), whose two-transaction ReadSample takes the timestamp immediately after the STATUS plus RAW ANGLE read; no separate change remains. Depends on S10.17 (B133)"
       ],
       "points": 1,
       "status": "open",
@@ -1282,7 +1294,8 @@
         "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-11, FW-12, FW-13, FW-15, GATE-21",
         "Clauses: I2C_MANAGER_CONTRACT Diagnostics; I2C_MANAGER_CONTRACT Timeout and Error Policy; PRM-ACQ-03; SYS-REC-001",
         "Files: Arm_Sensor_Hub/App/Src/app_init.c:144-148, Arm_Sensor_Hub/App/Src/as5600.c:36-61, Arm_Sensor_Hub/App/Src/i2c_manager.c:268-273, Arm_Sensor_Hub/App/Src/i2c_manager.c:285-335, Arm_Sensor_Hub/App/Src/i2c_manager.c:545-564, Arm_Sensor_Hub/App/Src/i2c_manager.c:74-130, Arm_Sensor_Hub/App/Src/sensor_task.c:107-115, Arm_Sensor_Hub/App/Src/sensor_task.c:312-315, Arm_Sensor_Hub/App/Src/sensor_task.c:62-71, Arm_Sensor_Hub/App/Src/sensor_task.c:62-72, Arm_Sensor_Hub/App/Src/tca9548a_mux.c:92-125, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:55-71",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: the 'fewer I2C transactions' item is S10.17 (B133): two burst reads per axis under one scoped lock, HAL_I2C_Mem_Read for write-read; this story keeps bus recovery, bring-up retry and timeout diagnostics. Depends on S10.17 (B133)"
       ],
       "points": 3,
       "status": "open",
@@ -1300,7 +1313,8 @@
         "Clauses: PRM-ACQ-02; SPI_PAYLOAD_SCHEMA validity flags; SYSTEM_CONFIGURATION \u00a75",
         "Files: Arm_Sensor_Hub/App/Src/as5600.c:101-125, Arm_Sensor_Hub/App/Src/as5600.c:199-241, Arm_Sensor_Hub/App/Src/i2c_manager.c:375-417, Arm_Sensor_Hub/App/Src/sensor_task.c:154-173, Arm_Sensor_Hub/App/Src/sensor_task.c:177-185, Arm_Sensor_Hub/tools/check-sensors.sh:97-130",
         "Ruling R6: ML/MH are warnings (SAMPLE_VALID stays set); processed_angle_mdeg = RAW ANGLE x 360000 / 4096; PRM-ACQ-02 note 'method not recorded; believed to include the unpopulated channel'; TIM2 sweep counter readable over SWD",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: processed_angle_mdeg = RAW ANGLE x 360000 / 4096 is computed in the latest-value store's AcceptSample (B128) and the ANGLE register is no longer read (S10.17, B133); the ML/MH warning policy is applied in the store from the driver's typed magnet condition. The sweep counter this story adds is the instrument for re-measuring PRM-ACQ-02 after B133"
       ],
       "points": 1,
       "status": "open",
@@ -1427,7 +1441,8 @@
         "Files: Arm_Sensor_Hub/App/Inc/can_tx_policy.h:12, Arm_Sensor_Hub/App/Src/can_service.c:209-250, Arm_Sensor_Hub/App/Src/can_service.c:377-385, Arm_Sensor_Hub/App/Src/can_service.c:94-114, Arm_Sensor_Hub/App/Src/can_tx_policy.c:23, Arm_Sensor_Hub/App/Src/can_tx_policy.c:31-39, Arm_Sensor_Hub/App/Src/i2c_manager.c:82, Arm_Sensor_Hub/App/Src/sensor_task.c:317-345, Arm_Sensor_Hub/App/Src/spi_slave_service.c:272-316, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:34-35, Arm_Sensor_Hub/Core/Src/main.c:441-455, Arm_Sensor_Hub/Core/Src/main.c:441-457",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R15: sensor acquisition in its own lower-priority task with a lock or double buffer on the latest-value stores",
-        "Depends on S9.2 (B53) and S12.2 (B92)"
+        "Depends on S9.2 (B53) and S12.2 (B92)",
+        "The lock-or-double-buffer part of ruling R15 is met by S10.15 (B128); this story keeps the task split and the CAN scheduling"
       ],
       "points": 5,
       "status": "open",
@@ -1464,7 +1479,8 @@
         "Files: Arm_Sensor_Hub/App/Src/can_service.c:160-176, Arm_Sensor_Hub/App/Src/can_service.c:183-198, Arm_Sensor_Hub/App/Src/can_service.c:238-245, Arm_Sensor_Hub/App/Src/motor_latest_value.c:41-84, Arm_Sensor_Hub/App/Src/motor_latest_value.c:68-71, Arm_Sensor_Hub/App/Src/spi_slave_service.c:163-174, Arm_Sensor_Hub/App/Src/spi_slave_service.c:166, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/include/mksservo/decoder.hpp:33-35, Arm_Sensor_Hub/Middlewares/Third_Party/MksServo/src/decoder.cpp:37-53",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R10(a): the record carries the raw 31H reply bytes and command code; speed replies and acks go to a separate diagnostics field",
-        "Depends on S9.5"
+        "Depends on S9.5",
+        "Design 2026-10-15: the record shape is produced by drive_protocol.OnFrame into the latest-value store (B131, B128); R10(a)'s raw 31H reply and command code are the store's v1 wire field. Depends on S11.13 (B131)"
       ],
       "points": 2,
       "status": "open",
@@ -1483,7 +1499,8 @@
         "Files: Arm_Sensor_Hub/App/Inc/motor_latest_value.h:18-23, Arm_Sensor_Hub/App/Inc/motor_latest_value.h:18-27, Arm_Sensor_Hub/App/Src/can_service.c:157-250, Arm_Sensor_Hub/App/Src/can_service.c:183-202, Arm_Sensor_Hub/App/Src/can_service.c:199-202, Arm_Sensor_Hub/App/Src/can_service.c:209-245, Arm_Sensor_Hub/App/Src/can_service.c:219-245, Arm_Sensor_Hub/App/Src/health_monitor.c:82-132, Arm_Sensor_Hub/App/Src/motor_latest_value.c:89, Arm_Sensor_Hub/App/Src/motor_latest_value.c:89-102, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:57",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R11(b): a per-motor position feedback period (new Provisional row via B101); PRM-MOT-01 becomes Derived from it; 32H speed read at a lower rate for the R22(c) moving rule",
-        "Depends on S11.3"
+        "Depends on S11.3",
+        "Design 2026-10-15: per-motor deadlines, miss counting and PRM-MOT-02 escalation live in drive_protocol.Tick (B131); FAULT clears motor ready. Depends on S11.13 (B131)"
       ],
       "points": 2,
       "status": "open",
@@ -1501,7 +1518,8 @@
         "Clauses: CAN \u00a75, \u00a78; CAN_SYSTEM_INTERFACE \u00a75; D-3 CAN ACTIVE; PRM-CAN-07; PRM-CAN-08; SAFE-03; SAFE-04; SD-06; SYS-CAN-001",
         "Files: Arm_Sensor_Hub/App/Inc/can_service.h:31-43, Arm_Sensor_Hub/App/Src/app_init.c:142-159, Arm_Sensor_Hub/App/Src/can_service.c:26-33, Arm_Sensor_Hub/App/Src/can_service.c:33, Arm_Sensor_Hub/App/Src/can_service.c:338, Arm_Sensor_Hub/App/Src/can_service.c:343-348, Arm_Sensor_Hub/App/Src/can_service.c:354-364, Arm_Sensor_Hub/App/Src/can_service.c:356-362, Arm_Sensor_Hub/App/Src/can_service.c:46-114, Arm_Sensor_Hub/App/Src/can_service.c:46-59, Arm_Sensor_Hub/App/Src/can_service.c:46-71, Arm_Sensor_Hub/App/Src/can_service.c:50",
         "Ruling R12: no automatic retries while in ERROR; the system-activate message applies RECOVER then ACTIVATE; failure = BOFF still set after restart or bus-off again within a short interval (new row); safety frames rejected with an error while inhibited; PRM-CAN-08 sliding window held in a three-entry timestamp ring; bus-off inhibits the whole arm",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: bus-off detection, ESR judgement, queue purge and the RECOVER then ACTIVATE path stay in can_service, which is transport only after B131. Depends on S11.13 (B131)"
       ],
       "points": 3,
       "status": "open",
@@ -1574,7 +1592,8 @@
         "Clauses: SPI \u00a74, \u00a75; SPI_PAYLOAD_SCHEMA DIAGNOSTIC; SPI_SYSTEM_INTERFACE \u00a74, \u00a75",
         "Files: Arm_Sensor_Hub/App/Inc/spi_protocol.h:16, Arm_Sensor_Hub/App/Src/spi_protocol.c:80-83, Arm_Sensor_Hub/App/Src/spi_protocol.c:80-84, Arm_Sensor_Hub/App/Src/spi_slave_service.c:258, Arm_Sensor_Hub/App/Src/spi_slave_service.c:293, Arm_Sensor_Hub/App/Src/spi_slave_service.c:303, Documentation/01_SYSTEM/SYSTEM_OVERVIEW.md:36, Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md:113-131, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md:87,99, Documentation/04_SAFETY/SAFETY_REQUIREMENTS.md:17, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:20-31, RaspberryPi_Sensor_Hub/src/spi/timing.py:39",
         "Ruling R14: DIAGNOSTIC v1 payload = lifecycle state, counters, cause code; sent at boot and after every recovery; GET_DIAGNOSTIC = 0x15 requested and answered on both sides; an SWD health-snapshot read is acceptable Stage 2 evidence until it lands",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: GET_DIAGNOSTIC is a handler case and DIAGNOSTIC at boot and recovery goes through SpiProtocol_StageUnsolicited (B132). Depends on S10.16 (B132)"
       ],
       "points": 2,
       "status": "open",
@@ -1648,7 +1667,8 @@
         "Files: Arm_Sensor_Hub/App/Inc/spi_payload_layout.h, Arm_Sensor_Hub/App/Src/spi_protocol.c:26-72, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:160-190, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:316-335",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R16(b), (c): appended as the last 8 bytes of ACK, VERSION and the correlated SNAPSHOT, each schema_version 1 to 2; never on NACK",
-        "Depends on S12.2, S9.4"
+        "Depends on S12.2, S9.4",
+        "Design 2026-10-15: request_received_local_us is appended by the protocol module from the receipt-time parameter of ProcessRequest (B132); the handler never sees it. Depends on S10.16 (B132)"
       ],
       "points": 2,
       "status": "open",
@@ -1667,7 +1687,8 @@
         "Files: RaspberryPi_Sensor_Hub/src/spi/, RaspberryPi_Sensor_Hub/src/spi/timing.py, RaspberryPi_Sensor_Hub/src/spi/timing.py:189-244, RaspberryPi_Sensor_Hub/src/spi/timing.py:198-207, RaspberryPi_Sensor_Hub/src/spi/timing.py:220-229, RaspberryPi_Sensor_Hub/src/spi/timing.py:24-27, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R16(d), (e), (h): CLOCK_MONOTONIC_RAW through one monotonic_us() helper; a decrease of STM32 time invalidates ClockSync; plausibility rejection is the single acceptance policy",
-        "Depends on S12.3"
+        "Depends on S12.3",
+        "Design 2026-10-15: the observation hook is the three fields on TransactionRecord (B130); ClockSync's owner feeds it from records and the session has no ClockSync dependency. Depends on S9.14 (B130)"
       ],
       "points": 5,
       "status": "open",
@@ -1778,7 +1799,8 @@
         "Clauses: Charter goal 3",
         "Files: RaspberryPi_Sensor_Hub/Documentation/README.md:93-94, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:133-141, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:153-160, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:281-320, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:381-394, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:417-442, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:445-452, RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:49-53",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
-        "Depends on S10.4"
+        "Depends on S10.4",
+        "Design 2026-10-15: the harness measures through ExchangeSession.transact and runs offline with --fake against fake_backend.py (B130). Depends on S9.14 (B130)"
       ],
       "points": 3,
       "status": "open",
@@ -1892,7 +1914,9 @@
         "Files: Arm_Sensor_Hub/App/Inc/can_service.h:54-64, Arm_Sensor_Hub/App/Inc/motion_permission.h:28-55, Arm_Sensor_Hub/App/Src/can_service.c:76-89, Arm_Sensor_Hub/App/Src/motion_permission.c:1-3, Arm_Sensor_Hub/App/Src/motion_permission.c:5-33, Arm_Sensor_Hub/App/Src/motion_permission.c:96-127, Arm_Sensor_Hub/CMakeLists.txt:61-82, Arm_Sensor_Hub/tests/host/CMakeLists.txt:1-46",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R18: detail codes 0 ALLOWED to 6 CAN_QUEUE_FULL in that precedence, latched flag in the upper byte; ruling R20: motor_ready and global_motion_inhibit as defined",
-        "Depends on S9.3, S14.1"
+        "Depends on S9.3, S14.1",
+        "Design 2026-10-15 (architecture review candidate 2): the module is rebuilt as motion_gate.[ch] (prefix MotionGate_; the vocabulary makes 'motion gate' canonical and 'motion permission' its output). No setters, no state, no init: one call, MotionGate_Evaluate(motor index), reads the owners at evaluation time (system lifecycle B129, CAN service lifecycle, link liveness B107, inhibit latch B129, drive protocol module's per-motor ready flag (B131, B111)) and returns the R18 reason with the five inputs in a result struct; latched = (reason == GLOBAL_MOTION_INHIBIT). CAN_QUEUE_FULL (6) is returned by the SET_MOTOR_COMMAND handler at enqueue, not by the gate. Tests: gate per input in service_test_main.c against the owner stubs",
+        "Depends on S14.12 (B129)"
       ],
       "points": 2,
       "status": "open",
@@ -1911,7 +1935,8 @@
         "Files: Arm_Sensor_Hub/App/Src/motion_permission.c:5, Arm_Sensor_Hub/App/Src/motion_permission.c:5-26, Arm_Sensor_Hub/App/Src/spi_slave_service.c:349-394, Arm_Sensor_Hub/App/Src/spi_slave_service.c:371-379, Arm_Sensor_Hub/CMakeLists.txt:61-82, Arm_Sensor_Hub/CMakeLists.txt:63-81, Arm_Sensor_Hub/Core/Src/main.c:447-455, Documentation/06_CONFIGURATION/PARAMETER_REGISTER.md:73",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R22: N_moving and N_idle from PRM-LINK-02; fixed STM32 expected-message interval; moving = non-zero MKS speed, unknown speed counts as moving; link_stale true from reset until the first valid message",
-        "Depends on S11.6 (B84) for the speed poll"
+        "Depends on S11.6 (B84) for the speed poll",
+        "Design 2026-10-15: link_stale is computed by a pure module link_liveness.[ch] (prefix LinkLiveness_) that takes 'message accepted at t' and 'tick at t, moving' in microseconds from TimeService_NowUs passed in by the SPI service, and answers stale per SYS-LINK-001/R22 (stale from reset until the first valid message). 'Moving' comes from the latest-value store's speed feedback (B128). The SPI service drives it and exposes the result for the gate. Tests in protocol_test_main.c with a time argument and no bus"
       ],
       "points": 2,
       "status": "open",
@@ -1930,7 +1955,8 @@
         "Files: Arm_Sensor_Hub/App/Inc/spi_protocol.h:15-23, Arm_Sensor_Hub/App/Inc/spi_protocol.h:24-26, Arm_Sensor_Hub/App/Src/spi_protocol.c:148-151, Arm_Sensor_Hub/App/Src/spi_protocol.c:170, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:28, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:316-335, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:34-49",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Pi client support for the system-activate message (R19b)",
-        "Depends on S14.2, S14.3, S9.4"
+        "Depends on S14.2, S14.3, S9.4",
+        "Design 2026-10-15: SET_MOTOR_COMMAND is a handler case in the service calling MotionGate_Evaluate (B106) and DriveProtocol_Command (B131); the protocol module validates and frames (B132). Depends on S10.16 (B132)"
       ],
       "points": 5,
       "status": "open",
@@ -1969,7 +1995,8 @@
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
         "Ruling R21(d): the sequence ends stopped and enabled (shaft held), never disabled; motor_ready cleared so a new ENABLE is needed",
         "Ruling R23: controlled stop to every registered motor at boot and on every CAN activation before polling, with a host test that no other motion frame precedes it; 98H heartbeat configured at CAN activation",
-        "Depends on S14.5 (B109), S11.7 (B85) and the WP17 requirements amendment"
+        "Depends on S14.5 (B109), S11.7 (B85) and the WP17 requirements amendment",
+        "Design 2026-10-15: the controlled stop is DriveProtocol_Stop's per-drive state machine (B131): the running command's own stop form, F7H fallback on refusal or timeout, result readable; callers (system lifecycle B129, boot and activation per R23) say stop once. Depends on S11.13 (B131)"
       ],
       "points": 3,
       "status": "open",
@@ -1988,7 +2015,10 @@
         "It clears global_motion_inhibit and the health YELLOW latch; SET_MOTOR_COMMAND ENABLE then enables one motor only",
         "Producers: motor_ready per R20(a); global_motion_inhibit set by bus-off escalation and by a host command, latched until this message",
         "Files: Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md, Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md, Arm_Sensor_Hub/App/Src/spi_slave_service.c, Arm_Sensor_Hub/App/Src/spi_protocol.c, RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Design 2026-10-15: the system-activate handler, the activation sequence, the inhibit latch and the motion lifecycle live in the system lifecycle module (B129); this story adds the SPI message on both sides and calls it. motor_ready is one flag per motor owned by the drive protocol module (B131): set by an accepted ENABLE reply, cleared by disable, reset, a refused command or a feedback FAULT; exposed by a read for the gate",
+        "Depends on S14.12 (B129)",
+        "Design 2026-10-15: system-activate is a handler case calling the system lifecycle module (B129); the protocol module validates and frames (B132). Depends on S10.16 (B132)"
       ],
       "points": 2,
       "status": "open",
@@ -2284,6 +2314,156 @@
       "created": "2026-10-14T23:32:08.099507+00:00",
       "done_at": null,
       "package": "WP16"
+    },
+    {
+      "id": "B128",
+      "title": "S10.15 Latest-value store: one module owns sample and feedback ageing, stale, and the coherent snapshot copy",
+      "story": "As the maintainer I want one latest-value store that accepts samples and feedback, ages them against their freshness windows and hands out a coherent copy, so that the snapshot coherency promise (SPI_SYSTEM_INTERFACE \u00a78), the stale record and the R15 protection each have one owner and one test surface. Architecture review 2026-10-15, candidate 1 (Strong); design settled with Lenton Neale the same day (size: 3 points).",
+      "acceptance": [
+        "New module Arm_Sensor_Hub/App/{Inc,Src}/latest_value.[ch] (prefix LatestValue_; records LatestValue_SensorRecord, LatestValue_MotorRecord) replaces sensor_latest_value and motor_latest_value; added to both CMake source lists",
+        "Interface is four calls and nothing else: Configure (per-axis fitted flag; registered motors as index plus axis, from the app_init commissioning tables), AcceptSample (axis, raw counts, magnet status, acquisition timestamp), AcceptFeedback (motor, typed position or speed or drive status, acquisition timestamp), CopySnapshot (now, caller-provided buffer). No single-record reader until a second caller exists",
+        "Not fitted and not registered are slot properties set by Configure; a write to such a slot returns an error. The sensor task no longer writes NOT_FITTED and the SPI service no longer filters motor records by joint id",
+        "Freshness is decided by the store at CopySnapshot: stale when now minus acquisition timestamp exceeds the kind's window. Motor window PRM-MOT-01. New register row, Provisional: sensor freshness window = 5 \u00d7 PRM-ACQ-05 (100 ms), basis Derived from PRM-ACQ-05, to be Measured in Stage 3. Producers no longer mark stale; a decode error stays an error counter in the CAN service",
+        "Escalation per PRM-MOT-02 (degraded, inhibit, FAULT) stays in the CAN service, derived from the age the store reports",
+        "Typed feedback is merged in the store with per-field timestamps; the record is valid once a position has arrived and its acquisition timestamp is the position's; speed has its own validity flag. The raw last 31H position reply and its command code are kept alongside (R10(a), B83) only so the schema v1 motor record stays byte-identical, and are removed with schema v2",
+        "Raw counts become millidegrees inside AcceptSample (scale only; calibration version 0); SYS-MAP-001 direction and zero offset apply here later. The AS5600 driver returns counts; the serializer writes what it is given",
+        "synchronization_quality and the TIMESTAMP_SYNCHRONIZED validity bit are removed from the records per ruling R16; the wire bit is written zero; producers stop calling TimeService_GetSyncSnapshot. The store has no TimeService, HAL or FreeRTOS dependency beyond taskENTER_CRITICAL/taskEXIT_CRITICAL",
+        "CopySnapshot and every accept run under a FreeRTOS critical section (copy about 650 bytes); this meets ruling R15's lock-or-double-buffer obligation for S11.3 (B81)",
+        "Per-record counters (rx_ok_count, rx_decode_error_count) leave the records; producers keep their counters; the store counts only snapshots copied and refused writes",
+        "Snapshot serialization moves from spi_slave_service.c:146-228 to spi_protocol.c (the lockstep mirror of spi_protocol.py), reading the caller's copy, never the store; the duplicated WriteU16/32/64 in the service are deleted",
+        "The SPI service copies on the PRM-ACQ-01 period and on every GET_SNAPSHOT into its own static buffer (stack check unchanged); the sensor task and the CAN service only accept",
+        "Tests in protocol_test_main.c: feed samples and feedback at chosen times, copy at a later time, check records, ageing and refused writes; serialize the copy and compare bytes with the Python side. The setter tests at protocol_test_main.c:414 are replaced; the staging test at service_test_main.c:1072 moves to the new publish path",
+        "FIRMWARE_ARCHITECTURE.md (currently only on the wp9 branch) lists the new module; SPI_SYSTEM_INTERFACE \u00a78 coherency names the store as its implementation in the component documentation",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S9.2"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-15T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B129",
+      "title": "S14.12 System lifecycle module: motion lifecycle, global inhibit latch, dependency-ordered activation and the fail-closed edge",
+      "story": "As the maintainer I want one module that owns the R19 motion lifecycle, the R20 global motion inhibit latch, the dependency-ordered activation now hand-coded in app_init.c, and the detection of a permitted-to-refused gate edge, so that the motion gate can read system state instead of being told it, and reactivation, inhibit clearing and fail-closed each have one actor. Architecture review 2026-10-15, candidate 2 (Strong); design settled with Lenton Neale the same day (size: 3 points).",
+      "acceptance": [
+        "New module Arm_Sensor_Hub/App/{Inc,Src}/system_lifecycle.[ch] (prefix SystemLifecycle_), added to both CMake source lists",
+        "Owns the motion lifecycle record (R19): INACTIVE after every reset while the sensing services auto-activate; ACTIVE only through system-activate. 'Lifecycle ACTIVE' in SYS-GATE-001 means this record; the four service lifecycle records stay inputs to the health monitor",
+        "Owns the global motion inhibit latch (R20): set by bus-off escalation (CAN service) and by a host command (SPI service), latched, cleared only by system-activate. Latched is a property of the inhibit, so the gate derives its latched flag from the reason",
+        "Owns the activation sequence: the dependency-ordered activation in app_init.c:142-173 moves here; app_init.c keeps the commissioning tables and one call. A failing dependency leaves later services unactivated and is reported",
+        "Handles system-activate (B111's message): services in dependency order (CAN RECOVER then ACTIVATE after an escalated bus-off), then the motion lifecycle; clears the inhibit and the health YELLOW latch (R27)",
+        "Fail-closed edge: its periodic process evaluates the motion gate per registered motor and, on a permitted-to-refused transition, orders the drive protocol module's stop sequence (DriveProtocol_Stop, B131) exactly once for that motor (sequence content per B110 and, when WP17 amends SAFE-02/SYS-LINK-002/SYS-GATE-001, per R21). Owners never cross-call: the SPI service does not call the CAN service on link_stale",
+        "Reads only: the gate's result, the CAN service's lifecycle. Exposes: motion lifecycle state, inhibit (set/clear/read). No TimeService dependency; the periodic process takes now in microseconds",
+        "Tests in service_test_main.c against the existing owner stubs: activation order with a failing dependency; inhibit surviving a lifecycle recover and clearing on system-activate; the permitted-to-refused edge ordering the stop exactly once and not again while refused",
+        "FIRMWARE_ARCHITECTURE.md (currently only on the wp9 branch) lists the module; SYSTEM_LIFECYCLE.md \u00a76 subsystem mapping names it as the lifecycle-managed coordinator it already describes",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S14.1 (B105); S14.2 (B106) and S14.7 (B111) depend on this story"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-15T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP14"
+    },
+    {
+      "id": "B130",
+      "title": "S9.14 Exchange owner on the Pi: ExchangeSession with transact and exchange, one firmware-rules fake, process-wide Sequencer",
+      "story": "As the maintainer I want one module that sends a request, clocks the transaction, correlates the reply that arrives in a later transaction and paces the link, returning one record per transaction, so that the harness, the probes, the snapshot logger and ClockSync all consume one record type instead of four hand-rolled loops and five unshared fakes. Architecture review 2026-10-15, candidate 3 (Strong); design settled with Lenton Neale the same day (size: 3 points).",
+      "acceptance": [
+        "RaspberryPi_Sensor_Hub/src/spi/exchange.py holds ExchangeSession, grown from timing.TimingSession (TransactionRecord keeps its name and CSV fields); spi_device.py and SpiDevice are deleted",
+        "Interface is two calls: transact(request) paces (DataReadyLike or min interval), clocks one transaction, records phase timings, decodes, correlates against the pending table and returns one TransactionRecord; exchange(request, filler=GET_STATUS, budget) transacts the request then filler until its reply correlates, a NACK correlates, or the budget is spent",
+        "exchange returns a result object with outcome (replied, refused, exhausted), the reply frame or the NACK status and detail, and the records consumed; firmware outcomes never raise. Bus and decode errors stay exceptions. Message-specific helpers (version read for the evidence tool) are functions over exchange in their callers, not methods",
+        "The pending table makes the session a stream: any transaction may carry any request and every reply correlates to whichever pending request it answers; exchange is the stop-and-wait special case",
+        "TransactionRecord gains the observation fields (Pi send time, request_received_local_us when present, Pi receive time) so B94's ClockSync is fed from records by its owner; the session has no dependency on ClockSync. It gains the raw response bytes when decoding fails, absent otherwise",
+        "Sequences come from a process-wide Sequencer in spi_protocol.py beside initial_sequence(), injected into ExchangeSession with a shared default; R3's single bounded jump on BAD_SEQUENCE (B69) lives there. Two sessions in one process never both start from the seed",
+        "src/spi/fake_backend.py is one SpiBackend adapter enforcing the firmware's rules: one-transaction reply delay, sequence high-water mark with BAD_SEQUENCE, BAD_STATE before activation, VERSION and SNAPSHOT replies from configured records, CRC check of the request, a garbage mode. The five fakes in tests/spi are deleted. spi_link_probe.py and spi_timing_harness.py gain a --fake flag",
+        "The fake reproduces the B55 golden vectors byte for byte (test_fake_backend.py), so the C protocol, the Python protocol and the fake are pinned to one set of bytes",
+        "Callers migrated: spi_timing_harness.py uses transact and a version-read function over exchange; spi_link_probe.py consumes transact and keeps its verdict logic over the record's raw bytes; spi_time_sync_probe.py is ported to exchange in place (B97 still deletes it)",
+        "tests/spi/test_exchange.py replaces test_spi_device.py and test_timing.py, written against the fake: pipelined correlation, BAD_SEQUENCE and the R3 jump, BAD_STATE before activation, exchange budget and refused outcome, garbage with raw bytes on the record, pacing by FakeDataReady. test_spi_link_probe.py drives the probe end to end through the fake",
+        "RaspberryPi_Sensor_Hub/Documentation/README.md names exchange.py as the owner of transaction, exchange and pacing (vocabulary: SYSTEM_OVERVIEW.md \u00a7 Vocabulary)",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S9.4 (B55) for the golden vectors; S9.11 (B62), S10.4 (B68), S10.5 (B69), S12.4 (B94) and S13.1 (B100) depend on this story"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-15T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP9"
+    },
+    {
+      "id": "B131",
+      "title": "S11.13 Drive protocol module: frame-in feedback-out, per-drive state, poll deadlines, motor ready and the stop sequence; CAN service becomes transport only",
+      "story": "As the maintainer I want the drive protocol (which drive a frame belongs to, decoding to typed feedback, per-motor poll deadlines and miss counting, motor ready, the controlled-stop state machine) in one pure module with the bxCAN plumbing left in can_service, so that the one module with real behaviour on the motor path is tested frame-in record-out with the real MKS decoder, and B83, B84, B85, B110 and the gate's motor_ready each land in a tested home. Architecture review 2026-10-15, candidate 7; design settled with Lenton Neale the same day (size: 3 points).",
+      "acceptance": [
+        "New module Arm_Sensor_Hub/App/{Inc,Src}/drive_protocol.[ch] (prefix DriveProtocol_), added to both CMake source lists. It takes now in microseconds on every call, reads no clock and drives no lifecycle",
+        "DriveProtocol_Init(send, context): one injected send callback with a priority argument (the real seam: can_service enqueue in production, a recording function in tests). DriveProtocol_Register(motor index, axis, model, CAN ID, position and speed feedback periods per R11(b)) from the app_init commissioning tables; app_init registers with this module, not with can_service",
+        "DriveProtocol_OnFrame(frame, rx_time): find the registered drive by CAN ID, decode through mks_decode (mks_api.h stays the only byte-layout authority), hand typed feedback straight to the latest-value store (B128): 31H gives position, 32H gives speed and the R22 moving flag; an accepted F3H reply sets motor ready; a reply with status 0 to an enable or motion command clears it",
+        "DriveProtocol_Tick(now): emits through send every position or speed read whose per-motor deadline has passed (no shared round-robin); counts a miss when a position deadline passes with no 31H reply since the previous one; escalates per PRM-MOT-02 (one miss degraded, three consecutive FAULT); FAULT clears motor ready; advances each drive's stop state machine",
+        "DriveProtocol_Command(motor, kind, params, now): encodes ENABLE, DISABLE, MOVE_TO_POSITION (F5H), MOVE_AT_VELOCITY (F6H) through send and remembers the running motion command per drive. DriveProtocol_Stop(motor, now): starts the R21 sequence in the running command's own stop form (F5H speed 0 after a position move, F6H speed 0 after a velocity move), falls back to F7H when refused or unanswered within the Provisional timeout taken as a parameter; the result (stopped, fell back, failed) is readable. The end state of the sequence follows B110 and, when WP17 amends it, R21",
+        "Readable: per-motor ready (R20: registered, ENABLE accepted since the last disable or reset, no drive fault, where drive fault = refused command or feedback FAULT; a drive status query is recorded as open for the bench, not added), per-motor miss state and counters, stop result. The motion gate (B106) reads motor ready here; the health monitor pulls the counters",
+        "can_service.[ch] becomes transport only: Init, Activate, GetLifecycleState, Process (drain RX FIFO into OnFrame, call Tick, drain the TX queue, bus-off per B85), Enqueue(frame, priority) as the production send adapter, counters per B87. The eleven command, poll and getter functions in can_service.h are deleted; can_tx_policy stays with the transport",
+        "Tests: the real MksServo library (portable C++17, no HAL includes, already a CMake target) is linked into the protocol test executable (C++ enabled for that target in the HostTests preset); frame-in record-out tests there beside the latest-value store tests: 31H updates position, 32H updates speed and moving, refused F3H clears motor ready, three missed deadlines reach FAULT, Stop emits the right form and falls back on timeout, frames and priorities asserted through the recording send. service_test_main.c keeps the B85 plumbing tests and deletes its mks stubs (lines 473-585)",
+        "FIRMWARE_ARCHITECTURE.md (currently only on the wp9 branch) lists the module; CAN_SYSTEM_INTERFACE.md names drive_protocol as the implementation of its feedback and command sections in the component documentation",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S10.15 (B128) and S11.2 (B80); S11.5 (B83), S11.6 (B84), S11.7 (B85) and B110 depend on this story"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-15T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP11"
+    },
+    {
+      "id": "B132",
+      "title": "S10.16 SPI response path built once: the protocol module validates, calls one injected handler and writes the frame into the pool's buffer; the service becomes transport",
+      "story": "As the maintainer I want every Pi-visible response decided and built in one place, spi_protocol.c, from one validation and one handler call, written once into the buffer the frame pool lends, so that the module mirrored by spi_protocol.py holds every message rule, the service holds only lifecycle and DMA, and the messages still to come (DIAGNOSTIC, SET_MOTOR_COMMAND, system-activate) are handler cases rather than service branches. Architecture review 2026-10-15, candidate 4; design settled with Lenton Neale the same day (size: 3 points).",
+      "acceptance": [
+        "SpiProtocol_ProcessRequest(state, request, now_us, receipt_time or none, lent frame buffer): validates framing once (magic, version, length, CRC, sequence, known type, R1 payload rule); advances the request-sequence mark on every frame-valid request whatever the handler answers (R3 compatible); calls the one handler injected at init; writes the complete frame once. The service's separate ValidateRequest call, its own NACK building and the TIME_SYNC override are removed; validation never runs twice",
+        "Handler seam: one function injected into SpiProtocol_State at init, handle(request type, request payload, now, out payload region, capacity) returning accepted with length or refused with NACK status and detail. The protocol module lends the handler the frame's payload region and owns everything outside it: header, sequence, frame_time_us from the now parameter, request_received_local_us appended to ACK, VERSION and SNAPSHOT and never to NACK, omitted when the receipt time is absent (R16, B92, B93), CRC. BuildCommandReply and BuildVersionReply become private. Two adapters: the service's static handler and a scripted test handler",
+        "The service's handler is the application switch: BAD_STATE when the lifecycle disallows the type; GET_SNAPSHOT serializes a fresh coherent copy from the latest-value store (B128, B65); GET_VERSION; later GET_DIAGNOSTIC (B89), SET_MOTOR_COMMAND with the gate reason (B108), system-activate (B111)",
+        "SpiProtocol_StageUnsolicited(kind, payload writer, now): boot and recovery DIAGNOSTIC (R14) and the periodic snapshot (PRM-ACQ-01, zero correlation) through the same private frame builder into a lent buffer. The response path and this call are the only two writers of frames; BuildBootStatus is removed",
+        "Buffers: the pool lends its buffer to ProcessRequest and StageUnsolicited through SnapshotBuilder_Stage's callback, so the production serializer writes in place; s_response_frame, SpiProtocol_State.unsolicited_payload and s_pending_request are deleted (about 1.5 KB). s_rx_frame is processed in place; the invariant that DMA is not re-armed while s_request_pending is set is stated beside the flag. The transmit sequence is consumed only for frames that are staged",
+        "One source of truth for armed: the pool's SNAPSHOT_FRAME_DMA_ACTIVE state; s_dma_active is deleted (agrees with B66, which keeps the stall and re-arm fixes)",
+        "spi_slave_service.h keeps seven entries: Init (period from the register value, no setter), Activate, GetLifecycleState, Process, the two HAL callbacks, GetSnapshotDiagnostics. BeginDmaTransfer, CompleteDmaTransfer, StageSnapshot, StageLatestSnapshot, SetUnsolicitedSnapshot, ProcessRequestFrame, GetDataReadyState and SetPollPeriodMs are removed",
+        "Tests in protocol_test_main.c against a scripted handler: each validation failure and its NACK code; the R1 payload rule; the mark advancing on a refused request; receipt time on ACK, VERSION and SNAPSHOT, never NACK, omitted when absent; the unsolicited path; the B55 golden vectors driven through ProcessRequest into a lent buffer. service_test_main.c: the DMA-loop test keeps its intent without the removed exports and asserts the pool state is the only armed flag",
+        "FIRMWARE_ARCHITECTURE.md (currently only on the wp9 branch) describes the handler seam; SPI_SYSTEM_INTERFACE.md \u00a74 and \u00a714 are named as implemented by spi_protocol.c in the component documentation",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S10.15 (B128) and S10.1 (B65); S10.2 (B66), S10.6 (B70), S11.11 (B89), S12.3 (B93), S14.4 (B108) and S14.7 (B111) depend on this story"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-15T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
+    },
+    {
+      "id": "B133",
+      "title": "S10.17 AS5600 sample in two transactions: burst reads under one scoped I2C lock, repeated-start write-read, typed magnet condition; driver interface down to InitDevice and ReadSample",
+      "story": "As the maintainer I want one joint-encoder sample to cost two bus reads instead of fifteen bus transactions, with the timestamp taken right after the angle read and the magnet bits classified in the driver, so that the sweep (PRM-ACQ-02, 46 ms measured) shrinks without touching the task loop and the datasheet knowledge lives in one module. Architecture review 2026-10-15, candidate 6; design settled with Lenton Neale the same day after the datasheet check (size: 2 points).",
+      "acceptance": [
+        "Datasheet basis (icm-project/references/as5600/i2c-interface.md, p. 15 and p. 19 of the local copy): the address pointer increments after each byte except that ANGLE, RAW ANGLE and MAGNITUDE suppress the increment on reads. So a 3-byte read from 0x0B yields STATUS, RAW ANGLE(11:8), RAW ANGLE(7:0) and a 3-byte read from 0x1A yields AGC, MAGNITUDE(11:8), MAGNITUDE(7:0); ANGLE (0x0E) is not reachable in the first burst and, per ruling R6 (B74), is no longer needed because processed_angle_mdeg derives from RAW ANGLE in the latest-value store (B128)",
+        "AS5600_ReadSample(dev, sample): take the I2C manager's scoped lock; select the mux channel only if the cached mask differs (the tca9548a cache at tca9548a_mux.c:26-31 is honoured on this path); read 3 bytes at 0x0B; take the acquisition timestamp immediately after that read returns (satisfies B72); read 3 bytes at 0x1A; release the lock. Per axis the bus sees three transactions, four on a cache miss, instead of fifteen",
+        "The sample carries raw angle counts, status byte, AGC, magnitude, timestamp and a typed magnet condition (detected, missing, weak, strong) derived from MD, ML, MH in the driver. The angle field is removed. The latest-value store's AcceptSample receives the condition and applies R6 (ML and MH are warnings; SAMPLE_VALID stays set); the sensor task reads and accepts and holds no datasheet bits or record policy",
+        "as5600.h shrinks to AS5600_InitDevice, AS5600_ReadSample and the magnet-condition type; ReadStatus, ReadRawAngle, ReadAngle, ReadAgc, ReadMagnitude and RawToDegrees are deleted; bring-up uses ReadSample. The five per-reader TimeService_NowUs calls go with them",
+        "I2C manager: a scoped lock (take and release) exposed for the driver's per-axis sequence; the write-read primitive is implemented with HAL_I2C_Mem_Read (pointer write, repeated start, read in one HAL call, the datasheet's p. 19 form) instead of HAL_I2C_Master_Transmit then HAL_I2C_Master_Receive with a STOP between; the manager's interface is otherwise unchanged (this is B73's 'fewer I2C transactions' item made concrete)",
+        "AGC and MAGNITUDE are read every sweep; reading them every Nth sweep is a Stage 3 decision taken with a measurement, not here",
+        "Tests in service_test_main.c against the HAL stub (which gains HAL_I2C_Mem_Read and a lock counter): per fitted axis the script is lock, mux write only on a cache miss, Mem_Read 3 bytes at 0x0B, Mem_Read 3 bytes at 0x1A, unlock; the timestamp falls between the two reads; a scripted STATUS and RAW ANGLE produce a valid record with the right counts; the existing bring-up, mux-map and not-fitted script tests are updated to the new sequence. In protocol_test_main.c: the store maps each magnet condition to the R6 validity flags",
+        "After it lands, PRM-ACQ-02 is re-measured with the sweep counter B74 adds; the row stays Measured with the new date and value, and PRM-ACQ-01 is revisited against it",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Depends on S10.15 (B128); S10.8 (B72) is satisfied by this story; S10.9 (B73) and S10.10 (B74) point at it"
+      ],
+      "points": 2,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-15T00:00:00+00:00",
+      "done_at": null,
+      "package": "WP10"
     }
   ]
 }
