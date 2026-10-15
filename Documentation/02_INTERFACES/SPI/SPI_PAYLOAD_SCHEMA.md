@@ -154,7 +154,7 @@ Solicited response to `GET_VERSION` (`0x14`). Identifies the firmware build that
 Total payload: 20 bytes.
 
 - `protocol_version` repeats the outer frame's transport version so a decoded payload is self-describing in a log.
-- `build_flags` bit 0 is set when the firmware subtree had uncommitted changes at build time; the accompanying `git_hash_abbrev` then does not fully identify the source. Bits 1-7 are reserved and must be zero. **Timing and acceptance evidence recorded against a firmware reporting bit 0 set does not satisfy an integration gate.**
+- `build_flags` bit 0 is set when the firmware sources (`Arm_Sensor_Hub/` and `shared/`) had uncommitted changes at build time; the accompanying `git_hash_abbrev` then does not fully identify the source. Bits 1-7 are reserved and must be zero. **Timing and acceptance evidence recorded against a firmware reporting bit 0 set does not satisfy an integration gate.**
 - `git_hash_abbrev` is the first eight hex digits of the commit hash read as a hexadecimal number, so commit `1a2b3c4d…` reports `0x1A2B3C4D` and a host formatting the field as eight lowercase hex digits reproduces `git rev-parse --short=8`. Zero when the build system could not determine it.
 - `commit_epoch_secs` is the commit timestamp in seconds since the Unix epoch, not the build time, so the field stays reproducible across rebuilds of the same source. Zero when unavailable.
 

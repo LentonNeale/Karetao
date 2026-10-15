@@ -87,7 +87,18 @@ Physical facts about the fitted hardware, recorded from [`Hardware/bench-wiring/
 
 The switch modules connect to the drives, not to the hub: on the 57D to IN_1 and IN_2, on the 42D to En and Dir with 9EH port mapping on and COM at the drive's EVCC (MKS manual p. 12). The wiring per axis is drawn from the original Arctos design in the bench schematic and confirmed at the bench (`BRING_UP.md` phases 1 and 6).
 
-Not recorded yet: motor make and model, step angle, drive firmware versions, recalibration history, the worst gravity pose per joint, and the as-found drive settings (`BRING_UP.md` phase 6).
+Drive settings as reported by Lenton Neale, 2026-10-15 (to be read from each drive in `BRING_UP.md` phase 6):
+
+| Setting (MKS command) | Reported | Note |
+|---|---|---|
+| Work mode (82H) | SR_CLOSE intended | The Provisional decision "MKS drive work mode" in `ARCHITECTURE_DECISIONS.md`; the setting on each drive is not yet read |
+| Microstep (84H) | Believed to be the highest setting | To be set to 64 (decision "MKS drive settings", Provisional): RPM speed values are exact only at 16, 32 and 64 (MKS manual p. 68) |
+| 9EH port mapping (42D drives) | On | As above |
+| Response mode (8CH) | Not known | To be set to respond on, active on (decision "MKS drive settings") |
+| Power-on auto-run (FFH) | Not known | To be set off (decision "MKS drive settings"); before the arm is first powered with this firmware (ruling R25a) |
+| En-pin mode (85H) | Not known | To be set to Hold (decision "MKS drive settings", Provisional, confirmed in phase 6) |
+
+Not recorded yet: motor make and model, step angle, drive firmware versions, recalibration history, the worst gravity pose per joint, and the as-found drive settings above (`BRING_UP.md` phase 6).
 
 ---
 

@@ -11,6 +11,8 @@ typedef enum
 } eNotifyAction;
 
 BaseType_t xTaskNotify(TaskHandle_t task, uint32_t value, eNotifyAction action);
+UBaseType_t uxTaskGetStackHighWaterMark(TaskHandle_t task);
+TaskHandle_t xTaskGetHandle(const char *name);
 BaseType_t xTaskNotifyFromISR(TaskHandle_t task,
                               uint32_t value,
                               eNotifyAction action,

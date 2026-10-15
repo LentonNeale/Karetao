@@ -15,8 +15,10 @@
 #include "i2c_manager.h"
 #include "sensor_task.h"
 #include "spi_slave_service.h"
+#include "stack_monitor.h"
 #include "tca9548a_mux.h"
 #include "time_service.h"
+#include "timers.h"
 
 I2C_HandleTypeDef hi2c1 = {.Instance = I2C1};
 CAN_HandleTypeDef hcan1 = {.Instance = (void *)0x2};
@@ -211,6 +213,44 @@ HAL_StatusTypeDef HAL_TIM_Base_Start(TIM_HandleTypeDef *htim)
 uint32_t HAL_GetTick(void)
 {
     return s_hal_tick;
+}
+
+/* Stack monitor stubs: three distinct handles, each with its own high-water mark
+ * (words). The calling task (NULL) is a fourth, so reading it by mistake shows. */
+static int s_default_task_tag;
+static int s_idle_task_tag;
+static int s_timer_task_tag;
+static bool s_idle_task_exists;
+static uint32_t s_idle_handle_calls;
+static uint32_t s_default_handle_calls;
+static UBaseType_t s_default_free_words = 300u;
+static UBaseType_t s_idle_free_words = 40u;
+static UBaseType_t s_timer_free_words = 90u;
+static UBaseType_t s_calling_task_free_words = 7u;
+extern uint32_t g_stack_monitor_host_stop_count;
+
+UBaseType_t uxTaskGetStackHighWaterMark(TaskHandle_t task)
+{
+    if (task == &s_default_task_tag) return s_default_free_words;
+    if (task == &s_idle_task_tag) return s_idle_free_words;
+    if (task == &s_timer_task_tag) return s_timer_free_words;
+    return s_calling_task_free_words;
+}
+
+TaskHandle_t xTaskGetHandle(const char *name)
+{
+    if (strcmp(name, "defaultTask") == 0) {
+        s_default_handle_calls++;
+        return &s_default_task_tag;
+    }
+    assert(strcmp(name, "IDLE") == 0);
+    s_idle_handle_calls++;
+    return s_idle_task_exists ? &s_idle_task_tag : NULL;
+}
+
+TaskHandle_t xTimerGetTimerDaemonTaskHandle(void)
+{
+    return &s_timer_task_tag;
 }
 
 void HAL_GPIO_WritePin(void *gpio_port, uint16_t gpio_pin, GPIO_PinState state)
@@ -1047,6 +1087,21 @@ static void TestSpiSlaveServiceDmaLoop(void)
     assert(s_last_gpio_state == GPIO_PIN_SET);
 }
 
+/* A serializer that tries to stage again from inside a staging, as a second
+ * caller would; it then writes a small frame so the outer staging succeeds. */
+static SnapshotBuild_Result s_nested_stage_result;
+
+static bool TestNestedStageSerializer(uint8_t *frame_buffer, uint16_t frame_capacity,
+                                      uint16_t *frame_length, void *context)
+{
+    (void)context;
+    s_nested_stage_result = SpiSlaveService_StageLatestSnapshot();
+    if ((frame_buffer == NULL) || (frame_length == NULL) || (frame_capacity < 16u)) return false;
+    memset(frame_buffer, 0, 16u);
+    *frame_length = 16u;
+    return true;
+}
+
 static void TestSpiSlaveServiceLatestSnapshot(void)
 {
     const uint8_t *frame;
@@ -1093,6 +1148,15 @@ static void TestSpiSlaveServiceLatestSnapshot(void)
     assert(frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX] == 0u);
     assert(ReadU16(&frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_CAN_ID]) == 0x123u);
     assert(frame[motor0_offset + SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] == 0u);
+
+    /* The staging guard is released after each build, so the next one succeeds. */
+    assert(SpiSlaveService_StageLatestSnapshot() == SNAPSHOT_BUILD_OK);
+
+    /* A caller that arrives while another is staging is refused, not interleaved. */
+    s_nested_stage_result = SNAPSHOT_BUILD_OK;
+    assert(SpiSlaveService_StageSnapshot(TestNestedStageSerializer, NULL) == SNAPSHOT_BUILD_OK);
+    assert(s_nested_stage_result == SNAPSHOT_BUILD_BUSY);
+    assert(SpiSlaveService_StageLatestSnapshot() == SNAPSHOT_BUILD_OK);
 }
 
 static void TestAppInitCore(void)
@@ -1101,6 +1165,62 @@ static void TestAppInitCore(void)
     assert(App_GetMksRegisterFailureCount() == 0u);
     App_Start();
     assert(App_GetLifecycleActivationFailureCount() == 0u);
+}
+
+static void TestStackMonitor(void)
+{
+    /* Not read until the first refresh. */
+    assert(g_stack_monitor_dbg.sample_count == 0u);
+    assert(g_stack_monitor_dbg.default_task_min_free_bytes == STACK_MONITOR_NOT_READ);
+
+    /* First refresh: the idle task is not found yet, so its figure stays unread. */
+    s_hal_tick = 5000u;
+    s_idle_task_exists = false;
+    StackMonitor_Process();
+    assert(g_stack_monitor_dbg.sample_count == 1u);
+    assert(g_stack_monitor_dbg.default_task_min_free_bytes == 300u * 4u);
+    assert(g_stack_monitor_dbg.timer_task_min_free_bytes == 90u * 4u);
+    assert(g_stack_monitor_dbg.idle_task_min_free_bytes == STACK_MONITOR_NOT_READ);
+
+    /* Within the refresh period nothing is read again. */
+    s_default_free_words = 250u;
+    s_hal_tick = 5999u;
+    StackMonitor_Process();
+    assert(g_stack_monitor_dbg.sample_count == 1u);
+    assert(g_stack_monitor_dbg.default_task_min_free_bytes == 300u * 4u);
+
+    /* After it, every figure is refreshed and the idle handle is looked up again. */
+    s_idle_task_exists = true;
+    s_hal_tick = 6000u;
+    StackMonitor_Process();
+    assert(g_stack_monitor_dbg.sample_count == 2u);
+    assert(g_stack_monitor_dbg.default_task_min_free_bytes == 250u * 4u);
+    assert(g_stack_monitor_dbg.idle_task_min_free_bytes == 40u * 4u);
+    assert(s_idle_handle_calls == 2u);
+
+    /* Once found, the handles are cached; defaultTask is found by name, not by caller. */
+    s_hal_tick = 7000u;
+    StackMonitor_Process();
+    assert(g_stack_monitor_dbg.sample_count == 3u);
+    assert(s_idle_handle_calls == 2u);
+    assert(s_default_handle_calls == 1u);
+    assert(g_stack_monitor_dbg.default_task_min_free_bytes != s_calling_task_free_words * 4u);
+
+    /* Overflow: the outputs are stopped first and the task name is recorded. */
+    StackMonitor_OnOverflow("defaultTask");
+    assert(g_stack_monitor_host_stop_count == 1u);
+    assert(g_stack_monitor_dbg.overflow_detected == 1u);
+    assert(strcmp((const char *)g_stack_monitor_dbg.overflow_task, "defaultTask") == 0);
+
+    /* A name longer than the field is cut and still terminated. */
+    StackMonitor_OnOverflow("a_task_name_longer_than_sixteen");
+    assert(strlen((const char *)g_stack_monitor_dbg.overflow_task) == STACK_MONITOR_TASK_NAME_BYTES - 1u);
+    assert(strncmp((const char *)g_stack_monitor_dbg.overflow_task, "a_task_name_lon", 15u) == 0);
+
+    /* No name at all leaves an empty string. */
+    StackMonitor_OnOverflow(NULL);
+    assert(g_stack_monitor_dbg.overflow_task[0] == '\0');
+    assert(g_stack_monitor_host_stop_count == 3u);
 }
 
 int main(void)
@@ -1134,6 +1254,9 @@ int main(void)
 
     ResetHalState();
     TestSpiSlaveServiceLatestSnapshot();
+
+    ResetHalState();
+    TestStackMonitor();
 
     return 0;
 }

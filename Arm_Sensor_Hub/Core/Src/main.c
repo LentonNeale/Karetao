@@ -29,6 +29,7 @@
 #include "i2c_manager.h"
 #include "sensor_task.h"
 #include "spi_slave_service.h"
+#include "stack_monitor.h"
 
 /* USER CODE END Includes */
 
@@ -62,7 +63,7 @@ TIM_HandleTypeDef htim2;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -451,6 +452,7 @@ void StartDefaultTask(void *argument)
     CanService_Process();
     SpiSlaveService_Process();
     HealthMonitor_Process();
+    StackMonitor_Process();
     osDelay(1);
   }
   /* USER CODE END 5 */

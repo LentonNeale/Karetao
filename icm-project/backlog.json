@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "next_id": 134,
+  "next_id": 135,
   "stories": [
     {
       "id": "B1",
@@ -1314,7 +1314,8 @@
         "Files: Arm_Sensor_Hub/App/Src/as5600.c:101-125, Arm_Sensor_Hub/App/Src/as5600.c:199-241, Arm_Sensor_Hub/App/Src/i2c_manager.c:375-417, Arm_Sensor_Hub/App/Src/sensor_task.c:154-173, Arm_Sensor_Hub/App/Src/sensor_task.c:177-185, Arm_Sensor_Hub/tools/check-sensors.sh:97-130",
         "Ruling R6: ML/MH are warnings (SAMPLE_VALID stays set); processed_angle_mdeg = RAW ANGLE x 360000 / 4096; PRM-ACQ-02 note 'method not recorded; believed to include the unpopulated channel'; TIM2 sweep counter readable over SWD",
         "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
-        "Design 2026-10-15: processed_angle_mdeg = RAW ANGLE x 360000 / 4096 is computed in the latest-value store's AcceptSample (B128) and the ANGLE register is no longer read (S10.17, B133); the ML/MH warning policy is applied in the store from the driver's typed magnet condition. The sweep counter this story adds is the instrument for re-measuring PRM-ACQ-02 after B133"
+        "Design 2026-10-15: processed_angle_mdeg = RAW ANGLE x 360000 / 4096 is computed in the latest-value store's AcceptSample (B128) and the ANGLE register is no longer read (S10.17, B133); the ML/MH warning policy is applied in the store from the driver's typed magnet condition. The sweep counter this story adds is the instrument for re-measuring PRM-ACQ-02 after B133",
+        "PRM-ACQ-02 note also records: measured on a Debug build, values read over the debug terminal (Lenton Neale, 2026-10-15); the Stage 3 re-measurement names the build type"
       ],
       "points": 1,
       "status": "open",
@@ -1555,7 +1556,8 @@
         "Clauses: CAN_SYSTEM_INTERFACE.md \u00a79",
         "Files: Arm_Sensor_Hub/App/Inc/can_service.h:78-102, Arm_Sensor_Hub/App/Src/can_service.c:247-249",
         "Ruling R13: TX success and failure counters added",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "RX FIFO overflow count (CAN_SYSTEM_INTERFACE.md \u00a79) added: RX is polled, so the overrun flags (bxCAN RF0R/RF1R FOVR) are read and cleared in the CAN service each cycle and counted, and the count is exported with the other \u00a79 diagnostics (added 2026-10-15 from the STM32 configuration review)"
       ],
       "points": 1,
       "status": "open",
@@ -2464,6 +2466,25 @@
       "created": "2026-10-15T00:00:00+00:00",
       "done_at": null,
       "package": "WP10"
+    },
+    {
+      "id": "B134",
+      "title": "S9.15 Check the main (interrupt) stack depth at build time",
+      "story": "As the maintainer I want the main stack (MSP), which every interrupt handler and nested interrupt uses, checked against its worst case after every build, like the task stacks (B53), so that an interrupt-side overflow cannot pass unnoticed. Found in the 2026-10-15 STM32 configuration review.",
+      "acceptance": [
+        "tools/stack_depth.py also checks the main stack: the deepest path of each enabled exception and IRQ handler (from the vector table in startup_stm32f405xx.s and stm32f4xx_it.c), combined across NVIC preemption levels (one handler per level can nest), plus the exception frame each nesting level pushes",
+        "The main stack size comes from the linker script (_Min_Stack_Size in STM32F405xx_FLASH.ld); the pre-scheduler path from main() is checked against it too (FreeRTOS resets MSP when the scheduler starts)",
+        "Handler priorities are read from the generated code or the .ioc, not restated; a handler whose priority cannot be read fails the check",
+        "Function-pointer calls in HAL IRQ handlers (HAL callbacks) are resolved through stack_depth.cfg with site counts, as for tasks",
+        "Host tests for the nesting arithmetic; the Debug and Release builds report the main-stack headroom in stack_depth.txt",
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+      ],
+      "points": 3,
+      "status": "open",
+      "sprint": null,
+      "created": "2026-10-15T01:32:00.738938+00:00",
+      "done_at": null,
+      "package": "WP9"
     }
   ]
 }

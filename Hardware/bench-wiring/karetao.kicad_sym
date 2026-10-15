@@ -63,7 +63,7 @@
     (property "Value" "AS5600" (at 0 -7.62 0) (effects (font (size 1.27 1.27))))
     (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
     (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
-    (property "Description" "AS5600 magnetic rotary position sensor on a breakout board (3.3 V mode)" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Description" "AS5600 magnetic rotary position sensor on a breakout board (5 V mode)" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
     (symbol "AS5600_0_1"
       (rectangle (start -10.16 6.35) (end 10.16 -6.35) (stroke (width 0.254) (type default)) (fill (type background))))
     (symbol "AS5600_1_1"

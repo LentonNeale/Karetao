@@ -207,6 +207,27 @@ openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg \
   -c "script dump_sync_data.ocd"
 ```
 
+## Procedure 6: Read task stack headroom
+
+**Purpose:** Confirm on the target that each task's stack keeps the headroom the build-time check predicts, and see whether a stack overflow stopped the firmware.
+
+**Global Variable Location:**
+- File: `Arm_Sensor_Hub/App/Src/stack_monitor.c`
+- Symbol: `g_stack_monitor_dbg` (StackMonitor_DebugMirror struct)
+
+**Steps in GDB** (after the firmware has run its normal workload, including SPI snapshot traffic, for the length of the bench session):
+
+```gdb
+(gdb) print g_stack_monitor_dbg
+```
+
+**Fields (from stack_monitor.h):**
+- `default_task_min_free_bytes`, `idle_task_min_free_bytes`, `timer_task_min_free_bytes`: least free stack each task has had since reset (the FreeRTOS high-water mark), refreshed about once a second. `0xFFFFFFFF` means not read yet.
+- `sample_count`: how many times they were refreshed. 0 means `StackMonitor_Process` never ran.
+- `overflow_detected` and `overflow_task`: set when FreeRTOS detected an overflow. The firmware is then stopped until reset: every configurable interrupt is masked (PRIMASK), the SPI3 DMA streams are off, and pending CAN frames are aborted. The MKS drives keep their last command; the drive heartbeat (ruling R23) is what stops them.
+
+**Interpretation:** for each task, the stack size minus its `*_min_free_bytes` is the stack actually used. It must stay below that task's "deepest path + switch allowance" total in `build/Debug/stack_depth.txt` for the same build. If it is above, the static analysis missed a path, so treat that as a defect.
+
 ## Troubleshooting
 
 | Problem | Cause | Solution |

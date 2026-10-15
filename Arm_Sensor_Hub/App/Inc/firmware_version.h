@@ -12,8 +12,13 @@
 #define FIRMWARE_VERSION_MINOR UINT8_C(1)
 #define FIRMWARE_VERSION_PATCH UINT8_C(0)
 
-/* Supplied by CMake. The fallbacks keep host test builds and any
- * out-of-tree build working without a git checkout. */
+/* Supplied by the header the firmware build regenerates on every build
+ * (cmake/firmware_identity.cmake). The fallbacks keep host test builds and
+ * any out-of-tree build working without a git checkout. */
+#ifdef FIRMWARE_IDENTITY_GENERATED
+#include "firmware_identity.h"
+#endif
+
 #ifndef FIRMWARE_GIT_HASH_ABBREV
 #define FIRMWARE_GIT_HASH_ABBREV UINT32_C(0)
 #endif
@@ -24,6 +29,16 @@
 
 #ifndef FIRMWARE_BUILD_DIRTY
 #define FIRMWARE_BUILD_DIRTY 0
+#endif
+
+/* Not on the wire: VERSION has no field for them. The generated header and
+ * the build log record them for evidence records (ruling R28). */
+#ifndef FIRMWARE_C_COMPILER
+#define FIRMWARE_C_COMPILER "unknown"
+#endif
+
+#ifndef FIRMWARE_CXX_COMPILER
+#define FIRMWARE_CXX_COMPILER "unknown"
 #endif
 
 /** Set when the firmware was built from uncommitted changes. */

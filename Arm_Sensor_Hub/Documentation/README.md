@@ -68,7 +68,7 @@ Component verification (unit tests, functional tests on target hardware) provide
 This documentation directory follows the Karetao component documentation model (`Documentation/DOCUMENTATION_RULES.md`):
 
 - **System interface compliance:** How this component implements the Karetao system contracts
-- **Internal architecture:** Service APIs, data structures, execution model
+- **Internal architecture:** Service APIs, data structures, execution model. Start at [`FIRMWARE_ARCHITECTURE.md`](FIRMWARE_ARCHITECTURE.md): the module map, task and interrupt model, peripheral allocation, memory and configuration sources.
 - **Peripheral integration:** HAL usage, DMA configuration, interrupt handling
 - **Build and test:** CMake structure, build presets, test infrastructure
 - **Component-level evidence:** Verification results, test coverage, validation records

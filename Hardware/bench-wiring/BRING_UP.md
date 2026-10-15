@@ -14,7 +14,7 @@ Status: written 2026-10-15 from the schematic, the WP8 review rulings (R9, R17, 
 |---|---|---|---|
 | B1 | The firmware's CAN is generated at 187.5 kbit/s (prescaler 16, BS1 11, BS2 2), which MKS drives cannot use. Ruling R9 sets 1 Mbit/s (PRM-CAN-03), but this is not applied yet. | Phase 7b (STM32 to drives) cannot pass until WP11 S11.1 is applied. Phase 7a (drives through a USB-CAN adapter) can go ahead. | WP8 review, CAN-1; `main.c` CAN init |
 | B2 | The firmware never stages a SNAPSHOT: GET_SNAPSHOT returns ACK. | `spi_link_probe.py --snapshot` shows no sensor records. Read the sensors over SWD with `check-sensors.sh` (phase 4). The link probe still shows VERSION and STATUS. | WP8 review headline defect |
-| B3 | **The sensor supply voltage conflicts.** The schematic draws the AS5600s, the mux and the pull-ups on +3V3. `Arm_Sensor_Hub/tools/check-sensors.sh` defaults `AS5600_VDD_5V=1` and says "this rig runs the sensors on a 5 V bus". | Measure it in phase 2 and record it. The schematic or the script is wrong. See the I2C voltage notes in phase 4. | `check-sensors.sh` header; README Provisional list |
+| B3 | **The sensor and I2C rails are not measured.** The schematic first drew the AS5600s, the mux and the pull-ups on +3V3, while `Arm_Sensor_Hub/tools/check-sensors.sh` defaults `AS5600_VDD_5V=1` ("this rig runs the sensors on a 5 V bus"). | Lenton Neale, 2026-10-15: the sensors currently run on 5 V, so the script was right. The schematic now draws the AS5600s on +5V. Still Provisional: the mux supply (drawn +3V3), the upstream pull-ups (drawn to +3V3) and the rail of the channel pull-ups on the breakouts (not drawn). In 5 V mode each channel must be pulled to about 0.7 × VDD or higher. Measure all of them in phase 2. See the I2C voltage notes in phase 4. | `check-sensors.sh` header; README Provisional list; schematic note at the sensors |
 | B4 | No E-stop or power cut is fitted (ruling R25b). | Phase 6 powers each drive alone from a supply whose switch is within reach. Phase 8 (E-stop) must pass before any session that powers all drives together with the arm assembled, and before Stage 4. | `04_SAFETY/SAFETY_REQUIREMENTS.md` SAFE-01; RULINGS R25 |
 | B5 | The MKS power-on auto-run (FFH) and the En-pin mode (85H) have not been read (ruling R25a). | Read both in phase 6, before the drive is powered with its motor coupled to the arm. | RULINGS R25 |
 | B6 | The drive facts are unknown: CanRate, CAN ID, model, firmware, work mode and response mode for all six drives (ruling R9b). | Read them in phase 6. They are a hard prerequisite for WP11 S11.1. | RULINGS R9; `SYSTEM_CONFIGURATION.md` §2.1 |
@@ -123,7 +123,7 @@ Record the parts the schematic draws as Provisional.
 
 **Entry:** phase 3 passed. Magnets fitted on the shafts of axes 1, 2, 4 and 5, and on the bench sensor.
 
-I2C voltage notes for B3. The TCA9548A translates levels: each downstream channel may be pulled up to its own rail. If the sensors run at 5 V with pull-ups to 5 V, then the upstream bus (I2C1 to the STM32) must still be pulled to a level PB6/PB7 can take. Check PB6/PB7 are marked FT (5 V tolerant) in the STM32F405 datasheet pin table before any pull-up goes to 5 V. If the sensors run at 3.3 V, the AS5600 datasheet requires VDD5V and VDD3V3 tied together. Check the breakout (phase 0).
+I2C voltage notes for B3. The TCA9548A translates levels: each downstream channel may be pulled up to its own rail. If the sensors run at 5 V with pull-ups to 5 V, then the upstream bus (I2C1 to the STM32) must still be pulled to a level PB6/PB7 can take. PB6 and PB7 are FT (5 V tolerant): DS8626 Rev 12, Table 7, p. 60, note 5 on p. 61 (checked 2026-10-15). Like PB8, they are tolerant only while the STM32 is powered. If the sensors run at 3.3 V, the AS5600 datasheet requires VDD5V and VDD3V3 tied together. Check the breakout (phase 0).
 
 | Check | Expected | Record to |
 |---|---|---|
@@ -165,9 +165,10 @@ For each drive M1 to M6:
 | ☐ CAN ID (menu CanID or by command) | Unique on the bus. Write the planned axis next to it. An ID above 0xFF needs its checksum rule confirmed on a drive before it is commissioned (ruling R9d). | §2.1 CAN ID column; README |
 | ☐ CanRate | Recorded as found, then **set to 1M** (ruling R9a; menu or 8AH with value 03) | §2.1; session log |
 | ☐ Work mode (82H) | Recorded as found. Bus motion needs an SR mode; the factory default CR_vFOC ignores bus motion commands (ruling R9). The Provisional choice is SR_CLOSE (82H value 04H; `ARCHITECTURE_DECISIONS.md`, "MKS drive work mode"). Change it only when WP11 needs it or for the phase 9 check, and note the change. | §2.1 (new column if needed); session log |
-| ☐ Response mode (8CH) | Recorded (default: respond enabled, active enabled) | §2.1; session log |
+| ☐ Response mode (8CH) | Recorded as found, then set to respond on, active on (the factory default; decision "MKS drive settings") | §2.1; session log |
 | ☐ FFH power-on auto-run | **Off** (CA). If it is on, turn it off before the drive is ever powered with its motor coupled. | §2.1, new column (ruling R25a) |
-| ☐ 85H En-pin mode | Recorded (L, H, or Hold) | §2.1, new column (ruling R25a) |
+| ☐ 85H En-pin mode | Recorded as found (L, H or Hold), then set to Hold (decision "MKS drive settings", Provisional). Motor uncoupled: pressing the axis's switch does not disable the drive, F3H disable does, and the switch still reports through 9EH. If Hold blocks F3H, stop and revise the decision | §2.1, new column (ruling R25a) |
+| ☐ Microstep (84H) | Recorded as found, then set to 64 (decision "MKS drive settings", Provisional). A commanded F6H speed gives that RPM at the shaft | `JOINT_SHEET.md`; session log |
 | ☐ 98H heartbeat time | Recorded as found (default 0, off). The firmware sets 500 ms at CAN activation later (ruling R23b). | Session log |
 | ☐ 9EH port mapping, as found | On for every drive whose switches are wired to En and Dir (the 42D drives as drawn) | §2.2; session log |
 | ☐ EVCC current with the switch modules connected | Within 20 mA (MKS manual pp. 10, 19). If over, the switch supply needs a change before use | Session log |

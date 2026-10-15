@@ -61,6 +61,25 @@ Consequences: the PID set that applies is 97H (CLOSE), left at the factory value
 - F5H acknowledges a staged command in synchronised mode (status 5, p. 91), so it works with the synchronisation decision above.
 - With the gear ratios in [`SYSTEM_CONFIGURATION.md`](../06_CONFIGURATION/SYSTEM_CONFIGURATION.md) §2.2, every joint's travel stays inside the signed 24-bit target range.
 
+## MKS drive settings
+
+**Status:** Decided 2026-10-15, Lenton Neale. The En-pin mode and the microstep value are Provisional until the `BRING_UP.md` phase 6 checks below pass. No drive has been set yet; each drive's as-found value is recorded first ([`JOINT_SHEET.md`](../../Hardware/bench-wiring/JOINT_SHEET.md)).
+
+**Decision:** every drive is set as follows (commands from the MKS SERVO42D/57D CAN manual V1.0.9; [`config-commands.md`](../../icm-project/references/mks-servo42d-57d-can/config-commands.md), [`frame-and-checksum.md`](../../icm-project/references/mks-servo42d-57d-can/frame-and-checksum.md), [`motion-commands.md`](../../icm-project/references/mks-servo42d-57d-can/motion-commands.md)).
+
+| Setting | Value | Why |
+|---|---|---|
+| Response mode (8CH) | Respond on, active on (XX = 01, YY = 01: the factory default) | The controlled stop is complete on the drive's "stop complete" reply (status 2), with a timeout as fallback (ruling R21b). A move's start and finish replies are also how the host sees the command was taken. Only this mode sends them (p. 41). |
+| Power-on auto-run (FFH) | Off (enable = CA) | A drive must never move just because it was powered (ruling R25a; SAFE behaviour on power-up, ruling R23). |
+| En-pin mode (85H) | Hold (Level = 02: always enabled), **Provisional** | On the 42D drives the En input carries a limit or home switch through 9EH port mapping. An En mode of L or H could then disable the drive whenever a switch is pressed. Enable and disable are bus commands instead (F3H), so the stop-and-hold rule (R21d) and an operator DISABLE stay in firmware control. Same setting on the 57D drives for one rule on every drive. |
+| Microstep (84H) | 64, **Provisional** | MKS calibrates the RPM speed values at 16, 32 and 64 microsteps (p. 68). At any other setting every commanded speed is scaled, and at the highest setting the motor runs at a sixteenth of the commanded RPM. 64 is the finest of the calibrated settings. Position targets use the 31H coordinate unit, which does not depend on the microstep (see "MKS motion commands"). |
+
+Confirmation (bench, phase 6, one drive at a time, motor uncoupled):
+- **En-pin mode:** with Hold set, pressing the axis's switch does not disable the drive, F3H disable does disable it, and the switch still reports through 9EH. If Hold also blocks F3H, this decision is revised before any gated motion.
+- **Microstep:** a commanded F6H speed gives that RPM at the shaft, within what the bench can observe.
+
+The firmware does not set these yet. Setting them at CAN activation, or checking them by a read at activation, is decided with the motor command path (WP11, WP14).
+
 ## Clock synchronization (Issue #12)
 
 **Status:** DECIDED (2026-09-24). This is a living decision record, and some parameters are open.

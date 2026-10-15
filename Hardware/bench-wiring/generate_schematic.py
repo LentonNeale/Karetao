@@ -14,7 +14,14 @@ import argparse, uuid, os, sys
 
 MM = 2.54
 FONT = "(effects (font (size 1.27 1.27)))"
-def U(): return str(uuid.uuid4())
+# UUIDs are derived from what each item is, not drawn at random, so regenerating an
+# unchanged sheet gives an identical file and a change shows only what changed. Two
+# items with the same key (an identical wire drawn twice) get distinct IDs by order.
+_UUID_NS = uuid.UUID("6f1d0c2e-5b2a-4c3e-9a51-6b6172657461")
+_uuid_seen = {}
+def U(key):
+    n = _uuid_seen.get(key, 0); _uuid_seen[key] = n + 1
+    return str(uuid.uuid5(_UUID_NS, f"{key}#{n}"))
 def q(s): return '"' + s.replace('"', '\\"') + '"'
 
 # ---------------------------------------------------------------- symbol library (lib coordinates, y up)
@@ -111,7 +118,7 @@ MUX = add(Sym("TCA9548A", 12.7,
     [(f"S{k}{n}", BI) for n in range(8) for k in ("C", "D")],
     "TI TCA9548A 8-channel I2C switch, address 0x70", value="TCA9548A"))
 AS = add(Sym("AS5600", 10.16, [("VDD", PI), ("SCL", IN), ("SDA", BI), ("DIR", IN)], [("OUT", OUT), ("PGO", IN), ("GND", PI)],
-    "AS5600 magnetic rotary position sensor on a breakout board (3.3 V mode)", value="AS5600"))
+    "AS5600 magnetic rotary position sensor on a breakout board (5 V mode)", value="AS5600"))
 XCVR = add(Sym("CAN_XCVR", 12.7, [("VCC", PI), ("TXD", IN), ("RXD", OUT), ("VREF", OUT), ("S", IN), ("GND", PI)],
     [("CANH", BI), ("CANL", BI)], "NXP TJA1050 high-speed CAN transceiver, 5 V supply; S low = high-speed mode", value="TJA1050"))
 DRV_LEFT = [("VIN+", PI), ("CANH", BI), ("CANL", BI), ("VIN-", PI), ("GND", PI)]
@@ -144,14 +151,14 @@ for n in ("+3V3", "+5V", "GND", "VMOT", "VMOT_SW"): add(PowerSym(n))
 add(PowerSym("PWR_FLAG", "power_out", flag=True))
 
 # ---------------------------------------------------------------- sheet model (sheet coordinates, y down)
-ROOT = U()
+ROOT = U("root sheet")
 items = []        # s-expressions
 preview = []      # (kind, data) for the PNG renderer
 checks = []       # (x, y) points that must be wire endpoints
 wire_ends = set()
 
 def wire(x1, y1, x2, y2):
-    items.append(f'(wire (pts (xy {x1:.2f} {y1:.2f}) (xy {x2:.2f} {y2:.2f})) (stroke (width 0) (type default)) (uuid "{U()}"))')
+    items.append(f'(wire (pts (xy {x1:.2f} {y1:.2f}) (xy {x2:.2f} {y2:.2f})) (stroke (width 0) (type default)) (uuid "{U(f"wire {x1:.2f} {y1:.2f} {x2:.2f} {y2:.2f}")}"))')
     wire_ends.add((round(x1, 2), round(y1, 2))); wire_ends.add((round(x2, 2), round(y2, 2)))
     preview.append(("wire", (x1, y1, x2, y2)))
 
@@ -159,25 +166,25 @@ named_points = []   # (net name, x, y) for labels and power pins
 def label(name, x, y, direction):
     named_points.append((name, x, y))
     ang, just = (0, "left") if direction > 0 else (180, "right")
-    items.append(f'(label {q(name)} (at {x:.2f} {y:.2f} {ang}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)) (justify {just} bottom)) (uuid "{U()}"))')
+    items.append(f'(label {q(name)} (at {x:.2f} {y:.2f} {ang}) (fields_autoplaced yes) (effects (font (size 1.27 1.27)) (justify {just} bottom)) (uuid "{U(f"label {name} {x:.2f} {y:.2f}")}"))')
     checks.append((x, y)); preview.append(("label", (name, x, y, direction)))
 
 def no_connect(x, y):
-    items.append(f'(no_connect (at {x:.2f} {y:.2f}) (uuid "{U()}"))'); preview.append(("nc", (x, y)))
+    items.append(f'(no_connect (at {x:.2f} {y:.2f}) (uuid "{U(f"nc {x:.2f} {y:.2f}")}"))'); preview.append(("nc", (x, y)))
 
 def text(s, x, y, size=1.27):
-    items.append(f'(text {q(s)} (at {x:.2f} {y:.2f} 0) (effects (font (size {size} {size})) (justify left bottom)) (uuid "{U()}"))')
+    items.append(f'(text {q(s)} (at {x:.2f} {y:.2f} 0) (effects (font (size {size} {size})) (justify left bottom)) (uuid "{U(f"text {s} {x:.2f} {y:.2f}")}"))')
     preview.append(("text", (s, x, y, size)))
 
 def junction(x, y):
-    items.append(f'(junction (at {x:.2f} {y:.2f}) (diameter 0) (color 0 0 0 0) (uuid "{U()}"))')
+    items.append(f'(junction (at {x:.2f} {y:.2f}) (diameter 0) (color 0 0 0 0) (uuid "{U(f"junction {x:.2f} {y:.2f}")}"))')
 
 class Inst:
     def __init__(self, sym, ref, x, y, value=None, dnp=False, rot=0):
         self.sym, self.ref, self.x, self.y, self.dnp, self.rot = sym, ref, x, y, dnp, rot
         self.value = value or sym.value
-        self.uuid = U()
-        self.pin_uuids = {n: U() for n in sym.pins}
+        self.uuid = U(f"symbol {ref}")
+        self.pin_uuids = {n: U(f"pin {ref} {n}") for n in sym.pins}
         preview.append(("sym", (self, )))
     def pin_pos(self, number):
         _, _, px, py, _ = self.sym.pins[number]
@@ -302,16 +309,19 @@ sensors = [  # (ref, y, channel, note, dnp)
 ]
 for ref, y, ch, note, dnp in sensors:
     s = place(AS, ref, 299.72, y, dnp=dnp)
-    stub(s, "VDD", power="+3V3"); stub(s, "SCL", f"SCL_CH{ch}"); stub(s, "SDA", f"SDA_CH{ch}"); stub(s, "DIR", power="GND")
+    stub(s, "VDD", power="+5V"); stub(s, "SCL", f"SCL_CH{ch}"); stub(s, "SDA", f"SDA_CH{ch}"); stub(s, "DIR", power="GND")
     stub(s, "GND", power="GND"); stub(s, "OUT", nc=True); stub(s, "PGO", nc=True)
     text(note, 322.58, y + 0.5, 1.0)
+
+text("AS5600s on +5V (Lenton Neale, 2026-10-15): in 5 V mode a logic high needs about 0.7 x VDD, so each channel's SCx/SDx", 299.72, 228.6, 1.0)
+text("must be pulled to the sensor rail, not +3V3. Channel pull-ups are not drawn: confirm the breakout pull-ups and all rails in BRING_UP phase 2 (B3).", 299.72, 231.14, 1.0)
 
 U10 = place(XCVR, "U10", 127.0, 165.1)
 stub(U10, "VCC", power="+5V"); stub(U10, "TXD", "CAN_TX"); stub(U10, "RXD", "CAN_RX")
 gnd_bus(U10, ["S", "GND"]); stub(U10, "VREF", nc=True); stub(U10, "CANH", "CAN_H"); stub(U10, "CANL", "CAN_L")
 R1 = place(R, "R1", 175.26, 165.1, value="120R"); rstub(R1, "1", "CAN_H"); rstub(R1, "2", "CAN_L")
 text("R1: termination at the hub end (Provisional)", 160.0, 180.0, 1.0)
-text("U10 TJA1050 on +5V: RXD swings to 5 V into PB8 (FT, 5 V tolerant only while the STM32 is powered; no pull-up). S tied low (Provisional).", 95.0, 183.0, 1.0)
+text("U10 TJA1050 on +5V: RXD swings to 5 V into PB8 (FT per DS8626 Table 7; 5 V tolerant only while the STM32 is powered; no pull-up). S tied low (Provisional).", 95.0, 183.0, 1.0)
 
 text("CAN bus: CAN_H and CAN_L daisy-chained U10 -> M1 ... M6 (and J3 when used), 120R at each end (R1, R2); every drive's own terminator off", 95.0, 186.0, 1.0)
 text("(57D DIP 1, 42D shorting cap). Drives and adapter share GND with the hub (MKS manual p. 18). Drive blocks: bottom of the sheet.", 95.0, 189.4, 1.0)
@@ -393,7 +403,8 @@ notes = [
     ("Signals are connected by net labels of the same name. Power symbols: +3V3, +5V, GND, VMOT_SW (motor supply after the E-stop).", 1.2),
     ("Confirmed by the documents: STM32 pins (ARM_SENSOR_HUB.md), mux address 0x70 and axis N on channel N+2, encoder fitted per axis,", 1.2),
     ("drive models and CAN IDs 0x001 to 0x006 (SYSTEM_CONFIGURATION.md 2.1, 2.2), Pi header pins 19/21/23/24/22 (Pi README), 12 to 24 V drive supply (MKS manual).", 1.2),
-    ("Provisional (not stated in any document): STM32 board type and its 5 V input; TJA1050 S pin tie; I2C pull-up values and location;", 1.2),
+    ("Provisional (not stated in any document): STM32 board type and its 5 V input; TJA1050 S pin tie; I2C pull-up values, location and rails", 1.2),
+    ("(main bus drawn to +3V3; channel SCx/SDx pull-ups expected on the breakouts, rail not recorded); mux supply (drawn +3V3);", 1.2),
     ("mux RESET pull-up (no MCU line, FW-12); AS5600 DIR tied low; termination placement;", 1.2),
     ("motor supply voltage; the E-stop itself (SAFE-01, ruling R25b: to be fitted); drive switch and motor phase wiring (Arctos drawing, bench check).", 1.2),
     ("Decoupling on breakout boards is not drawn. Gripper parts (Nano, MCP2515, servo) are out of scope and not drawn (charter).", 1.2),
@@ -420,7 +431,7 @@ def write(outdir):
             for pt in ((d[0], d[1]), (d[2], d[3])):
                 key = (round(pt[0], 2), round(pt[1], 2)); ends[key] = ends.get(key, 0) + 1
     for (jx, jy), n in ends.items():
-        if n >= 3: items.append(f'(junction (at {jx:.2f} {jy:.2f}) (diameter 0) (color 0 0 0 0) (uuid "{U()}"))')
+        if n >= 3: items.append(f'(junction (at {jx:.2f} {jy:.2f}) (diameter 0) (color 0 0 0 0) (uuid "{U(f"junction {jx:.2f} {jy:.2f}")}"))')
     for it in items: body.append("  " + it.replace("\n", "\n  "))
     for i in insts: body.append("  " + i.emit().replace("\n", "\n  "))
     body.append(f'  (sheet_instances (path "/" (page "1")))')
