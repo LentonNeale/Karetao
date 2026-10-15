@@ -10,7 +10,7 @@ Issues and specs for this repo live as GitHub issues on `LentonNeale/Karetao`. U
 - **Labels**: only the approved taxonomy in `ISSUE_CONTRACT.md` (`design`, `implementation`, `verification`, `safety`, `timing`, `communications`, `mechanical`, `configuration`; `estimation` is dormant). Labels describe the nature of the work, never workflow state. **Never create a label.** See `triage-labels.md` for how the triage roles fit this.
 - **Decisions** go in `Documentation/07_DECISIONS/`, not in issue bodies. Link the issue to the record.
 - **Reference** the `LIVE-xx` / `SD-xx` / `SYS-*` identifier the issue serves, when one exists.
-- Work packages and sprint stories above the issue level live in `icm-project/lifecycle.json` and `icm-project/backlog.json` (the ICM Portal). A GitHub issue is the unit of trackable work; it does not replace those.
+- Above the issue level there are only native **Milestones** (stages named after charter goals) and the **Karetao Engineering Project** board (Status and order). Blocking is recorded with GitHub native issue dependencies (see "Blocking" below). The former ICM Map (`icm-project/lifecycle.json`, `backlog.json`) was retired on 2026-10-15; its stories are migrated into issues stage by stage from git history (`git show 247cf35:icm-project/backlog.json`).
 
 ## Conventions
 

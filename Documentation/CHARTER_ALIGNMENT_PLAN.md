@@ -88,6 +88,8 @@ The documentation is aligned and ready for code work when all of the following h
 
 ## 5. Working method: agile in the ICM Portal
 
+> Historical from 2026-10-15: the ICM Portal and its work-package Map were retired that day. Remaining work is tracked as GitHub issues under milestones, ordered on the Karetao Engineering Project board, and worked with the repository's `/next-issue` and `/work-issue` skills. The text below describes how sprints S0 to S7 were run.
+
 - Methodology: the Portal's `agile.toml` (tabs Backlog, Sprint plan, Design, Build, Retro). Set `[methodology] default = "agile"` in `portal.toml`, or pick agile in the picker when the run is created. Stories live in `backlog.json`; Sprint 0 loads the stories below as B5 onward.
 - A sprint is one Portal run, one branch (`portal/<date>-<sprint-slug>`), one merge into `main`. Sprints are scoped by stories, not by dates (charter: no calendar commitments); a sprint ends at its Retro.
 - The Design stage is where Lenton accepts, changes or rejects each decision in §6 and the proposed text of each story. The Build stage writes in a worktree; Verify runs the same commands as CI (documentation-only runs still pass them); the pre-merge review is read-only.

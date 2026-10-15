@@ -103,7 +103,7 @@ The GitHub Project provides management metadata separately from labels. The boar
 
 ### Status
 
-Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Project Status is workflow metadata, not an engineering authority. An agent that cannot write the board records the state in the first line of the triage comment instead (`> Triage state: ...`, `docs/agents/triage-labels.md`).
+Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Project Status is workflow metadata, not an engineering authority. `Blocked`, `Ready` and `Backlog` are derived from GitHub native issue dependencies and the current stage by `icm-project/tools/issue_graph` (rules in its card), which also sets the board order; `In Progress`, `Verification` and `Done` are set by people or by GitHub's close workflow. An agent that cannot write the board records the state in the first line of the triage comment instead (`> Triage state: ...`, `docs/agents/triage-labels.md`).
 
 ### Order
 
