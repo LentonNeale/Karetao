@@ -24,6 +24,27 @@ target_compile_definitions(sprint1_protocol_tests PRIVATE
 
 add_test(NAME sprint1_protocol_tests COMMAND sprint1_protocol_tests)
 
+# The shared SPI golden frames (shared/test-vectors/spi), asserted byte for byte against
+# spi_protocol.c. The Python suite asserts the same file (SYS-SPI-001 acceptance), so the
+# test reads it from the repository rather than a copy.
+get_filename_component(KARETAO_ROOT ${CMAKE_SOURCE_DIR} DIRECTORY)
+set(SPI_GOLDEN_FRAMES ${KARETAO_ROOT}/shared/test-vectors/spi/frames.txt)
+if(NOT EXISTS ${SPI_GOLDEN_FRAMES})
+    message(FATAL_ERROR "Shared SPI golden frames not found: ${SPI_GOLDEN_FRAMES}")
+endif()
+add_executable(spi_golden_vector_tests
+    spi_golden_vector_tests.c
+    ${CMAKE_SOURCE_DIR}/App/Src/crc32_iso_hdlc.c
+    ${CMAKE_SOURCE_DIR}/App/Src/spi_protocol.c
+)
+target_include_directories(spi_golden_vector_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/App/Inc
+)
+target_compile_definitions(spi_golden_vector_tests PRIVATE
+    TIME_SERVICE_HOST_TEST
+)
+add_test(NAME spi_golden_vector_tests COMMAND spi_golden_vector_tests ${SPI_GOLDEN_FRAMES})
+
 add_executable(service_smoke_tests
     service_test_main.c
     ${CMAKE_SOURCE_DIR}/App/Src/app_init.c

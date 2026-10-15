@@ -8,13 +8,18 @@ import struct
 import time
 import zlib
 
+# Contract constants (SPI_SYSTEM_INTERFACE.md section 3). Each is defined once here;
+# every other module refers to these names. The C side's single home is
+# Arm_Sensor_Hub/App/Inc/spi_payload_layout.h, and the shared golden frames in
+# shared/test-vectors/spi assert that the two agree byte for byte.
 MAGIC = 0xA55A
 PROTOCOL_VERSION = 1
-HEADER_SIZE = 18
 CRC_SIZE = 4
 MAX_FRAME_BYTES = 512
-MAX_PAYLOAD_BYTES = 490
-_HEADER_STRUCT = struct.Struct('<HBBHIQ')
+# magic u16, protocol_version u8, message_type u8, payload_len u16, seq u32, frame_time_us u64
+HEADER_STRUCT = struct.Struct('<HBBHIQ')
+HEADER_SIZE = HEADER_STRUCT.size
+MAX_PAYLOAD_BYTES = MAX_FRAME_BYTES - HEADER_SIZE - CRC_SIZE
 
 
 class MessageType(IntEnum):
@@ -118,7 +123,7 @@ class SpiFrame:
             raise ValueError('sequence exceeds uint32 range')
         if not 0 <= self.frame_time_us <= 0xFFFFFFFFFFFFFFFF:
             raise ValueError('frame time exceeds uint64 range')
-        header = _HEADER_STRUCT.pack(MAGIC, self.protocol_version, int(self.message_type),
+        header = HEADER_STRUCT.pack(MAGIC, self.protocol_version, int(self.message_type),
                                      len(payload), self.seq, self.frame_time_us)
         crc = crc32_iso_hdlc(header + payload)
         return header + payload + struct.pack('<I', crc)
@@ -129,7 +134,7 @@ class SpiFrame:
         if len(raw) < HEADER_SIZE + CRC_SIZE or len(raw) > MAX_FRAME_BYTES:
             raise ValueError('invalid SPI frame size')
 
-        magic, protocol_version, message_type, payload_len, seq, frame_time_us = _HEADER_STRUCT.unpack(raw[:HEADER_SIZE])
+        magic, protocol_version, message_type, payload_len, seq, frame_time_us = HEADER_STRUCT.unpack(raw[:HEADER_SIZE])
         if magic != MAGIC:
             raise ValueError('invalid frame magic')
         if protocol_version != PROTOCOL_VERSION:
@@ -139,7 +144,7 @@ class SpiFrame:
         if expected_length > MAX_FRAME_BYTES or len(raw) < expected_length:
             raise ValueError('frame length does not match payload length')
 
-        # SPI transport is fixed at 512 bytes. The wire frame itself ends at
+        # SPI transport is fixed at MAX_FRAME_BYTES. The wire frame itself ends at
         # expected_length; the remainder must be zero padding.
         if len(raw) > expected_length and any(raw[expected_length:]):
             raise ValueError('non-zero bytes after SPI frame')
@@ -158,10 +163,13 @@ class SpiFrame:
                    payload=raw[HEADER_SIZE:expected_length - CRC_SIZE], protocol_version=protocol_version)
 
 
-VERSION_PAYLOAD_BYTES = 20
 VERSION_SCHEMA_VERSION = 1
 BUILD_FLAG_DIRTY = 0x01
+# schema u8, protocol_version u8, major u8, minor u8, patch u8, build_flags u8, reserved u16,
+# response_to_seq u32, git_hash_abbrev u32, commit_epoch_secs u32
 _VERSION_STRUCT = struct.Struct('<BBBBBBHIII')
+VERSION_PAYLOAD_BYTES = _VERSION_STRUCT.size
+VERSION_OFFSET_RESPONSE_TO_SEQ = struct.calcsize('<BBBBBBH')
 
 
 @dataclass(frozen=True)
@@ -223,9 +231,18 @@ SENSOR_VALIDITY_MAGNET_TOO_WEAK = 0x0008
 SENSOR_VALIDITY_MAGNET_TOO_STRONG = 0x0010
 SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED = 0x0020
 SENSOR_VALIDITY_NOT_FITTED = 0x0040
-SENSOR_RECORD_BYTES = 24
-SNAPSHOT_PREFIX_BYTES = 12
+# sensor_id u8, status u8, validity_flags u16, measurement_timestamp_us u64, raw_angle u16,
+# processed_angle_mdeg i32, magnitude u16, agc u8, reserved u8, reserved_2 u16
 _SENSOR_RECORD_STRUCT = struct.Struct('<BBHQHiHBBH')
+SENSOR_RECORD_BYTES = _SENSOR_RECORD_STRUCT.size
+# Snapshot prefix: schema u8, sensor_count u8, motor_count u8, reserved u8, flags u16,
+# dropped_snapshot_count_low u16, response_to_seq u32 (spi_payload_layout.h SPI_SNAPSHOT_*)
+_SNAPSHOT_PREFIX_STRUCT = struct.Struct('<BBBBHHI')
+SNAPSHOT_PREFIX_BYTES = _SNAPSHOT_PREFIX_STRUCT.size
+SNAPSHOT_SCHEMA_VERSION = 1
+SNAPSHOT_OFFSET_SCHEMA_VERSION = 0
+SNAPSHOT_OFFSET_SENSOR_COUNT = 1
+SNAPSHOT_OFFSET_RESPONSE_TO_SEQ = struct.calcsize('<BBBBHH')
 
 
 @dataclass(frozen=True)
@@ -270,7 +287,7 @@ def decode_snapshot_sensor_records(payload: bytes) -> list[SensorRecord]:
     """Decode the sensor records of a SNAPSHOT payload (sensor_count at offset 1)."""
     if len(payload) < SNAPSHOT_PREFIX_BYTES:
         raise ValueError('SNAPSHOT payload shorter than its prefix')
-    sensor_count = payload[1]
+    sensor_count = payload[SNAPSHOT_OFFSET_SENSOR_COUNT]
     end = SNAPSHOT_PREFIX_BYTES + sensor_count * SENSOR_RECORD_BYTES
     if len(payload) < end:
         raise ValueError('SNAPSHOT payload shorter than its sensor records')
@@ -280,8 +297,14 @@ def decode_snapshot_sensor_records(payload: bytes) -> list[SensorRecord]:
 
 TIME_SYNC_PAYLOAD_BYTES = 16
 TIME_SYNC_SCHEMA_VERSION = 1
-COMMAND_REPLY_PAYLOAD_BYTES = 12
+# ACK/NACK: schema u8, request_type u8, status_code u16, request_seq u32, detail_code u32
+_COMMAND_REPLY_STRUCT = struct.Struct('<BBHII')
+COMMAND_REPLY_PAYLOAD_BYTES = _COMMAND_REPLY_STRUCT.size
 COMMAND_REPLY_SCHEMA_VERSION = 1
+COMMAND_REPLY_OFFSET_REQUEST_SEQ = struct.calcsize('<BBH')
+# DIAGNOSTIC (0x03): schema u8, health_level u8, reserved u16, diagnostic_timestamp_us u64,
+# then response_to_seq u32 (SPI_PAYLOAD_SCHEMA.md); no decoder exists on this side yet.
+DIAGNOSTIC_OFFSET_RESPONSE_TO_SEQ = struct.calcsize('<BBHQ')
 
 
 def encode_time_sync_payload(pi_time_us: int, sync_seq: int, flags: int = 0) -> bytes:
@@ -328,7 +351,7 @@ def decode_command_reply(payload: bytes) -> tuple:
     if len(payload) < COMMAND_REPLY_PAYLOAD_BYTES:
         raise ValueError(f'ACK/NACK payload must be >={COMMAND_REPLY_PAYLOAD_BYTES} bytes, got {len(payload)}')
 
-    schema, req_type, status, req_seq, detail = struct.unpack_from('<BBHII', payload, 0)
+    schema, req_type, status, req_seq, detail = _COMMAND_REPLY_STRUCT.unpack_from(payload, 0)
     if schema != COMMAND_REPLY_SCHEMA_VERSION:
         raise ValueError(f'Expected schema {COMMAND_REPLY_SCHEMA_VERSION}, got {schema}')
 
@@ -352,15 +375,15 @@ def extract_time_sync_from_ack_nack(payload: bytes) -> tuple[int, int] | None:
     Raises:
         ValueError: if payload < 12 bytes
     """
-    if len(payload) < 12 + TIME_SYNC_PAYLOAD_BYTES:
+    if len(payload) < COMMAND_REPLY_PAYLOAD_BYTES + TIME_SYNC_PAYLOAD_BYTES:
         return None
 
     try:
-        # TIME_SYNC echo starts at offset 12 (after command_reply header)
-        # pi_time_us is at offset 12+4=16 (after schema_version, reserved, flags)
-        pi_time_us = struct.unpack_from('<Q', payload, 12 + 4)[0]
-        # sync_seq is at offset 12+12=24
-        sync_seq = struct.unpack_from('<I', payload, 12 + 12)[0]
+        # The TIME_SYNC echo follows the command reply; pi_time_us sits after
+        # schema_version, reserved and flags (4 bytes), sync_seq after pi_time_us.
+        echo = COMMAND_REPLY_PAYLOAD_BYTES
+        pi_time_us = struct.unpack_from('<Q', payload, echo + 4)[0]
+        sync_seq = struct.unpack_from('<I', payload, echo + 12)[0]
         return (pi_time_us, sync_seq)
     except struct.error:
         return None

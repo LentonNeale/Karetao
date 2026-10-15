@@ -13,7 +13,9 @@
 
 #define SPI_PROTOCOL_VERSION UINT8_C(1)
 #define SPI_MESSAGE_SNAPSHOT UINT8_C(0x01)
-#define SPI_MESSAGE_STATUS UINT8_C(0x03)
+/* 0x03 is DIAGNOSTIC in SPI_SYSTEM_INTERFACE.md section 5; as built it is sent with an empty
+ * payload as the first frame after boot (SpiProtocol_BuildBootStatus). Ruling R14 (B89) adds the v1 content. */
+#define SPI_MESSAGE_DIAGNOSTIC UINT8_C(0x03)
 #define SPI_MESSAGE_VERSION UINT8_C(0x04)
 #define SPI_MESSAGE_GET_SNAPSHOT UINT8_C(0x10)
 #define SPI_MESSAGE_GET_STATUS UINT8_C(0x11)
@@ -22,14 +24,30 @@
 #define SPI_MESSAGE_ACK UINT8_C(0x80)
 #define SPI_MESSAGE_NACK UINT8_C(0x81)
 
-typedef enum { SPI_PROTOCOL_OK = 0, SPI_PROTOCOL_BAD_MAGIC, SPI_PROTOCOL_BAD_VERSION,
-    SPI_PROTOCOL_BAD_LENGTH, SPI_PROTOCOL_BAD_CRC, SPI_PROTOCOL_BAD_SEQUENCE,
-    SPI_PROTOCOL_BAD_MESSAGE, SPI_PROTOCOL_BAD_TIME_SYNC, SPI_PROTOCOL_BAD_STATE } SpiProtocol_Result;
+/**
+ * Request validation result. The values are the NACK `status_code` on the wire
+ * (SPI_SYSTEM_INTERFACE.md section 14), so they are fixed here and mirrored by
+ * NackReason in RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py; the shared golden
+ * frames (shared/test-vectors/spi) assert both.
+ */
+typedef enum {
+    SPI_PROTOCOL_OK = 0,
+    SPI_PROTOCOL_BAD_MAGIC = 1,
+    SPI_PROTOCOL_BAD_VERSION = 2,
+    SPI_PROTOCOL_BAD_LENGTH = 3,
+    SPI_PROTOCOL_BAD_CRC = 4,
+    SPI_PROTOCOL_BAD_SEQUENCE = 5,
+    SPI_PROTOCOL_BAD_MESSAGE = 6,
+    SPI_PROTOCOL_BAD_TIME_SYNC = 7,
+    SPI_PROTOCOL_BAD_STATE = 8
+} SpiProtocol_Result;
 
 #define SPI_REQUEST_SCHEMA_VERSION UINT8_C(1)
 #define SPI_TIME_SYNC_SCHEMA_VERSION UINT8_C(1)
 #define SPI_TIME_SYNC_PAYLOAD_BYTES UINT16_C(16)
 #define SPI_VERSION_SCHEMA_VERSION UINT8_C(1)
+#define SPI_SNAPSHOT_SCHEMA_VERSION UINT8_C(1)
+#define SPI_COMMAND_REPLY_SCHEMA_VERSION UINT8_C(1)
 
 typedef struct {
     uint32_t request_sequence;

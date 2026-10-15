@@ -16,6 +16,9 @@
 #define SPI_FRAME_CRC_BYTES UINT16_C(4)
 /** Maximum payload capacity after accounting for the fixed header and CRC. */
 #define SPI_PAYLOAD_MAX_BYTES UINT16_C(490)
+/** Synchronization value in the first two bytes of every frame, little-endian on the wire
+ *  (SPI_SYSTEM_INTERFACE.md section 3). */
+#define SPI_FRAME_MAGIC UINT16_C(0xA55A)
 
 /** Magic field offset used to reject misaligned or malformed frames. */
 #define SPI_FRAME_OFFSET_MAGIC UINT16_C(0)
@@ -46,6 +49,14 @@
 #define SPI_VERSION_OFFSET_RESPONSE_TO_SEQUENCE UINT16_C(8)
 #define SPI_VERSION_OFFSET_GIT_HASH_ABBREV UINT16_C(12)
 #define SPI_VERSION_OFFSET_COMMIT_EPOCH_SECS UINT16_C(16)
+
+/** Serialized size of the ACK (0x80) and NACK (0x81) payload (SPI_PAYLOAD_SCHEMA.md). */
+#define SPI_COMMAND_REPLY_PAYLOAD_BYTES UINT16_C(12)
+#define SPI_COMMAND_REPLY_OFFSET_SCHEMA_VERSION UINT16_C(0)
+#define SPI_COMMAND_REPLY_OFFSET_REQUEST_TYPE UINT16_C(1)
+#define SPI_COMMAND_REPLY_OFFSET_STATUS_CODE UINT16_C(2)
+#define SPI_COMMAND_REPLY_OFFSET_REQUEST_SEQUENCE UINT16_C(4)
+#define SPI_COMMAND_REPLY_OFFSET_DETAIL_CODE UINT16_C(8)
 
 /** Snapshot prefix shared by all snapshot payload instances. */
 #define SPI_SNAPSHOT_PREFIX_BYTES UINT16_C(12)
@@ -101,6 +112,8 @@ _Static_assert(SPI_PAYLOAD_MAX_BYTES == (SPI_FRAME_MAX_BYTES - SPI_FRAME_HEADER_
                "SPI payload maximum must match fixed frame overhead");
 _Static_assert(SPI_VERSION_PAYLOAD_BYTES == (SPI_VERSION_OFFSET_COMMIT_EPOCH_SECS + 4u),
                "Version payload offsets must consume its fixed size");
+_Static_assert(SPI_COMMAND_REPLY_PAYLOAD_BYTES == (SPI_COMMAND_REPLY_OFFSET_DETAIL_CODE + 4u),
+               "Command reply offsets must consume its fixed size");
 _Static_assert(SPI_SENSOR_RECORD_BYTES == (SPI_SENSOR_RECORD_OFFSET_RESERVED_2 + 2u),
                "Sensor record offsets must consume its fixed size");
 _Static_assert(SPI_MOTOR_RECORD_BYTES == (SPI_MOTOR_RECORD_OFFSET_PAYLOAD + 8u),

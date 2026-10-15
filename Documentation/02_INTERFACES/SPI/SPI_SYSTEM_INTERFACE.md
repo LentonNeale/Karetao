@@ -53,6 +53,8 @@ SPI mode: **Mode 0** (CPOL=0, CPHA=0). The current value of the SPI clock ceilin
 | ASCII `123456789` | `0xCBF43926` | `26 39 F4 CB` |
 | `5A A5 01 01 03 00 34 12 00 00 88 77 66 55 44 33 22 11 AA BB CC` | `0x049705F5` | `F5 05 97 04` |
 
+**Shared golden frames.** Complete transactions that both implementations must produce and accept byte for byte are kept in [`shared/test-vectors/spi/`](../../../shared/test-vectors/spi/README.md). The C host tests and the Raspberry Pi tests both assert that one file, which is the evidence for the SYS-SPI-001 acceptance clause "the C and Python protocol tests exchange the same frames bit-for-bit". A change to the wire changes the C side, the Python side and the golden frames in one commit.
+
 ---
 
 ## 3. Frame Format
@@ -237,6 +239,20 @@ Reject a frame when magic, version, message type, length, CRC, sequence, or life
 - `INVALID_MESSAGE`
 - `INVALID_STATE`
 - `TIME_SYNC_INVALID`
+
+The NACK `status_code` (SPI_PAYLOAD_SCHEMA.md) carries the cause as one of the values below (as built, 2026-10-16). Each side names them once, `SpiProtocol_Result` in `Arm_Sensor_Hub/App/Inc/spi_protocol.h` and `NackReason` in `RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py`, and the shared golden frames pin them.
+
+| `status_code` | Name in code | Cause |
+| ---: | --- | --- |
+| 0 | `OK` | Accepted (the status of an `ACK`). |
+| 1 | `BAD_MAGIC` | `INVALID_MAGIC` |
+| 2 | `BAD_VERSION` | `UNSUPPORTED_VERSION` |
+| 3 | `BAD_LENGTH` | `INVALID_LENGTH` |
+| 4 | `BAD_CRC` | `CRC_ERROR` |
+| 5 | `BAD_SEQUENCE` | `seq` not newer than the last accepted request (§6). |
+| 6 | `BAD_MESSAGE` | `INVALID_MESSAGE` |
+| 7 | `BAD_TIME_SYNC` | `TIME_SYNC_INVALID` |
+| 8 | `BAD_STATE` | `INVALID_STATE` |
 
 A malformed or rejected frame must not modify application state. Recoverable transport faults may be retried or reported without changing lifecycle state; persistent DMA/NSS/transport faults follow the system lifecycle contract and may enter `ERROR`.
 

@@ -6,8 +6,17 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'src'))
 
 from spi.spi_protocol import (
+    COMMAND_REPLY_OFFSET_REQUEST_SEQ,
     COMMAND_REPLY_PAYLOAD_BYTES,
+    CRC_SIZE,
+    HEADER_SIZE,
+    MAX_FRAME_BYTES,
+    MAX_PAYLOAD_BYTES,
+    PROTOCOL_VERSION,
+    SNAPSHOT_OFFSET_RESPONSE_TO_SEQ,
+    SNAPSHOT_PREFIX_BYTES,
     TIME_SYNC_PAYLOAD_BYTES,
+    VERSION_OFFSET_RESPONSE_TO_SEQ,
     VERSION_PAYLOAD_BYTES,
     MessageType,
     SpiFrame,
@@ -24,7 +33,6 @@ from spi.spi_protocol import (
     SENSOR_VALIDITY_NOT_FITTED,
     SENSOR_VALIDITY_SAMPLE_VALID,
     SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED,
-    SNAPSHOT_PREFIX_BYTES,
     SensorRecord,
     decode_snapshot_sensor_records,
 )
@@ -37,6 +45,20 @@ def _sensor_record(sensor_id: int, flags: int, timestamp_us: int = 0, raw_angle:
 
 
 class SpiProtocolTests(unittest.TestCase):
+    def test_contract_constants_match_the_interface_document(self) -> None:
+        # SPI_SYSTEM_INTERFACE.md section 3: 18-byte header, 4-byte CRC, 512-byte frame,
+        # 490-byte payload; the same pins as the _Static_asserts in spi_payload_layout.h.
+        self.assertEqual(HEADER_SIZE, 18)
+        self.assertEqual(CRC_SIZE, 4)
+        self.assertEqual(MAX_FRAME_BYTES, 512)
+        self.assertEqual(MAX_PAYLOAD_BYTES, 490)
+        self.assertEqual(SNAPSHOT_PREFIX_BYTES, 12)
+        self.assertEqual(VERSION_PAYLOAD_BYTES, 20)
+        self.assertEqual(COMMAND_REPLY_PAYLOAD_BYTES, 12)
+        self.assertEqual(COMMAND_REPLY_OFFSET_REQUEST_SEQ, 4)
+        self.assertEqual(SNAPSHOT_OFFSET_RESPONSE_TO_SEQ, 8)
+        self.assertEqual(VERSION_OFFSET_RESPONSE_TO_SEQ, 8)
+
     def test_crc32_reference_vectors_match_contract(self) -> None:
         self.assertEqual(crc32_iso_hdlc(b''), 0x00000000)
         self.assertEqual(crc32_iso_hdlc(b'123456789'), 0xCBF43926)
@@ -59,25 +81,27 @@ class SpiProtocolTests(unittest.TestCase):
     def test_fixed_512_byte_transport_padding_is_accepted(self) -> None:
         frame = SpiFrame(message_type=MessageType.GET_STATUS, seq=1)
         encoded = frame.encode()
-        decoded = SpiFrame.decode(encoded.ljust(512, b'\x00'))
+        decoded = SpiFrame.decode(encoded.ljust(MAX_FRAME_BYTES, b'\x00'))
         self.assertEqual(decoded, frame)
 
     def test_nonzero_transport_padding_is_rejected(self) -> None:
         frame = SpiFrame(message_type=MessageType.GET_STATUS, seq=1)
         encoded = frame.encode()
-        padded = bytearray(encoded.ljust(512, b'\x00'))
+        padded = bytearray(encoded.ljust(MAX_FRAME_BYTES, b'\x00'))
         padded[-1] = 0x01
         with self.assertRaises(ValueError):
             SpiFrame.decode(padded)
 
     def test_unsupported_protocol_version_is_rejected(self) -> None:
-        frame = SpiFrame(message_type=MessageType.GET_STATUS, seq=1, protocol_version=2).encode()
+        frame = SpiFrame(message_type=MessageType.GET_STATUS, seq=1,
+                         protocol_version=PROTOCOL_VERSION + 1).encode()
         with self.assertRaises(ValueError):
             SpiFrame.decode(frame)
 
     def test_oversized_payload_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
-            SpiFrame(message_type=MessageType.DIAGNOSTIC, seq=1, payload=b'x' * 491).encode()
+            SpiFrame(message_type=MessageType.DIAGNOSTIC, seq=1,
+                     payload=b'x' * (MAX_PAYLOAD_BYTES + 1)).encode()
 
 
 class VersionPayloadTests(unittest.TestCase):

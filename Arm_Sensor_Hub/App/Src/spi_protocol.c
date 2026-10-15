@@ -9,6 +9,7 @@
 static uint16_t SpiProtocol_ReadU16(const uint8_t *data) { return (uint16_t)data[0] | ((uint16_t)data[1] << 8u); }
 static uint32_t SpiProtocol_ReadU32(const uint8_t *data) { return (uint32_t)data[0] | ((uint32_t)data[1] << 8u) | ((uint32_t)data[2] << 16u) | ((uint32_t)data[3] << 24u); }
 static uint64_t SpiProtocol_ReadU64(const uint8_t *data) { return (uint64_t)data[0] | ((uint64_t)data[1] << 8u) | ((uint64_t)data[2] << 16u) | ((uint64_t)data[3] << 24u) | ((uint64_t)data[4] << 32u) | ((uint64_t)data[5] << 40u) | ((uint64_t)data[6] << 48u) | ((uint64_t)data[7] << 56u); }
+static void SpiProtocol_WriteU16(uint8_t *data, uint16_t value) { data[0] = (uint8_t)value; data[1] = (uint8_t)(value >> 8u); }
 static void SpiProtocol_WriteU32(uint8_t *data, uint32_t value) { data[0] = (uint8_t)value; data[1] = (uint8_t)(value >> 8u); data[2] = (uint8_t)(value >> 16u); data[3] = (uint8_t)(value >> 24u); }
 static void SpiProtocol_WriteU64(uint8_t *data, uint64_t value)
 {
@@ -27,9 +28,11 @@ static void SpiProtocol_BuildFrame(SpiProtocol_State *state, uint8_t type, const
 {
     uint32_t crc32;
     memset(response, 0, SPI_FRAME_MAX_BYTES);
-    response[0] = 0x5Au; response[1] = 0xA5u; response[2] = SPI_PROTOCOL_VERSION; response[3] = type;
-    response[4] = (uint8_t)length; response[5] = (uint8_t)(length >> 8u);
-    SpiProtocol_WriteU32(&response[6], state->next_tx_sequence++);
+    SpiProtocol_WriteU16(&response[SPI_FRAME_OFFSET_MAGIC], SPI_FRAME_MAGIC);
+    response[SPI_FRAME_OFFSET_PROTOCOL_VERSION] = SPI_PROTOCOL_VERSION;
+    response[SPI_FRAME_OFFSET_MESSAGE_TYPE] = type;
+    SpiProtocol_WriteU16(&response[SPI_FRAME_OFFSET_PAYLOAD_LENGTH], length);
+    SpiProtocol_WriteU32(&response[SPI_FRAME_OFFSET_SEQUENCE], state->next_tx_sequence++);
     SpiProtocol_WriteU64(&response[SPI_FRAME_OFFSET_TIME_US], TimeService_NowUs());
     if (length > 0u) { memcpy(&response[SPI_FRAME_OFFSET_PAYLOAD], payload, length); }
     crc32 = Crc32IsoHdlc_Compute(response, SPI_FRAME_HEADER_BYTES + length);
@@ -38,7 +41,7 @@ static void SpiProtocol_BuildFrame(SpiProtocol_State *state, uint8_t type, const
 
 static bool SpiProtocol_ValidateTimeSyncPayload(const uint8_t request[SPI_FRAME_MAX_BYTES])
 {
-    uint16_t length = SpiProtocol_ReadU16(&request[4]);
+    uint16_t length = SpiProtocol_ReadU16(&request[SPI_FRAME_OFFSET_PAYLOAD_LENGTH]);
     const uint8_t *payload = &request[SPI_FRAME_OFFSET_PAYLOAD];
 
     return (length == SPI_TIME_SYNC_PAYLOAD_BYTES) &&
@@ -47,11 +50,14 @@ static bool SpiProtocol_ValidateTimeSyncPayload(const uint8_t request[SPI_FRAME_
 
 void SpiProtocol_BuildCommandReply(SpiProtocol_State *state, uint8_t type, uint8_t request_type,
                                    uint32_t request_sequence, uint16_t code, uint32_t detail_code,
-                                   uint8_t *response)
+                                   uint8_t response[SPI_FRAME_MAX_BYTES])
 {
-    uint8_t payload[12] = {1u, request_type, (uint8_t)code, (uint8_t)(code >> 8u), 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u};
-    SpiProtocol_WriteU32(&payload[4], request_sequence);
-    SpiProtocol_WriteU32(&payload[8], detail_code);
+    uint8_t payload[SPI_COMMAND_REPLY_PAYLOAD_BYTES] = {0};
+    payload[SPI_COMMAND_REPLY_OFFSET_SCHEMA_VERSION] = SPI_COMMAND_REPLY_SCHEMA_VERSION;
+    payload[SPI_COMMAND_REPLY_OFFSET_REQUEST_TYPE] = request_type;
+    SpiProtocol_WriteU16(&payload[SPI_COMMAND_REPLY_OFFSET_STATUS_CODE], code);
+    SpiProtocol_WriteU32(&payload[SPI_COMMAND_REPLY_OFFSET_REQUEST_SEQUENCE], request_sequence);
+    SpiProtocol_WriteU32(&payload[SPI_COMMAND_REPLY_OFFSET_DETAIL_CODE], detail_code);
     SpiProtocol_BuildFrame(state, type, payload, sizeof(payload), response);
 }
 
@@ -80,7 +86,7 @@ bool SpiProtocol_SetUnsolicitedSnapshot(SpiProtocol_State *state, const uint8_t 
 SpiProtocol_Result SpiProtocol_BuildBootStatus(SpiProtocol_State *state, uint8_t response[SPI_FRAME_MAX_BYTES])
 {
     if ((state == NULL) || (response == NULL)) { return SPI_PROTOCOL_BAD_LENGTH; }
-    SpiProtocol_BuildFrame(state, SPI_MESSAGE_STATUS, NULL, 0u, response); return SPI_PROTOCOL_OK;
+    SpiProtocol_BuildFrame(state, SPI_MESSAGE_DIAGNOSTIC, NULL, 0u, response); return SPI_PROTOCOL_OK;
 }
 
 SpiProtocol_Result SpiProtocol_BuildSnapshotFrame(SpiProtocol_State *state,
@@ -106,7 +112,7 @@ SpiProtocol_Result SpiProtocol_ParseTimeSyncRequest(const uint8_t request[SPI_FR
         return SPI_PROTOCOL_BAD_LENGTH;
     }
 
-    if (request[3] != SPI_MESSAGE_TIME_SYNC) {
+    if (request[SPI_FRAME_OFFSET_MESSAGE_TYPE] != SPI_MESSAGE_TIME_SYNC) {
         return SPI_PROTOCOL_BAD_MESSAGE;
     }
 
@@ -115,7 +121,7 @@ SpiProtocol_Result SpiProtocol_ParseTimeSyncRequest(const uint8_t request[SPI_FR
     }
 
     payload = &request[SPI_FRAME_OFFSET_PAYLOAD];
-    time_sync->request_sequence = SpiProtocol_ReadU32(&request[6]);
+    time_sync->request_sequence = SpiProtocol_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]);
     time_sync->flags = SpiProtocol_ReadU16(&payload[2]);
     time_sync->pi_time_us = SpiProtocol_ReadU64(&payload[4]);
     time_sync->sync_sequence = SpiProtocol_ReadU32(&payload[12]);
@@ -131,11 +137,11 @@ SpiProtocol_Result SpiProtocol_ValidateRequest(const SpiProtocol_State *state,
 
     if ((state == NULL) || (request == NULL)) { return SPI_PROTOCOL_BAD_LENGTH; }
 
-    type = request[3];
-    sequence = SpiProtocol_ReadU32(&request[6]);
-    length = SpiProtocol_ReadU16(&request[4]);
-    if (SpiProtocol_ReadU16(request) != UINT16_C(0xA55A)) { return SPI_PROTOCOL_BAD_MAGIC; }
-    if (request[2] != SPI_PROTOCOL_VERSION) { return SPI_PROTOCOL_BAD_VERSION; }
+    type = request[SPI_FRAME_OFFSET_MESSAGE_TYPE];
+    sequence = SpiProtocol_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]);
+    length = SpiProtocol_ReadU16(&request[SPI_FRAME_OFFSET_PAYLOAD_LENGTH]);
+    if (SpiProtocol_ReadU16(&request[SPI_FRAME_OFFSET_MAGIC]) != SPI_FRAME_MAGIC) { return SPI_PROTOCOL_BAD_MAGIC; }
+    if (request[SPI_FRAME_OFFSET_PROTOCOL_VERSION] != SPI_PROTOCOL_VERSION) { return SPI_PROTOCOL_BAD_VERSION; }
     if ((length > SPI_PAYLOAD_MAX_BYTES) || (SPI_FRAME_CRC_OFFSET(length) + SPI_FRAME_CRC_BYTES > SPI_FRAME_MAX_BYTES)) {
         return SPI_PROTOCOL_BAD_LENGTH;
     }
@@ -164,8 +170,8 @@ SpiProtocol_Result SpiProtocol_ProcessRequest(SpiProtocol_State *state, const ui
 
     if ((state == NULL) || (request == NULL) || (response == NULL)) { return SPI_PROTOCOL_BAD_LENGTH; }
 
-    type = request[3];
-    sequence = SpiProtocol_ReadU32(&request[6]);
+    type = request[SPI_FRAME_OFFSET_MESSAGE_TYPE];
+    sequence = SpiProtocol_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]);
     result = SpiProtocol_ValidateRequest(state, request);
     if (result != SPI_PROTOCOL_OK) { SpiProtocol_BuildCommandReply(state, SPI_MESSAGE_NACK, type, sequence, (uint16_t)result, 0u, response); return result; }
     state->last_request_sequence = sequence; state->has_request_sequence = true;

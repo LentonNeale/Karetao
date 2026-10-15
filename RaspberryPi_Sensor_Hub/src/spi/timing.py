@@ -19,24 +19,32 @@ from typing import Optional
 
 from .data_ready import DataReadyLike
 from .spi_bus import SpiBus
-from .spi_protocol import MessageType, SpiFrame, initial_sequence
+from .spi_protocol import (
+    COMMAND_REPLY_OFFSET_REQUEST_SEQ,
+    DIAGNOSTIC_OFFSET_RESPONSE_TO_SEQ,
+    SNAPSHOT_OFFSET_RESPONSE_TO_SEQ,
+    VERSION_OFFSET_RESPONSE_TO_SEQ,
+    MessageType,
+    SpiFrame,
+    decode_command_reply,
+    initial_sequence,
+)
 
 try:
     _INTERVAL_CLOCK = time.CLOCK_MONOTONIC_RAW
 except AttributeError:  # pragma: no cover - non-Linux fallback
     _INTERVAL_CLOCK = time.CLOCK_MONOTONIC
 
-_U16 = struct.Struct('<H')
 _U32 = struct.Struct('<I')
 
 # Payload offset of the field correlating a response to its request. ACK/NACK
 # name it request_seq, the others response_to_seq (SPI_PAYLOAD_SCHEMA.md).
 _CORRELATION_OFFSETS = {
-    MessageType.ACK: 4,
-    MessageType.NACK: 4,
-    MessageType.SNAPSHOT: 8,
-    MessageType.VERSION: 8,
-    MessageType.DIAGNOSTIC: 12,
+    MessageType.ACK: COMMAND_REPLY_OFFSET_REQUEST_SEQ,
+    MessageType.NACK: COMMAND_REPLY_OFFSET_REQUEST_SEQ,
+    MessageType.SNAPSHOT: SNAPSHOT_OFFSET_RESPONSE_TO_SEQ,
+    MessageType.VERSION: VERSION_OFFSET_RESPONSE_TO_SEQ,
+    MessageType.DIAGNOSTIC: DIAGNOSTIC_OFFSET_RESPONSE_TO_SEQ,
 }
 
 # Bound the outstanding-request table so a firmware that never correlates
@@ -56,9 +64,19 @@ def correlated_request_seq(frame: SpiFrame) -> Optional[int]:
 
 
 def nack_codes(frame: SpiFrame) -> tuple[Optional[int], Optional[int]]:
-    if frame.message_type is not MessageType.NACK or len(frame.payload) < 12:
+    """Status and detail code of a NACK, or (None, None).
+
+    Decoded by decode_command_reply, the one home of the ACK/NACK layout, so a reply with an
+    unsupported schema_version yields (None, None) rather than a schema-1 reading of other
+    bytes (SPI_PAYLOAD_SCHEMA.md common rules: unsupported schema versions are rejected).
+    """
+    if frame.message_type is not MessageType.NACK:
         return (None, None)
-    return (_U16.unpack_from(frame.payload, 2)[0], _U32.unpack_from(frame.payload, 8)[0])
+    try:
+        _, status_code, _, detail_code = decode_command_reply(frame.payload)
+    except ValueError:
+        return (None, None)
+    return (status_code, detail_code)
 
 
 @dataclass(frozen=True)

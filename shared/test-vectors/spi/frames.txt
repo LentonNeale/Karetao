@@ -1,0 +1,201 @@
+# Karetao shared SPI golden frames. Format and rules: README.md in this directory.
+# This file is the authority; make_vectors.py regenerates it and `--check` compares.
+# Hex values are byte sequences in wire order: the first two characters are byte 0.
+# Bytes beyond a request or response up to the 512-byte transaction are zero.
+
+[boot_status]
+description = First frame after boot (SPI_SYSTEM_INTERFACE.md section 4): DIAGNOSTIC (0x03) with an empty payload as built; ruling R14 adds the DIAGNOSTIC v1 content.
+stm32.next_tx_seq = 1
+stm32.last_request_seq = none
+stm32.now_us = 1000
+expect = OK
+response = 5AA50103000001000000E803000000000000EAA05CC4
+response.type = 0x03
+response.seq = 1
+response.frame_time_us = 1000
+response.payload = 
+
+[get_status_ack]
+description = GET_STATUS with the four-byte request payload (schema 1, three reserved zero bytes); answered by ACK with status 0 and the request seq echoed.
+stm32.next_tx_seq = 2
+stm32.last_request_seq = none
+stm32.now_us = 2000
+request = 5AA5011104000A000000000000000000000001000000E382BB92
+request.type = 0x11
+request.seq = 10
+request.frame_time_us = 0
+request.payload = 01000000
+expect = OK
+response = 5AA501800C0002000000D007000000000000011100000A000000000000001CA79C8F
+response.type = 0x80
+response.seq = 2
+response.frame_time_us = 2000
+response.payload = 011100000A00000000000000
+
+[get_snapshot_staged]
+description = GET_SNAPSHOT while a snapshot is staged: the staged payload is sent as SNAPSHOT with response_to_seq patched to the request seq (six sensor records, one motor record).
+stm32.next_tx_seq = 3
+stm32.last_request_seq = 10
+stm32.now_us = 3000
+stm32.staged_snapshot = 01060100000000000000000000002100A4420F0000000000230114640000C80560000000010021003A430F0000000000000820BF0200DE055D00000002002100D0430F0000000000FF0FE87D0500970565000000030040000000000000000000000000000000000000000000040040000000000000000000000000000000000000000000050040000000000000000000000000000000000000000000000001000100310898440F00000000003100001234560000
+request = 5AA5011004000B0000000000000000000000010000002A9331EB
+request.type = 0x10
+request.seq = 11
+request.frame_time_us = 0
+request.payload = 01000000
+expect = OK
+response = 5AA50101B40003000000B80B00000000000001060100000000000B00000000002100A4420F0000000000230114640000C80560000000010021003A430F0000000000000820BF0200DE055D00000002002100D0430F0000000000FF0FE87D0500970565000000030040000000000000000000000000000000000000000000040040000000000000000000000000000000000000000000050040000000000000000000000000000000000000000000000001000100310898440F000000000031000012345600002EDF38D0
+response.type = 0x01
+response.seq = 3
+response.frame_time_us = 3000
+response.payload = 01060100000000000B00000000002100A4420F0000000000230114640000C80560000000010021003A430F0000000000000820BF0200DE055D00000002002100D0430F0000000000FF0FE87D0500970565000000030040000000000000000000000000000000000000000000040040000000000000000000000000000000000000000000050040000000000000000000000000000000000000000000000001000100310898440F00000000003100001234560000
+
+[get_snapshot_none_staged]
+description = GET_SNAPSHOT with nothing staged is acknowledged, not answered with a SNAPSHOT.
+stm32.next_tx_seq = 4
+stm32.last_request_seq = 11
+stm32.now_us = 4000
+request = 5AA5011004000C0000000000000000000000010000005F6BC816
+request.type = 0x10
+request.seq = 12
+request.frame_time_us = 0
+request.payload = 01000000
+expect = OK
+response = 5AA501800C0004000000A00F000000000000011000000C00000000000000B66523FE
+response.type = 0x80
+response.seq = 4
+response.frame_time_us = 4000
+response.payload = 011000000C00000000000000
+
+[get_version]
+description = GET_VERSION answered by VERSION (0x04). The identity fields (version, build flags, git hash, commit epoch) are the host-test fallback identity of firmware_version.h, not contract; the layout, type and response_to_seq are.
+stm32.next_tx_seq = 5
+stm32.last_request_seq = 12
+stm32.now_us = 5000
+request = 5AA5011404000D0000000000000000000000010000002CF7C851
+request.type = 0x14
+request.seq = 13
+request.frame_time_us = 0
+request.payload = 01000000
+expect = OK
+response = 5AA50104140005000000881300000000000001010001000000000D00000000000000000000008BEDF1D7
+response.type = 0x04
+response.seq = 5
+response.frame_time_us = 5000
+response.payload = 01010001000000000D0000000000000000000000
+
+[time_sync_ack]
+description = TIME_SYNC (deprecated by Issue #12, still implemented) with its 16-byte payload: the protocol module ACKs a well-formed request. The service may still NACK BAD_TIME_SYNC after time_service judges the sample; that path is not a frame-format fact.
+stm32.next_tx_seq = 6
+stm32.last_request_seq = 13
+stm32.now_us = 6000
+request = 5AA5011210000E00000000000000000000000100000000401E18240A060007000000E15C4307
+request.type = 0x12
+request.seq = 14
+request.frame_time_us = 0
+request.payload = 0100000000401E18240A060007000000
+expect = OK
+response = 5AA501800C00060000007017000000000000011200000E00000000000000957A7D99
+response.type = 0x80
+response.seq = 6
+response.frame_time_us = 6000
+response.payload = 011200000E00000000000000
+
+[nack_bad_magic]
+description = Magic 0xA55B instead of 0xA55A (CRC valid over the bytes as sent): NACK BAD_MAGIC.
+stm32.next_tx_seq = 7
+stm32.last_request_seq = 14
+stm32.now_us = 7000
+request = 5BA5011104000F000000000000000000000001000000353BCAFF
+expect = BAD_MAGIC
+response = 5AA501810C0007000000581B000000000000011101000F000000000000008C9FB0AB
+response.type = 0x81
+response.seq = 7
+response.frame_time_us = 7000
+response.payload = 011101000F00000000000000
+
+[nack_bad_version]
+description = protocol_version 2 (CRC valid): NACK BAD_VERSION.
+stm32.next_tx_seq = 8
+stm32.last_request_seq = 15
+stm32.now_us = 8000
+request = 5AA502110400100000000000000000000000010000009B4B862F
+expect = BAD_VERSION
+response = 5AA501810C0008000000401F000000000000011102001000000000000000B47C7C92
+response.type = 0x81
+response.seq = 8
+response.frame_time_us = 8000
+response.payload = 011102001000000000000000
+
+[nack_bad_length]
+description = payload_len 491, one above the 490-byte maximum; the frame has no CRC position inside 512 bytes, so the request is the full 512-byte transaction: NACK BAD_LENGTH.
+stm32.next_tx_seq = 9
+stm32.last_request_seq = 16
+stm32.now_us = 9000
+request = 5AA50111EB011100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+expect = BAD_LENGTH
+response = 5AA501810C00090000002823000000000000011103001100000000000000E509E157
+response.type = 0x81
+response.seq = 9
+response.frame_time_us = 9000
+response.payload = 011103001100000000000000
+
+[nack_bad_crc]
+description = GET_STATUS with every CRC bit inverted: NACK BAD_CRC.
+stm32.next_tx_seq = 10
+stm32.last_request_seq = 17
+stm32.now_us = 10000
+request = 5AA50111040012000000000000000000000001000000CDDC70F8
+expect = BAD_CRC
+response = 5AA501810C000A0000001027000000000000011104001200000000000000299C25ED
+response.type = 0x81
+response.seq = 10
+response.frame_time_us = 10000
+response.payload = 011104001200000000000000
+
+[nack_bad_sequence]
+description = A well-formed GET_STATUS whose seq equals the last accepted request seq is not newer (SPI_SYSTEM_INTERFACE.md section 6): NACK BAD_SEQUENCE.
+stm32.next_tx_seq = 11
+stm32.last_request_seq = 18
+stm32.now_us = 11000
+request = 5AA5011104001200000000000000000000000100000032238F07
+request.type = 0x11
+request.seq = 18
+request.frame_time_us = 0
+request.payload = 01000000
+expect = BAD_SEQUENCE
+response = 5AA501810C000B000000F82A0000000000000111050012000000000000008C64C76D
+response.type = 0x81
+response.seq = 11
+response.frame_time_us = 11000
+response.payload = 011105001200000000000000
+
+[nack_bad_message]
+description = Unassigned message type 0x15 (CRC valid): NACK BAD_MESSAGE. Not a transport-valid frame for the Pi decoder either, so no request fields.
+stm32.next_tx_seq = 12
+stm32.last_request_seq = 18
+stm32.now_us = 12000
+request = 5AA5011504001300000000000000000000000100000041BF8F40
+expect = BAD_MESSAGE
+response = 5AA501810C000C000000E02E00000000000001150600130000000000000091EBEE5F
+response.type = 0x81
+response.seq = 12
+response.frame_time_us = 12000
+response.payload = 011506001300000000000000
+
+[nack_bad_time_sync]
+description = TIME_SYNC with a 15-byte payload instead of 16 (transport-valid frame): NACK BAD_TIME_SYNC.
+stm32.next_tx_seq = 13
+stm32.last_request_seq = 19
+stm32.now_us = 13000
+request = 5AA501120F0014000000000000000000000001000000000000000000000000000074EBEEFF
+request.type = 0x12
+request.seq = 20
+request.frame_time_us = 0
+request.payload = 010000000000000000000000000000
+expect = BAD_TIME_SYNC
+response = 5AA501810C000D000000C832000000000000011207001400000000000000C6545B66
+response.type = 0x81
+response.seq = 13
+response.frame_time_us = 13000
+response.payload = 011207001400000000000000

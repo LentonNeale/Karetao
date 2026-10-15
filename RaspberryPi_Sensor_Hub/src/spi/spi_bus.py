@@ -17,6 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Protocol
 
+from .spi_protocol import MAX_FRAME_BYTES
+
 
 class SpiBackend(Protocol):
     def open(self, config: 'SpiBusConfig') -> None:
@@ -37,7 +39,7 @@ class SpiBusConfig:
     bits_per_word: int = 8
     max_speed_hz: int = 5_000_000
     data_ready_gpio: Optional[int] = None
-    transfer_size: int = 512
+    transfer_size: int = MAX_FRAME_BYTES
 
 
 class SpidevBackend:
@@ -55,8 +57,8 @@ class SpidevBackend:
             raise ValueError('SPI contract requires mode 0')
         if config.bits_per_word != 8:
             raise ValueError('SPI contract requires 8 bits per word')
-        if config.transfer_size != 512:
-            raise ValueError('SPI contract requires 512-byte transactions')
+        if config.transfer_size != MAX_FRAME_BYTES:
+            raise ValueError(f'SPI contract requires {MAX_FRAME_BYTES}-byte transactions')
 
         try:
             import spidev
@@ -74,8 +76,8 @@ class SpidevBackend:
     def transfer(self, tx_data: bytes) -> bytes:
         if self._spi is None:
             raise RuntimeError('SPI backend must be opened before transfer')
-        if len(tx_data) != 512:
-            raise ValueError('SPI transactions must be exactly 512 bytes')
+        if len(tx_data) != MAX_FRAME_BYTES:
+            raise ValueError(f'SPI transactions must be exactly {MAX_FRAME_BYTES} bytes')
         return bytes(self._spi.xfer2(list(tx_data)))
 
     def close(self) -> None:

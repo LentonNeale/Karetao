@@ -1,7 +1,8 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "host_test_assert.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -674,16 +675,16 @@ static void BuildRequest(uint8_t frame[SPI_FRAME_MAX_BYTES], uint8_t type, uint1
 {
     uint32_t crc32;
     memset(frame, 0, SPI_FRAME_MAX_BYTES);
-    frame[0] = 0x5Au;
-    frame[1] = 0xA5u;
-    frame[2] = SPI_PROTOCOL_VERSION;
-    frame[3] = type;
-    frame[4] = (uint8_t)length;
-    frame[5] = (uint8_t)(length >> 8u);
-    frame[6] = (uint8_t)sequence;
-    frame[7] = (uint8_t)(sequence >> 8u);
-    frame[8] = (uint8_t)(sequence >> 16u);
-    frame[9] = (uint8_t)(sequence >> 24u);
+    frame[SPI_FRAME_OFFSET_MAGIC] = (uint8_t)SPI_FRAME_MAGIC;
+    frame[SPI_FRAME_OFFSET_MAGIC + 1u] = (uint8_t)(SPI_FRAME_MAGIC >> 8u);
+    frame[SPI_FRAME_OFFSET_PROTOCOL_VERSION] = SPI_PROTOCOL_VERSION;
+    frame[SPI_FRAME_OFFSET_MESSAGE_TYPE] = type;
+    frame[SPI_FRAME_OFFSET_PAYLOAD_LENGTH] = (uint8_t)length;
+    frame[SPI_FRAME_OFFSET_PAYLOAD_LENGTH + 1u] = (uint8_t)(length >> 8u);
+    frame[SPI_FRAME_OFFSET_SEQUENCE] = (uint8_t)sequence;
+    frame[SPI_FRAME_OFFSET_SEQUENCE + 1u] = (uint8_t)(sequence >> 8u);
+    frame[SPI_FRAME_OFFSET_SEQUENCE + 2u] = (uint8_t)(sequence >> 16u);
+    frame[SPI_FRAME_OFFSET_SEQUENCE + 3u] = (uint8_t)(sequence >> 24u);
     crc32 = Crc32IsoHdlc_Compute(frame, SPI_FRAME_HEADER_BYTES + length);
     Crc32IsoHdlc_WriteLittleEndian(crc32, &frame[SPI_FRAME_CRC_OFFSET(length)]);
 }
@@ -938,7 +939,7 @@ static void TestSpiSlaveServiceCore(void)
     assert(s_spi_last_transfer_size == SPI_FRAME_MAX_BYTES);
     assert(s_spi_last_tx_buffer != NULL);
     assert(s_spi_last_rx_buffer != NULL);
-    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_STATUS);
+    assert(s_spi_last_tx_buffer[SPI_FRAME_OFFSET_MESSAGE_TYPE] == SPI_MESSAGE_DIAGNOSTIC);
     assert(ReadU64(&s_spi_last_tx_buffer[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(111));
     assert(s_last_gpio_state == GPIO_PIN_SET);
     /* The armed buffer is DMA-owned: a second handoff is refused. */
@@ -1053,7 +1054,7 @@ static void TestSpiSlaveServiceDmaLoop(void)
     assert(s_spi_abort_count == 1u);
     assert(diagnostics->dma_complete_count == 2u);
     assert(s_spi_dma_start_count == 3u);
-    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_STATUS);
+    assert(s_spi_last_tx_buffer[SPI_FRAME_OFFSET_MESSAGE_TYPE] == SPI_MESSAGE_DIAGNOSTIC);
     assert(s_last_gpio_state == GPIO_PIN_SET);
 
     /* Host stall: no completion within 100 ms produces the same recovery. */
@@ -1065,7 +1066,7 @@ static void TestSpiSlaveServiceDmaLoop(void)
     assert(s_spi_abort_count == 2u);
     assert(diagnostics->dma_complete_count == 3u);
     assert(s_spi_dma_start_count == 4u);
-    assert(s_spi_last_tx_buffer[3] == SPI_MESSAGE_STATUS);
+    assert(s_spi_last_tx_buffer[SPI_FRAME_OFFSET_MESSAGE_TYPE] == SPI_MESSAGE_DIAGNOSTIC);
     assert(s_last_gpio_state == GPIO_PIN_SET);
 
     /* A DMA start failure releases the handed-off buffer and leaves DATA_READY low. */
@@ -1129,8 +1130,8 @@ static void TestSpiSlaveServiceLatestSnapshot(void)
     assert(s_last_gpio_state == GPIO_PIN_SET);
     frame = s_spi_last_tx_buffer;
     assert(frame != NULL);
-    assert(frame[3] == SPI_MESSAGE_SNAPSHOT);
-    assert(ReadU16(&frame[4]) == expected_payload_length);
+    assert(frame[SPI_FRAME_OFFSET_MESSAGE_TYPE] == SPI_MESSAGE_SNAPSHOT);
+    assert(ReadU16(&frame[SPI_FRAME_OFFSET_PAYLOAD_LENGTH]) == expected_payload_length);
     assert(ReadU64(&frame[SPI_FRAME_OFFSET_TIME_US]) == UINT64_C(700));
     assert(frame[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION] == 1u);
     assert(frame[SPI_FRAME_OFFSET_PAYLOAD + SPI_SNAPSHOT_OFFSET_SENSOR_COUNT] == 6u);

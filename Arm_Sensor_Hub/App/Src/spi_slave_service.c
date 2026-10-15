@@ -211,7 +211,7 @@ static bool SpiSlaveService_BuildLatestSnapshot(uint8_t *payload,
     if ((payload_length > SPI_SNAPSHOT_MAX_PAYLOAD_BYTES) || (payload_length > SPI_PAYLOAD_MAX_BYTES)) return false;
 
     memset(payload, 0, SPI_SNAPSHOT_MAX_PAYLOAD_BYTES);
-    payload[SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION] = 1u;
+    payload[SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION] = SPI_SNAPSHOT_SCHEMA_VERSION;
     payload[SPI_SNAPSHOT_OFFSET_SENSOR_COUNT] = (uint8_t)SPI_SNAPSHOT_SENSOR_RECORD_COUNT;
     payload[SPI_SNAPSHOT_OFFSET_MOTOR_COUNT] = published_motor_count;
     diagnostics = SnapshotFramePool_GetDiagnostics(&s_frame_pool);
@@ -387,7 +387,7 @@ SpiProtocol_Result SpiSlaveService_ProcessRequestFrame(const uint8_t request[SPI
 
     if (request == NULL) return SPI_PROTOCOL_BAD_MESSAGE;
     result = SpiProtocol_ValidateRequest(&s_protocol, request);
-    request_type = request[3];
+    request_type = request[SPI_FRAME_OFFSET_MESSAGE_TYPE];
     request_seq = SpiSlaveService_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]);
     /* Capture request type and sequence for timing mirror. */
     s_last_request_type = request_type;

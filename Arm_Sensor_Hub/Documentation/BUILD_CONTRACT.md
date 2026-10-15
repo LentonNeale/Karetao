@@ -78,7 +78,7 @@ cmake --preset HostTests && cmake --build --preset HostTests
 ctest --preset HostTests
 ```
 
-The `sprint1_protocol_tests` executable is the native test location for CRC framing, explicit serialization/size checks, and monotonic-time helpers. The `service_smoke_tests` executable provides minimal core-functionality and negative-path coverage for the service-layer modules under host stubs. Focused protocol regressions should continue to run with:
+The `sprint1_protocol_tests` executable is the native test location for CRC framing, explicit serialization/size checks, and monotonic-time helpers. The `spi_golden_vector_tests` executable asserts the shared golden frames in `shared/test-vectors/spi/` byte for byte against `spi_protocol.c`; the Raspberry Pi tests assert the same file (SYS-SPI-001 acceptance). The `service_smoke_tests` executable provides minimal core-functionality and negative-path coverage for the service-layer modules under host stubs. Every host test includes `tests/host/host_test_assert.h`, which refuses to compile when `NDEBUG` is defined, so `assert()` can never be compiled out silently (finding VER-34). Focused protocol regressions should continue to run with:
 
 ```bash
 ctest --test-dir build/HostTests --output-on-failure -R sprint1_protocol_tests
