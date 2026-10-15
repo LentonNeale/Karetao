@@ -89,48 +89,30 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Firmware build identity reported in VERSION (0x04) frames. Sourced from the
 # commit rather than the build clock so rebuilds of the same source agree.
-set(FIRMWARE_GIT_HASH_ABBREV 0)
-set(FIRMWARE_COMMIT_EPOCH_SECS 0)
-set(FIRMWARE_BUILD_DIRTY 0)
-
+# The header is regenerated on every build, not at configure time, so an
+# edit followed by `cmake --build` reports the dirty bit (SPI-19, FW-3).
 find_package(Git QUIET)
-if(GIT_FOUND)
-    execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short=8 HEAD
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_HASH_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET RESULT_VARIABLE GIT_HASH_RESULT)
-    execute_process(COMMAND ${GIT_EXECUTABLE} log -1 --format=%ct
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_COMMIT_EPOCH OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET RESULT_VARIABLE GIT_EPOCH_RESULT)
-    execute_process(COMMAND ${GIT_EXECUTABLE} status --porcelain -- .
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_STATUS_OUTPUT OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET RESULT_VARIABLE GIT_STATUS_RESULT)
-
-    if(GIT_HASH_RESULT EQUAL 0)
-        set(FIRMWARE_GIT_HASH_ABBREV "0x${GIT_HASH_SHORT}")
-    endif()
-    if(GIT_EPOCH_RESULT EQUAL 0)
-        set(FIRMWARE_COMMIT_EPOCH_SECS ${GIT_COMMIT_EPOCH})
-    endif()
-    if(NOT GIT_STATUS_RESULT EQUAL 0 OR NOT GIT_STATUS_OUTPUT STREQUAL "")
-        set(FIRMWARE_BUILD_DIRTY 1)
-        message(WARNING
-            "Building from a dirty working tree: VERSION frames will report build_flags bit 0 "
-            "and must not be used as integration-gate evidence.")
-    endif()
-endif()
-
-message(STATUS "Firmware identity: hash=${FIRMWARE_GIT_HASH_ABBREV} "
-               "commit_epoch=${FIRMWARE_COMMIT_EPOCH_SECS} dirty=${FIRMWARE_BUILD_DIRTY}")
+set(FIRMWARE_IDENTITY_HEADER ${CMAKE_BINARY_DIR}/generated/firmware_identity.h)
+add_custom_target(firmware_identity
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DSHARED_DIR=${CMAKE_SOURCE_DIR}/../shared
+        -DOUTPUT=${FIRMWARE_IDENTITY_HEADER}
+        -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
+        "-DC_COMPILER=${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}"
+        "-DCXX_COMPILER=${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}"
+        -P ${CMAKE_SOURCE_DIR}/cmake/firmware_identity.cmake
+    BYPRODUCTS ${FIRMWARE_IDENTITY_HEADER}
+    COMMENT "Updating the firmware build identity"
+    VERBATIM
+)
+add_dependencies(${CMAKE_PROJECT_NAME} firmware_identity)
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
-    FIRMWARE_GIT_HASH_ABBREV=${FIRMWARE_GIT_HASH_ABBREV}
-    FIRMWARE_COMMIT_EPOCH_SECS=${FIRMWARE_COMMIT_EPOCH_SECS}
-    FIRMWARE_BUILD_DIRTY=${FIRMWARE_BUILD_DIRTY}
+    FIRMWARE_IDENTITY_GENERATED=1
 )
 
 # Remove wrong libob.a library dependency when using cpp files

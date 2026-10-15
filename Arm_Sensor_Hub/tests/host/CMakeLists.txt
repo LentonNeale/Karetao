@@ -56,3 +56,19 @@ target_compile_definitions(service_smoke_tests PRIVATE
 )
 
 add_test(NAME service_smoke_tests COMMAND service_smoke_tests)
+
+# The firmware identity script is a build step, not C code: run it against a
+# scratch repository (needs git; skipped without it).
+find_package(Git QUIET)
+if(GIT_FOUND)
+    add_test(NAME firmware_identity_script
+        COMMAND ${CMAKE_COMMAND}
+            -DSCRIPT=${CMAKE_SOURCE_DIR}/cmake/firmware_identity.cmake
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/firmware_identity_test
+            -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
+            -DC_COMPILER_PATH=${CMAKE_C_COMPILER}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/firmware_identity_test.cmake
+    )
+else()
+    message(WARNING "git not found: the firmware_identity_script host test is skipped")
+endif()
