@@ -14,12 +14,12 @@ When an issue conflicts with an authoritative document, the authoritative docume
 2. Use a clear, action-oriented title.
 3. Reference the relevant `LIVE-xx`, `SD-xx`, or other project identifier when one exists.
 4. Apply labels from the approved taxonomy below.
-5. Populate the Karetao Engineering Project fields for `Workstream`, `Work Type`, and `Priority` where the issue is managed in that Project.
+5. Set the Project `Status` and the item's order on the board where the issue is managed in that Project; labels carry the nature of the work.
 6. Do not invent new labels for individual projects, components, states, priorities, or IDs.
 7. Put detailed technical decisions in the appropriate documentation; link the issue to that record.
 8. Close an issue when its acceptance criteria are met, or mark it as not planned/duplicate where appropriate.
 9. GitHub issue state and Project Status are work-tracking state; neither replaces the authoritative project status register.
-10. Project workflow fields are planning metadata and must not be presented as engineering requirements unless an authoritative document explicitly makes them so.
+10. Project Status and board order are planning metadata and must not be presented as engineering requirements unless an authoritative document explicitly makes them so.
 
 ## Issue Categories
 
@@ -99,31 +99,23 @@ These belong in issue titles, Project fields, GitHub state, or the authoritative
 
 ## Karetao Engineering Project Fields
 
-The GitHub Project provides management metadata separately from labels.
+The GitHub Project provides management metadata separately from labels. The board was closed and reopened on 2026-10-15 when the ICM Map was retired; it is now the single ordering view above issues, and the fields below are the only ones it keeps.
 
 ### Status
 
-Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Project Status is workflow metadata, not an engineering authority.
+Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Project Status is workflow metadata, not an engineering authority. An agent that cannot write the board records the state in the first line of the triage comment instead (`> Triage state: ...`, `docs/agents/triage-labels.md`).
 
-### Workstream
+### Order
 
-Use the Project `Workstream` field for `Documentation`, `Software`, `Hardware`, or `System`. Workstream is planning metadata and does not replace technical-domain labels.
+The board's manual item order within a milestone is the priority. There is no `Priority` field, and order is not a safety classification, requirement status, or severity.
 
-### Work Type
+### Retired fields
 
-Use `Design`, `Implementation`, or `Verification` as the primary phase of the work. Do not set multiple values merely because later phases will follow.
-
-### Priority
-
-Use `High`, `Medium`, or `Low` as planning priority. Priority is not a safety classification, requirement status, or severity.
-
-### Target Date
-
-Use only when there is a meaningful planning target. It is not an engineering requirement unless explicitly made so by authoritative documentation.
+`Workstream`, `Work Type`, `Priority`, and `Target Date` are retired. Labels carry the nature of the work, the board order replaces priority, and milestones are stages, not dates.
 
 ### Milestones
 
-Use native GitHub Milestones for major engineering objectives or release groupings. Do not duplicate milestones in labels or custom Project fields. Milestones are stages named after charter goals (Stage 1 Fitted encoders … Stage 5 Remaining joints), not dates.
+Use native GitHub Milestones for major engineering objectives or release groupings. Do not duplicate milestones in labels or custom Project fields. Milestones remain the stage grouping. Milestones are stages named after charter goals (Stage 1 Fitted encoders … Stage 5 Remaining joints), not dates.
 
 ## Adding a New Label
 
@@ -204,4 +196,4 @@ When creating or modifying an issue:
 9. Do not treat issue labels as authoritative project status.
 10. Update this contract when an approved label taxonomy change is made.
 
-This document is the repository-level contract for issue creation, labelling, and Project-field classification.
+This document is the repository-level contract for issue creation, labelling, and Project-field use.

@@ -82,6 +82,7 @@ Code symbols were checked against `Arm_Sensor_Hub/App` on 2026-10-03.
 | PRM-TS-03 | ClockSync validity window | 5 | s | Provisional | SD-19; as-built `TIME_SERVICE_DEFAULT_VALIDITY_TIMEOUT_US`, `time_service.h` | 2026-10-03 | SYS-TS-001, lifecycle | Code default matches. |
 | PRM-TS-04 | `counter_extension_gap_us` | 500 | ms | Provisional | Issue #12 item 11 | 2026-10-03 | time service | no symbol found in code (2026-10-03); searched `counter_extension`, `extension_gap`, `gap` in `Arm_Sensor_Hub/App`. |
 | PRM-TS-05 | Legacy drift bounds (as-built TIME_SYNC) | ± 24 h initial; ± 1 s runtime step | h, s | Provisional | as-built `TIME_SERVICE_DEFAULT_INITIAL_OFFSET_LIMIT_US` (86400000000 µs) and `TIME_SERVICE_DEFAULT_RUNTIME_OFFSET_STEP_LIMIT_US` (1000000 µs), `time_service.h` | 2026-10-03 | as-built only | Removed with Issue #12. |
+| PRM-TS-06 | ClockSync plausibility rejection | half round-trip > 2 × running minimum half round-trip, or offset residual > PRM-TS-01 | ratio, ms | Provisional | decided 2026-10-15 (Lenton Neale) for the Issue #42 Gate A tests; the values are confirmed or revised from the Gate A synthetic and integration data | 2026-10-15 | SYS-TS-001; Pi ClockSync model (#42) | A rejected exchange is counted (`rejected_sample_count`) and does not update the model. Replaces the retired PRM-TS-05 bounds. |
 
 ### Representation (REP)
 
@@ -94,6 +95,7 @@ Code symbols were checked against `Arm_Sensor_Hub/App` on 2026-10-03.
 | ID | Parameter | Working value | Unit | Basis | Source or evidence | Date | Used by | Notes |
 |---|---|---|---|---|---|---|---|---|
 | PRM-MCU-01 | Core clocks | SYSCLK 168; APB1 42; APB2 84 | MHz | Datasheet | STM32F405 and CubeMX `.ioc` | 2026-10-03 | CAN and SPI timing | none |
+| PRM-MCU-02 | STM32F405 flash endurance | 10 | kcycles | Datasheet | STM32F405xx/407xx datasheet DS8626 §5.3.13 "Flash memory endurance and data retention", N_END minimum | 2026-10-15 | calibration records, SYSTEM_CONFIGURATION.md §3 | A calibration record is written once per calibration event, so endurance is not a requirement and no evidence is produced for it (ruled 2026-10-15, Lenton Neale). |
 
 ## Measurement stages
 

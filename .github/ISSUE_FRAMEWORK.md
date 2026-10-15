@@ -83,8 +83,7 @@ Do not put the following into a title unless an established project convention e
 
 - labels;
 - Project Status;
-- Project Workstream;
-- Project Work Type;
+- workstream or work type;
 - priority;
 - severity;
 - open/closed status;
@@ -214,7 +213,7 @@ For a simple issue, sections that are genuinely not applicable may be omitted. A
 
 Labels classify the **nature of the work**.
 
-They do not replace the issue title, project identifier, Project Status, Project Workstream, Project Work Type, Project Priority, or acceptance criteria.
+They do not replace the issue title, project identifier, Project Status, or acceptance criteria.
 
 ### 6.1 Required classification
 
@@ -272,31 +271,23 @@ Do not add technical labels merely because a component is mentioned incidentally
 
 ## 7. Karetao Engineering Project Classification
 
-The Karetao Engineering Project provides planning metadata separately from labels.
+The Karetao Engineering Project provides planning metadata separately from labels. Only `Status` and the item order are used (7.3).
 
-### 7.1 Workstream
+### 7.1 Project Status
 
-Set `Workstream` to `Documentation`, `Software`, `Hardware`, or `System` according to the primary engineering area.
+Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Project Status represents work-tracking state and is not a substitute for the authoritative live status register. An agent that cannot write the board records the state in the first line of the triage comment (`> Triage state: <role>`, `docs/agents/triage-labels.md`).
 
-### 7.2 Work Type
+### 7.2 Order
 
-Set `Work Type` to `Design`, `Implementation`, or `Verification` according to the primary issue category.
+The board's manual item order within a milestone is the priority. It is not a safety classification or engineering severity.
 
-### 7.3 Priority
+### 7.3 Retired fields
 
-Use `High`, `Medium`, or `Low` when a planning distinction is meaningful. Priority is project-planning metadata, not safety classification or engineering severity.
+The board was closed and reopened on 2026-10-15 when the ICM Map was retired. `Workstream`, `Work Type`, `Priority`, and `Target Date` are retired: labels carry the nature of the work, the board order replaces priority, and milestones are stages, not dates.
 
-### 7.4 Target Date
+### 7.4 Milestones
 
-Use only when there is a meaningful planning target. Do not interpret it as a system requirement unless authoritative documentation says so.
-
-### 7.5 Project Status
-
-Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Project Status represents work-tracking state and is not a substitute for the authoritative live status register.
-
-### 7.6 Milestones
-
-Use native GitHub Milestones for major engineering objectives or release groupings. Do not duplicate milestone information in labels or Project custom fields.
+Use native GitHub Milestones for major engineering objectives or release groupings. Milestones remain the stage grouping. Do not duplicate milestone information in labels or Project custom fields.
 
 ## 8. Miscellaneous Issues
 
@@ -343,7 +334,7 @@ Before creating an issue, the author or agent shall determine:
 
 1. Does an equivalent or substantially related issue already exist?
 2. Is this work part of an existing `LIVE-xx` or `SD-xx` item?
-3. What is the primary work type?
+3. What is the primary work type (which decides the label)?
 4. Which technical domain, if any, applies?
 5. What is the intended outcome?
 6. What evidence will demonstrate completion?

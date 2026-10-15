@@ -87,7 +87,7 @@ Physical facts about the fitted hardware, recorded from [`Hardware/bench-wiring/
 
 The switch modules connect to the drives, not to the hub: on the 57D to IN_1 and IN_2, on the 42D to En and Dir with 9EH port mapping on and COM at the drive's EVCC (MKS manual p. 12). The wiring per axis is drawn from the original Arctos design in the bench schematic and confirmed at the bench (`BRING_UP.md` phases 1 and 6).
 
-Drive settings as reported by Lenton Neale, 2026-10-15 (to be read from each drive in `BRING_UP.md` phase 6):
+Drive settings as reported by Lenton Neale, 2026-10-15 (to be read from each drive in `BRING_UP.md` phase 6). The firmware checks these settings at CAN activation and withholds `motor_ready` on a mismatch; a Pi-side commissioning tool sets them in phase 6 (decision "MKS drive settings", "Who sets and who checks", 2026-10-15):
 
 | Setting (MKS command) | Reported | Note |
 |---|---|---|
@@ -139,6 +139,7 @@ The calibration model is versioned and integrity-protected.
 - The system stores redundant copies in STM32 flash slots.
 - A host-side source copy is maintained and synchronized.
 - Flash slot placement, write ordering, and power-loss handling are component concerns (not system configuration).
+- Flash endurance is not a requirement: a record is written once per calibration event, a handful of writes over the arm's life against the rating in `PARAMETER_REGISTER.md` PRM-MCU-02 (Datasheet basis). No evidence is produced for it (ruled 2026-10-15, Lenton Neale).
 
 ---
 

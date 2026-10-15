@@ -911,13 +911,14 @@
         "Clauses: EVIDENCE_RECORD_FORMAT dirty-build rule; SPI_PAYLOAD_SCHEMA VERSION build_flags and git_hash_abbrev; `EVIDENCE_RECORD_FORMAT.md` \"Rules\" (dirty build cannot satisfy a row)",
         "Files: Arm_Sensor_Hub/App/Inc/firmware_version.h:48-69, Arm_Sensor_Hub/CMakeLists.txt:90-134, Arm_Sensor_Hub/CMakeLists.txt:92-134, Arm_Sensor_Hub/build/Debug/build.ninja:744",
         "Ruling R28(a): the compiler version string is part of the build identity",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Done 2026-10-15: merged to main in 8622e64 (change 59d8c61, review fixes 70e7d46); identity written on every build by cmake/firmware_identity.cmake; ruling R28(a) compiler versions recorded"
       ],
       "points": 1,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-14T00:00:00+00:00",
-      "done_at": null,
+      "done_at": "2026-10-15T03:44:17+00:00",
       "package": "WP9"
     },
     {
@@ -928,13 +929,14 @@
         "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-2, PRM-9",
         "Clauses: none (defect)",
         "Files: Arm_Sensor_Hub/App/Src/spi_slave_service.c:186, Arm_Sensor_Hub/Arm_Sensor_Hub.ioc:35, Arm_Sensor_Hub/Core/Inc/FreeRTOSConfig.h:116, Arm_Sensor_Hub/Core/Inc/FreeRTOSConfig.h:46-170, Arm_Sensor_Hub/Core/Src/main.c:62-67, Arm_Sensor_Hub/Core/Src/main.c:63-67",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Done 2026-10-15: merged to main in 8622e64 (change 4db9294, review fixes 70e7d46); defaultTask stack 512 words, overflow checking on, tools/stack_depth.py checks every firmware build; budgets approved by Lenton Neale 2026-10-15"
       ],
       "points": 1,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-14T00:00:00+00:00",
-      "done_at": null,
+      "done_at": "2026-10-15T03:44:17+00:00",
       "package": "WP9"
     },
     {
@@ -945,13 +947,14 @@
         "Each listed finding is resolved as its report proposes, or a ruling by Lenton Neale records why not: FW-4",
         "Clauses: SYS-GATE-001",
         "Files: Arm_Sensor_Hub/CMakeLists.txt:61-82, Arm_Sensor_Hub/tests/host/CMakeLists.txt:1-46",
-        "HostTests, the Debug build and the Pi tests pass; doc_check is clean"
+        "HostTests, the Debug build and the Pi tests pass; doc_check is clean",
+        "Done 2026-10-15: merged to main in 8622e64 (change 4a8bf72); cmake/app_source_check.cmake fails configure on a module missing from either source list; motion_permission.c exempted until B106"
       ],
       "points": 1,
-      "status": "open",
+      "status": "done",
       "sprint": null,
       "created": "2026-10-14T00:00:00+00:00",
-      "done_at": null,
+      "done_at": "2026-10-15T03:44:17+00:00",
       "package": "WP9"
     },
     {
