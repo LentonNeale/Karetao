@@ -101,6 +101,20 @@ Each run writes `<run_id>_transactions.csv` (per transaction), `<run_id>_blocks.
 
 Runs are only admissible as evidence (`Documentation/05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md`) when `metadata.json` reports `dirty_build: false`; a dirty firmware build means the reported git hash does not identify the source that produced the numbers. Check `throttled` and `cpu_temp_c` in the block records before trusting tail latencies, since a throttled Pi produces misleading p99s.
 
+## Run records and the evidence-record tool
+
+`src/spi/run_record.py` implements the run-directory contract in `Documentation/05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md` ("Run directories"; GitHub #109, #70): `meta.json` with the run kind and name, rig, the `PRM-*`, `LIVE-*` or `SYS-*` identifiers the run informs, the local start time with its UTC offset (`started_now()`), the firmware identity decoded from `VERSION`, the Pi commit and dirty flag, and the capture command, plus one CSV per series. Capture tools write it with `write_run`, which validates before writing; the PC-side analysis and the record tool read it with `read_run`. The Pi dirty flag comes from `git status --porcelain -- RaspberryPi_Sensor_Hub shared`, the mirror of the firmware's build-time check, and a git failure is recorded as unknown and dirty rather than clean.
+
+`tools/evidence_record.py <run directory>` drafts the evidence record from `meta.json` (see `EVIDENCE_RECORD_FORMAT.md`, "Drafting a record"):
+
+```bash
+python3 tools/evidence_record.py BenchWork/runs/2026-10-20-spi-link-phase5          # print the draft
+python3 tools/evidence_record.py BenchWork/runs/2026-10-20-spi-link-phase5 --file   # file it under Documentation/05_VERIFICATION/evidence/
+python3 tools/evidence_record.py <run directory> --file --require-clean              # exit 2 unless the run can satisfy a matrix row
+```
+
+The draft fills every tool-readable field and states whether the run may satisfy a matrix row (clean firmware build and clean Pi tree). Result and Accepted by are completed by hand. Tools adopt the format one at a time; `spi_link_probe.py` is first (GitHub #110).
+
 ## Documentation Structure
 
 This documentation directory follows the Karetao component documentation model (`Documentation/DOCUMENTATION_RULES.md`):

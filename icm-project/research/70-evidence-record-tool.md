@@ -1,0 +1,33 @@
+# Issue #70: Implement the evidence-record tool with firmware VERSION identity and Pi commit
+
+Date: 2026-10-16. Branch: `issue/70-evidence-record-tool`. Requirement or ruling served: ruling R28(b) (a dirty Pi tree disqualifies an evidence record), `EVIDENCE_RECORD_FORMAT.md` "Required fields" and "Rules"; the amendment from grilling #109 (run directory and `run_record` module).
+
+## Predictions
+
+| Layer | Question | Lenton's prediction | What the source showed | Pointer |
+|---|---|---|---|---|
+| Requirement | What must happen to a record whose firmware VERSION reports the dirty bit? | Recorded, but it cannot satisfy a matrix row | Held. "A record whose `build_flags` dirty bit (bit 0) is set is recorded but cannot satisfy a matrix row." R28 extends the same rule to a dirty Pi tree. | `Documentation/05_VERIFICATION/EVIDENCE_RECORD_FORMAT.md` Rules; `Documentation/07_DECISIONS/ARCHITECTURE_DECISIONS.md:132` |
+| Contract | Is `commit_epoch_secs` the build time or the commit time? | Commit time, so rebuilding the same source gives the same identity | Held. "the commit timestamp ... not the build time, so the field stays reproducible across rebuilds of the same source." The hash is the first eight hex digits read as a number; formatting it back as eight lowercase hex digits reproduces `git rev-parse --short=8`. | `Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md:157-159`; `RaspberryPi_Sensor_Hub/src/spi/spi_protocol.py:161-216` |
+| Code | Which paths does the firmware dirty check cover, and what should the Pi mirror be? | Firmware: `Arm_Sensor_Hub/` and `shared/`; Pi: `RaspberryPi_Sensor_Hub/` and `shared/` | Held. `git status --porcelain -- ${dirty_paths}` with `dirty_paths` = SOURCE_DIR plus SHARED_DIR, run as `cmake -P` on every build (build time, not configure time). A git failure sets hash 0 and dirty 1 and names the reason. The existing Pi sketch in the timing harness is not a mirror: unscoped `git status`, and a git failure reads as clean. | `Arm_Sensor_Hub/cmake/firmware_identity.cmake:23-27,42-58`; `RaspberryPi_Sensor_Hub/tools/spi_timing_harness.py:313-326` |
+| Mechanism (git) | Does an untracked run directory inside `RaspberryPi_Sensor_Hub/` make the scoped status dirty? | Yes: untracked files count, so the capture itself would disqualify the run | Held, checked by running it: the directory appears as `?? RaspberryPi_Sensor_Hub/zz_probe_run/`; `-uno` hides it; gitignored `.pyc` files never appear. Hence runs live in `BenchWork/runs/` outside both dirty scopes (#109). No reference note for git exists in `icm-project/references/`; the fact comes from git 2.43 itself. | `git status --porcelain -- RaspberryPi_Sensor_Hub shared`, run 2026-10-16 |
+
+## Concepts met
+
+- **Provenance versus admissibility**: every run is kept as history; only a run whose source is exactly identified (clean firmware tree, clean Pi tree) may be offered against a matrix row. The tool drafts the admissibility, the human writes Result and Accepted by.
+- **Reproducible build identity**: every VERSION field is a function of the commit, not of the clock or machine, so two builds of one commit are indistinguishable on the wire. The compiler version (R28(a)) is not on the wire; it lives in the generated header and the build log.
+- **Configure time versus build time**: `firmware_identity.cmake` runs as a `-P` script on every build so the dirty bit follows the tree being compiled.
+- **Scoped dirty check**: `git status --porcelain -- <paths>` limits the check to the paths that affect the component; untracked files count, ignored files do not.
+- **Lockstep schema module**: one standard-library module (`run_record`) is the single definition of the run-directory format for the Pi writer and the PC reader, the same pattern as the SPI frame codec.
+
+## What the change did and how it was verified
+
+`RaspberryPi_Sensor_Hub/src/spi/run_record.py` defines the run directory (`meta.json` plus one CSV per series) with `write_run`, `read_run`, validation that names the missing field, and `pi_identity()`, which runs `git rev-parse HEAD` and `git status --porcelain -- RaspberryPi_Sensor_Hub shared` and records a git failure as unknown and dirty. `RaspberryPi_Sensor_Hub/tools/evidence_record.py` reads a run directory and drafts the record: every tool-readable required field, attachments by relative path from the evidence directory, and an eligibility section that is "Not eligible" whenever the firmware dirty bit or the Pi dirty flag is set; Result and Accepted by are left for Lenton. It never overwrites a record and exits 2 under `--require-clean`. `EVIDENCE_RECORD_FORMAT.md` gained the Pi dirty flag in the identity row, the R28(b) rule and a "Drafting a record" section; the Pi component README documents the tool.
+
+Checks on 2026-10-16: Pi tests 218 pass (new: `test_run_record.py`, `test_evidence_record.py`, including a real temporary git repository for the scope rule and a sample record drafted from the fake backend's VERSION bytes); firmware Debug build passes with the stack check; HostTests 5 of 5; `doc_check` clean. A sample draft from the live worktree came back "Not eligible" because the worktree had the uncommitted new files under `RaspberryPi_Sensor_Hub/`, which is the rule working as intended.
+
+`/code-review medium` raised ten findings, all fixed: (1) the record date and name came from a UTC timestamp and the directory name, which disagree for an afternoon run in New Zealand, so the field became `started` (local time with its UTC offset, validated with `datetime.fromisoformat`) and the name comes from `kind` and `name` in `meta.json`; (2) wrong-typed values in `meta.json` escaped as tracebacks, now every field reader raises a `RunRecordError` naming the field; (3) a hand-rolled shell quoter replaced by `shlex.join`; (4) free text is escaped for Markdown table cells; (5) `LIVE-*` identifiers are no longer listed as Requirement IDs (the format says `SYS-*` rows) and the Eligible text is conditional on a row being named; (6) the tool's eligibility verdict is `RunMeta.reproducible`, the module's single predicate; (7) `write_run` validates before writing and removes partial files on failure; (8) the `name` field is now consumed; (9) the never-overwrite guard is an exclusive-create `open(..., 'x')`; (10) `EVIDENCE_RECORD_FORMAT.md` now states the run-directory fields and Pi dirty scope itself and `run_record.py` cites that section, keeping the authority in `Documentation/`.
+
+## Open questions
+
+- `spi_timing_harness.py` `_git_describe` still uses the unscoped check; it adopts `run_record` when its Stage 3 rows come up (#109: tools adopt it one at a time).
+- The compiler version (R28(a)) cannot be read from the device; the record points at the build log.
