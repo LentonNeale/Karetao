@@ -20,6 +20,8 @@ RULES (from `.github/ISSUE_CONTRACT.md`, "Karetao Engineering Project Fields"):
   never overwritten by `--apply`.
 - Order: by stage, then the issue that blocks the most others first, then by number. The board's
   manual order is the priority; this tool is what sets it.
+- `Blocking` (Number field, tool-owned): the count of open issues this one blocks, written on every
+  `--apply`; the Chokepoints view sorts on it. Never edit it by hand.
 
 PSEUDO CODE:
   issues = open issues (REST, PRs dropped); for each with blocked_by > 0, fetch its open blockers

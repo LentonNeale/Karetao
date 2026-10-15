@@ -36,7 +36,7 @@ def gh(*args: str, input_json: dict | None = None) -> dict | list:
 def graphql(query: str, **variables):
     args = ["api", "graphql", "-f", f"query={query}"]
     for k, v in variables.items():
-        args += ["-F" if isinstance(v, int) else "-f", f"{k}={v}"]
+        args += ["-F" if isinstance(v, (int, float)) else "-f", f"{k}={v}"]
     out = gh(*args)
     if "errors" in out:
         sys.exit("GraphQL errors: " + json.dumps(out["errors"], indent=1))
@@ -112,8 +112,10 @@ query($owner:String!, $number:Int!) {
   user(login:$owner) { projectV2(number:$number) {
     id
     field(name:"Status") { ... on ProjectV2SingleSelectField { id options { id name } } }
+    blocking: field(name:"Blocking") { ... on ProjectV2Field { id } }
     items(first:100) { nodes { id content { ... on Issue { number } } fieldValues(first:20) {
-      nodes { ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2SingleSelectField { name } } } } } } }
+      nodes { ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2SingleSelectField { name } } }
+              ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2Field { name } } } } } } }
   } }
 }"""
 
@@ -134,12 +136,15 @@ def load_board():
             continue
         status = next((fv["name"] for fv in node["fieldValues"]["nodes"]
                        if fv and fv.get("field", {}).get("name") == "Status"), None)
-        items[num] = {"item_id": node["id"], "status": status}
-    return proj["id"], proj["field"]["id"], options, items
+        blocking = next((fv["number"] for fv in node["fieldValues"]["nodes"]
+                         if fv and fv.get("field", {}).get("name") == "Blocking"), None)
+        items[num] = {"item_id": node["id"], "status": status, "blocking": blocking}
+    blocking_field = (proj.get("blocking") or {}).get("id")
+    return proj["id"], proj["field"]["id"], options, items, blocking_field
 
 
 def apply(issues: list[dict], dry: bool) -> None:
-    project_id, field_id, options, items = load_board()
+    project_id, field_id, options, items, blocking_field = load_board()
     changes = []
     for i in issues:
         if i["number"] not in items:
@@ -150,12 +155,20 @@ def apply(issues: list[dict], dry: bool) -> None:
             continue
         if cur != i["computed"]:
             changes.append(("status", i["number"], i["computed"]))
+    if blocking_field:
+        for i in issues:
+            if items.get(i["number"], {}).get("blocking") != i["blocking"]:
+                changes.append(("blocking", i["number"], i["blocking"]))
+    else:
+        print("(no 'Blocking' number field on the board; counts not written)")
     changes.append(("order", [i["number"] for i in issues], None))
     for kind, a, b in changes:
         if kind == "add":
             print(f"add #{a} to board")
         elif kind == "status":
             print(f"#{a}: Status -> {b}")
+        elif kind == "blocking":
+            print(f"#{a}: Blocking -> {b}")
         else:
             print("order: " + " ".join(f"#{n}" for n in a))
     if dry:
@@ -175,6 +188,12 @@ def apply(issues: list[dict], dry: bool) -> None:
             continue
         graphql('mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p, itemId:$i, fieldId:$f, value:{singleSelectOptionId:$o}}){ projectV2Item { id } } }',
                 p=project_id, i=items[num]["item_id"], f=field_id, o=options[status])
+    # 2b. blocking counts
+    for kind, num, count in changes:
+        if kind != "blocking":
+            continue
+        graphql('mutation($p:ID!,$i:ID!,$f:ID!,$n:Float!){ updateProjectV2ItemFieldValue(input:{projectId:$p, itemId:$i, fieldId:$f, value:{number:$n}}){ projectV2Item { id } } }',
+                p=project_id, i=items[num]["item_id"], f=blocking_field, n=int(count))
     # 3. order: walk the list, placing each item after the previous one
     prev = None
     for num in [i["number"] for i in issues]:
@@ -192,7 +211,7 @@ def apply(issues: list[dict], dry: bool) -> None:
 def set_status(number: int, status: str) -> None:
     if status not in COMPUTED + HUMAN:
         sys.exit(f"unknown status {status!r}; one of {COMPUTED + HUMAN}")
-    project_id, field_id, options, items = load_board()
+    project_id, field_id, options, items, _ = load_board()
     if number not in items:
         sys.exit(f"#{number} is not on the board; run --apply first")
     graphql('mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p, itemId:$i, fieldId:$f, value:{singleSelectOptionId:$o}}){ projectV2Item { id } } }',
