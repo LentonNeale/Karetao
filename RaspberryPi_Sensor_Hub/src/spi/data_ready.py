@@ -36,7 +36,7 @@ DEFAULT_CONSUMER = 'karetao-data-ready'
 
 
 class DataReadyLike(Protocol):
-    """Duck-typed interface the timing session depends on, so tests can
+    """Duck-typed interface the exchange session depends on, so tests can
     substitute a fake without a real GPIO chip."""
 
     def is_ready(self) -> bool:

@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """Dump what the STM32 actually returns, to classify a non-responsive link.
 
-`get_version()` treats an undecodable transfer as "not yet" and retries, which
-is right for an occasional glitch but collapses every persistent fault into the
-same timeout. This probe keeps the raw bytes so the fault can be named: a
-silent MISO, a byte-shifted frame, a firmware that rejects the request, and a
-firmware that never answers all look identical through the normal client.
+An exchange that ends without a reply collapses every persistent fault into one
+outcome. This probe prints every transaction of the exchange, keeping the raw
+bytes of any that did not decode, so the fault can be named: a silent MISO, a
+byte-shifted frame, a firmware that rejects the request, and a firmware that
+never answers.
 
-Read-only: it clocks GET_VERSION once, then GET_STATUS, and reports. It changes
-no device state beyond the sequence numbers it consumes. The VERSION reply is
-printed decoded (firmware version, git hash, build flags with the dirty bit,
-protocol version, commit epoch).
+Read-only: it runs one GET_VERSION exchange through the exchange session
+(spi/exchange.py) and reports. It changes no device state beyond the sequence
+numbers it consumes. The VERSION reply is printed decoded (firmware version,
+git hash, build flags with the dirty bit, protocol version, commit epoch).
 
-With --snapshot it also clocks GET_SNAPSHOT once and prints the decoded sensor
-records (id, validity flag names, angles, timestamp), still read-only.
+With --snapshot it then runs one GET_SNAPSHOT exchange and prints the decoded
+sensor records (id, validity flag names, angles, timestamp), still read-only.
+With --fake it runs against the firmware-rules fake (spi/fake_backend.py)
+instead of the bus, which exercises the probe itself, not the link.
 """
 
 from __future__ import annotations
@@ -22,11 +24,19 @@ import argparse
 from pathlib import Path
 import struct
 import sys
-import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 from spi.data_ready import DataReadyWatcher, DEFAULT_DATA_READY_LINE  # noqa: E402
+from spi.exchange import (  # noqa: E402
+    GET_REQUEST_PAYLOAD,
+    ExchangeResult,
+    ExchangeSession,
+    Outcome,
+    Request,
+    TransactionRecord,
+)
+from spi.fake_backend import FakeFirmware  # noqa: E402
 from spi.spi_bus import SpiBus, SpiBusConfig  # noqa: E402
 from spi.spi_protocol import (  # noqa: E402
     MAGIC,
@@ -41,10 +51,11 @@ from spi.spi_protocol import (  # noqa: E402
     SpiFrame,
     VersionInfo,
     decode_snapshot_sensor_records,
-    initial_sequence,
 )
 
 MAGIC_LE = struct.pack('<H', MAGIC)
+GET_VERSION = Request(MessageType.GET_VERSION, GET_REQUEST_PAYLOAD)
+GET_SNAPSHOT = Request(MessageType.GET_SNAPSHOT, GET_REQUEST_PAYLOAD)
 
 VALIDITY_FLAG_NAMES = (
     (SENSOR_VALIDITY_SAMPLE_VALID, 'SAMPLE_VALID'),
@@ -56,12 +67,11 @@ VALIDITY_FLAG_NAMES = (
 )
 
 
-def snapshot_lines(raw: bytes) -> list[str]:
-    """One line per sensor record when raw is a SNAPSHOT frame, otherwise no lines."""
+def snapshot_lines(frame: SpiFrame) -> list[str]:
+    """One line per sensor record when frame is a SNAPSHOT, otherwise no lines."""
+    if frame.message_type is not MessageType.SNAPSHOT:
+        return []
     try:
-        frame = SpiFrame.decode(raw)
-        if frame.message_type is not MessageType.SNAPSHOT:
-            return []
         records = decode_snapshot_sensor_records(frame.payload)
     except ValueError as exc:
         return [f'     snapshot sensor records undecodable ({exc})']
@@ -74,16 +84,11 @@ def snapshot_lines(raw: bytes) -> list[str]:
     return lines
 
 
-def version_lines(raw: bytes) -> list[str]:
-    """One decoded line when raw is a VERSION frame, otherwise no lines.
+def version_lines(frame: SpiFrame) -> list[str]:
+    """One decoded line when frame is a VERSION, otherwise no lines.
 
-    A frame that fails to decode (bad magic, length or CRC) gives no lines,
-    because describe() already reports the frame error.
+    ENCODER_BENCH_PROCEDURE.md reads git_hash_abbrev and dirty from this line.
     """
-    try:
-        frame = SpiFrame.decode(raw)
-    except ValueError:
-        return []
     if frame.message_type is not MessageType.VERSION:
         return []
     try:
@@ -114,115 +119,122 @@ def classify(raw: bytes) -> str:
     return 'magic at offset 0'
 
 
-def describe(raw: bytes) -> str:
-    try:
-        frame = SpiFrame.decode(raw)
-    except ValueError as exc:
-        return f'undecodable ({exc})'
+def record_lines(record: TransactionRecord) -> list[str]:
+    """What one transaction sent and received; an undecodable response is classified."""
+    sent = f'tx{record.index:02d} sent {record.request_type:12s} seq={record.request_seq} -> '
+    lines = []
+    if record.data_ready_timed_out:
+        lines.append(f'     (DATA_READY not asserted within the session wait, PRM-SPI-04; clocked anyway)')
+    if not record.ok:
+        raw = record.raw_response or b''
+        lines.append(sent + f'undecodable ({record.error})')
+        lines.append(f'     {classify(raw)}')
+        lines.append(f'     first 24 bytes: {raw[:24].hex(" ")}')
+        return lines
+    detail = f'{record.response_type} seq={record.response_seq}'
+    if record.correlated_seq is not None:
+        detail += f' answers={record.correlated_seq}'
+    if record.nack_status_code is not None:
+        detail += f' reason={NackReason.describe(record.nack_status_code)}'
+    lines.append(sent + detail)
+    return lines
 
-    detail = f'{frame.message_type.name} seq={frame.seq} payload={len(frame.payload)}B'
-    if frame.message_type is MessageType.NACK and len(frame.payload) >= 8:
-        status, nacked = struct.unpack_from('<HI', frame.payload, 2)
-        detail += f' rejected_seq={nacked} reason={NackReason.describe(status)}'
-    elif frame.payload:
-        detail += f' head={frame.payload[:12].hex(" ")}'
-    return detail
+
+def verdict(version: ExchangeResult) -> str:
+    """Name the link's state from the GET_VERSION exchange.
+
+    A NACK counts as a refusal only when it names this run's request: a request
+    corrupted in transit is NACKed under a sequence the probe never sent, so it
+    shows as an uncorrelated NACK instead.
+    """
+    if version.outcome is Outcome.REPLIED and version.reply.message_type is MessageType.VERSION:
+        return 'VERDICT: firmware answered GET_VERSION. The link works.'
+    if version.outcome is Outcome.REFUSED:
+        status = version.records[-1].nack_status_code
+        reason = NackReason.describe(status) if status is not None else 'an undecodable NACK'
+        text = f'VERDICT: firmware is alive and framing correctly but refused GET_VERSION with {reason}.'
+        remedy = NackReason.remedy(status) if status is not None else ''
+        return f'{text} {remedy}' if remedy else text
+    if version.outcome is Outcome.REPLIED:
+        return (f'VERDICT: firmware answered GET_VERSION with {version.reply.message_type.name}, '
+                f'not VERSION.')
+    if not any(record.ok for record in version.records):
+        return ('VERDICT: no well-framed response at all -- treat this as a wiring, power, '
+                'or firmware-not-running fault before looking at the protocol.')
+    if any(record.response_type == 'NACK' for record in version.records):
+        return ('VERDICT: firmware is alive and framing correctly but NACKed requests under '
+                'sequences this run did not send (see answers= above): requests are being '
+                'corrupted in transit. Rerun with --data-ready before concluding anything about '
+                'wiring or firmware logic.')
+    return ('VERDICT: firmware is alive and framing correctly but never sent VERSION. '
+            'The running build most likely predates GET_VERSION (0x14) support -- '
+            'rebuild and reflash, then power-cycle the STM32.')
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+def print_exchange(result: ExchangeResult, show_snapshot: bool = False) -> None:
+    for record in result.records:
+        for line in record_lines(record):
+            print(line)
+    if result.reply is not None:
+        for line in version_lines(result.reply):
+            print(line)
+        if show_snapshot:
+            for line in snapshot_lines(result.reply):
+                print(line)
+            if result.reply.message_type is not MessageType.SNAPSHOT:
+                print(f'     GET_SNAPSHOT answered with {result.reply.message_type.name}, no sensor records')
+    print(f'     outcome: {result.outcome.value} after {len(result.records)} transaction(s)')
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--speed-hz', type=int, default=1_000_000)
-    parser.add_argument('--transactions', type=int, default=10)
+    parser.add_argument('--transactions', type=int, default=10,
+                        help='Most transactions each exchange may clock, its own request '
+                             'included (at least 2: the reply arrives one transaction late).')
     parser.add_argument('--interval-ms', type=float, default=20.0,
                         help='Fixed delay between transfers when --data-ready is not given. '
                              'This is a fallback, not a fix: the firmware only rearms DMA for '
                              'the next transfer when its bare-metal main loop next runs '
                              '(spi_slave_service.c SpiSlaveService_Process), so any fixed delay '
-                             'is a guess at that timing rather than a guarantee of it.')
+                             'is an estimate of that timing rather than a guarantee of it.')
     parser.add_argument('--data-ready', action='store_true',
                         help='Wait for DATA_READY (SD-17) before each transfer instead of a '
                              'fixed delay. This is what the transaction is actually gated on, '
                              'so prefer it over --interval-ms when diagnosing corruption.')
     parser.add_argument('--data-ready-line', type=int, default=DEFAULT_DATA_READY_LINE)
     parser.add_argument('--snapshot', action='store_true',
-                        help='Also send GET_SNAPSHOT (as the second request) and print each '
-                             'sensor record from its reply, which arrives on the next transfer. '
-                             'Needs at least 3 transactions.')
-    args = parser.parse_args()
+                        help='Also run a GET_SNAPSHOT exchange and print each sensor record '
+                             'from its reply.')
+    parser.add_argument('--fake', action='store_true',
+                        help='Run against the firmware-rules fake instead of the bus.')
+    args = parser.parse_args(argv)
+    if args.transactions < 2:
+        parser.error('--transactions must be at least 2: the reply arrives one transaction late')
+    if args.data_ready and args.fake:
+        parser.error('--data-ready requires real GPIO hardware; incompatible with --fake')
 
     data_ready = DataReadyWatcher(line_offset=args.data_ready_line) if args.data_ready else None
-    bus = SpiBus(SpiBusConfig(max_speed_hz=args.speed_hz))
+    bus = SpiBus(SpiBusConfig(max_speed_hz=args.speed_hz), backend=FakeFirmware() if args.fake else None)
     bus.open()
-    sequence = initial_sequence()
-    seen_magic = False
-    seen_version = False
-    replies: dict[str, int] = {}
+    session = ExchangeSession(bus=bus, block_id='probe', data_ready=data_ready,
+                              min_interval_s=0.0 if data_ready is not None else args.interval_ms / 1000.0)
 
-    print(f'device={bus.config.device} speed={args.speed_hz} Hz '
-          f'start_seq={sequence} transactions={args.transactions}\n')
+    print(f'device={"fake" if args.fake else bus.config.device} speed={args.speed_hz} Hz '
+          f'start_seq={session.sequencer.peek()} budget={args.transactions}\n')
     try:
-        for index in range(args.transactions):
-            # Ask for the version first; later transfers clock out its reply,
-            # since the device stages a response only after reading the request.
-            kind = MessageType.GET_VERSION if index == 0 else MessageType.GET_STATUS
-            if args.snapshot and index == 1:
-                kind = MessageType.GET_SNAPSHOT
-            request = SpiFrame(message_type=kind, seq=sequence + index, payload=b'\x01')
-            if data_ready is not None:
-                t0 = time.monotonic()
-                ready = data_ready.wait_for_ready(0.2)
-                elapsed_ms = (time.monotonic() - t0) * 1000
-                if not ready:
-                    print(f'tx{index:02d} sent {kind.name:12s} -> [skipped: DATA_READY not asserted within 200ms]')
-                    continue
-                print(f'     (DATA_READY was already/became asserted after {elapsed_ms:.1f} ms)')
-            raw = bus.transfer(request.encode())
-
-            shape = classify(raw)
-            decoded = describe(raw)
-            if 'magic at offset 0' in shape:
-                seen_magic = True
-            if decoded.startswith('VERSION'):
-                seen_version = True
-            replies[decoded.split(' ')[0]] = replies.get(decoded.split(' ')[0], 0) + 1
-
-            print(f'tx{index:02d} sent {kind.name:12s} -> {decoded}')
-            for line in version_lines(raw):
-                print(line)
-            if args.snapshot:
-                for line in snapshot_lines(raw):
-                    print(line)
-            if 'magic at offset 0' not in shape:
-                print(f'     {shape}')
-                print(f'     first 24 bytes: {raw[:24].hex(" ")}')
-            if data_ready is None:
-                time.sleep(args.interval_ms / 1000.0)
+        version = session.exchange(GET_VERSION, budget=args.transactions)
+        print_exchange(version)
+        if args.snapshot:
+            print()
+            print_exchange(session.exchange(GET_SNAPSHOT, budget=args.transactions), show_snapshot=True)
     finally:
         bus.close()
         if data_ready is not None:
             data_ready.close()
 
-    print('\nreply frames seen:', ', '.join(f'{k}x{v}' for k, v in replies.items()) or 'none')
-    if seen_version:
-        print('VERDICT: firmware answered GET_VERSION. The link works.')
-    elif not seen_magic:
-        print('VERDICT: no well-framed response at all -- treat this as a wiring, power, '
-              'or firmware-not-running fault before looking at the protocol.')
-    elif 'NACK' in replies:
-        if not args.data_ready:
-            print('VERDICT: firmware is alive and framing correctly but refused the request. '
-                  'This run used a fixed --interval-ms delay, not DATA_READY: if the rejected '
-                  'sequence numbers printed above climb by a fixed power-of-256 step instead of '
-                  'matching real host sequence numbers, that is a request corrupted in transit, '
-                  'not a real protocol rejection -- rerun with --data-ready before concluding '
-                  'anything about wiring or firmware logic.')
-        else:
-            print('VERDICT: firmware is alive and framing correctly but refused the request, '
-                  'even with DATA_READY pacing; the reason printed above is authoritative.')
-    else:
-        print('VERDICT: firmware is alive and framing correctly but never sent VERSION. '
-              'The running build most likely predates GET_VERSION (0x14) support -- '
-              'rebuild and reflash, then power-cycle the STM32.')
+    print()
+    print(verdict(version))
     return 0
 
 

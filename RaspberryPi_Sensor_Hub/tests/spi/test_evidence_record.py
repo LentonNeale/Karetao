@@ -3,7 +3,6 @@ import importlib.util
 import io
 from pathlib import Path
 import shutil
-import struct
 import sys
 import tempfile
 import unittest
@@ -12,10 +11,11 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'src'))
 
+from spi.exchange import GET_REQUEST_PAYLOAD, ExchangeSession, Outcome, Request  # noqa: E402
+from spi import fake_backend  # noqa: E402
 from spi.run_record import FirmwareIdentity, PiIdentity, RunMeta, read_run, write_run  # noqa: E402
 from spi.spi_bus import SpiBus, SpiBusConfig  # noqa: E402
-from spi.spi_device import SpiDevice  # noqa: E402
-from spi.spi_protocol import MessageType, SpiFrame  # noqa: E402
+from spi.spi_protocol import MessageType, Sequencer, VersionInfo  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location('evidence_record', ROOT / 'tools' / 'evidence_record.py')
 tool = importlib.util.module_from_spec(_spec)
@@ -24,33 +24,19 @@ _spec.loader.exec_module(tool)
 PI_COMMIT = '0123456789abcdef0123456789abcdef01234567'
 
 
-class VersionBackend:
-    """Fake SPI backend that answers every transfer with one VERSION frame."""
-
-    def __init__(self, build_flags: int, response_to_seq: int) -> None:
-        payload = struct.pack('<BBBBBBHIII', 1, 1, 0, 1, 0, build_flags, 0,
-                              response_to_seq, 0x1A2B3C4D, 1_700_000_000)
-        self._response = SpiFrame(message_type=MessageType.VERSION, seq=3, payload=payload).encode()
-
-    def open(self, config: SpiBusConfig) -> None:
-        pass
-
-    def transfer(self, tx_data: bytes) -> bytes:
-        return self._response
-
-    def close(self) -> None:
-        pass
-
-
 def firmware_from_fake_backend(build_flags: int = 0) -> FirmwareIdentity:
-    """The identity a capture tool would record: GET_VERSION through the fake backend."""
-    bus = SpiBus(SpiBusConfig(), backend=VersionBackend(build_flags, response_to_seq=100))
+    """The identity a capture tool would record: a GET_VERSION exchange with the firmware fake."""
+    identity = fake_backend.FirmwareIdentity(major=0, minor=1, patch=0, build_flags=build_flags,
+                                             git_hash_abbrev=0x1A2B3C4D, commit_epoch_secs=1_700_000_000)
+    bus = SpiBus(SpiBusConfig(), backend=fake_backend.FakeFirmware(identity=identity))
     bus.open()
     try:
-        info = SpiDevice(bus, start_sequence=100).get_version()
+        session = ExchangeSession(bus=bus, sequencer=Sequencer(100))
+        result = session.exchange(Request(MessageType.GET_VERSION, GET_REQUEST_PAYLOAD), budget=2)
     finally:
         bus.close()
-    return FirmwareIdentity.from_version_info(info)
+    assert result.outcome is Outcome.REPLIED, result.outcome
+    return FirmwareIdentity.from_version_info(VersionInfo.decode(result.reply.payload))
 
 
 def make_run(root: Path, directory: str = '2026-10-20-spi-link-phase5', build_flags: int = 0,

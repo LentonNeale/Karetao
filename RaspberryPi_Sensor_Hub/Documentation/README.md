@@ -87,9 +87,14 @@ STM32 SPI3 side, for reference (`Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTE
 
 ## Exchange Session
 
-`src/spi/exchange.py` is the one owner of the SPI exchange on the Pi. `ExchangeSession.transact(request)` paces, clocks one 512-byte transaction, decodes and correlates it, and returns one `TransactionRecord`; `exchange(request, filler, budget=...)` clocks the request and then the filler until the request's reply or NACK correlates or the budget is spent, and returns the outcome (replied, refused, exhausted) without raising for firmware outcomes. Sequences come from the process-wide `Sequencer` in `spi_protocol.py` (ruling R3). A correlated record carries the T1 and T4 of its exchange for ClockSync's owner (`Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` §3); the session does not depend on ClockSync.
+`src/spi/exchange.py` is the Pi's one owner of transaction, exchange and pacing: the timing harness, the link probe and the time-sync probe all clock the link through an `ExchangeSession`, and none builds frames or calls the bus itself. `ExchangeSession.transact(request)` paces, clocks one 512-byte transaction, decodes and correlates it, and returns one `TransactionRecord`; `exchange(request, filler, budget=...)` clocks the request and then the filler until the request's reply or NACK correlates or the budget is spent, and returns the outcome (replied, refused, exhausted) without raising for firmware outcomes. Sequences come from the process-wide `Sequencer` in `spi_protocol.py` (ruling R3). A correlated record carries the T1 and T4 of its exchange for ClockSync's owner (`Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` §3); the session does not depend on ClockSync.
 
-`src/spi/fake_backend.py` holds `FakeFirmware`, one `SpiBackend` that enforces the firmware's SPI rules (reply one transaction late, sequence high-water mark, BAD_STATE while not active, SNAPSHOT and VERSION replies, request CRC, garbage mode) and reproduces the shared golden frames byte for byte (`tests/spi/test_fake_backend.py`), and `FakeDataReady` for pacing tests. `timing.TimingSession` remains only as an adapter for the timing harness until #102 moves the tools to the exchange session.
+`src/spi/fake_backend.py` holds `FakeFirmware`, one `SpiBackend` that enforces the firmware's SPI rules (reply one transaction late, sequence high-water mark, BAD_STATE while not active, SNAPSHOT and VERSION replies, request CRC, garbage mode) and reproduces the shared golden frames byte for byte (`tests/spi/test_fake_backend.py`), and `FakeDataReady` for pacing tests. It is the only firmware fake: the Pi tests use it, and the timing harness and both probes run against it with `--fake`, which exercises the tool rather than the link:
+
+```bash
+python3 tools/spi_link_probe.py --fake --snapshot
+python3 tools/spi_time_sync_probe.py --fake --transactions 10 --verbose
+```
 
 ## SPI Timing Harness
 
@@ -98,10 +103,10 @@ STM32 SPI3 side, for reference (`Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTE
 ```bash
 python3 tools/spi_timing_harness.py --clocks 1000000,2000000,5000000 --loads 0,2,4 \
     --iterations 5000 --affinity 3 --rt-priority 50 --outdir evidence/
-python3 tools/spi_timing_harness.py --fake      # exercise the harness with no STM32 attached
+python3 tools/spi_timing_harness.py --fake      # exercise the harness against the firmware fake
 ```
 
-Each run writes `<run_id>_transactions.csv` (per transaction), `<run_id>_blocks.csv` (environment sampled around each block) and `<run_id>_metadata.json` (firmware identity, host state, configuration).
+Each run writes `<run_id>_transactions.csv` (per transaction), `<run_id>_blocks.csv` (environment sampled around each block) and `<run_id>_metadata.json` (firmware identity, host state, configuration). The firmware identity is one GET_VERSION exchange of at most `--version-budget` transactions (default 8); a refusal or no reply is recorded as `firmware_warning` and the run proceeds.
 
 **`transfer_ns` and `round_trip_ns` are not the same measurement and must not be compared as if they were.** `transfer_ns` is wire time for one 512-byte transfer. Because the transaction model is pipelined (`SPI_SYSTEM_INTERFACE.md` §4), the reply to a request is staged only after that request has been clocked in, so it arrives during a later transfer; `round_trip_ns` is reconstructed from the correlation field each response carries (`response_to_seq`, or `request_seq` on ACK/NACK) and therefore spans at least two transfers. A row whose `correlated_seq` is empty had no matching outstanding request, and its `round_trip_ns` is blank rather than zero.
 

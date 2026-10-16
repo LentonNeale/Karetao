@@ -62,6 +62,14 @@ class NackReason(IntEnum):
         except ValueError:
             return f'UNKNOWN({code})'
 
+    @classmethod
+    def remedy(cls, code: int) -> str:
+        """What an operator can do about a refusal, or '' when there is no general advice."""
+        if code == cls.BAD_SEQUENCE:
+            return ('The firmware keeps its sequence high-water mark until it is power-cycled and '
+                    'refuses anything not newer; power-cycle the STM32 (the bounded jump is #87).')
+        return ''
+
 
 _last_seed = 0
 
@@ -87,7 +95,7 @@ def initial_sequence() -> int:
     Wall-clock milliseconds keep the seed ahead of that high-water mark across
     restarts without persisting any state: each new process starts roughly
     `elapsed_ms` beyond the last one, which outpaces the transaction rate the
-    bench sustains (pacing holds it near 100/s; see DEFAULT_RETRY_DELAY_S).
+    bench sustains (pacing holds it near 100/s; see ExchangeSession.min_interval_s).
     Truncation to 32 bits wraps about every 50 days, which the firmware's
     wrap-tolerant half-space comparison handles.
 

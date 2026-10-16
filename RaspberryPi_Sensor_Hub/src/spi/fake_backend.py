@@ -16,9 +16,9 @@ shared golden frames byte for byte (tests/spi/test_fake_backend.py):
   seq), VERSION for GET_VERSION, ACK for every other accepted request;
 - garbage mode: nothing is armed, so the Pi clocks idle MISO and the request is never received.
 
-It lives in `src/spi`, not in the tests, so the tools can run against it too (the timing
-harness's `--fake` mode, moved onto it by #102). Two simplifications. The as-built service also stops arming DMA while it is not active, so on
-today's hardware a not-active slave looks like garbage mode; the fake answers BAD_STATE so the
+It lives in `src/spi`, not in the tests, so the tools can run against it too (the `--fake` mode
+of the timing harness and the two probes). Two simplifications. The as-built service also stops
+arming DMA while it is not active, so on today's hardware a not-active slave looks like garbage mode; the fake answers BAD_STATE so the
 Pi's handling of that NACK can be tested. And the fake does not judge a TIME_SYNC sample, which
 the firmware's time service may still NACK (deprecated by Issue #12).
 """

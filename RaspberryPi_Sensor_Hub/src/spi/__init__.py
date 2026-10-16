@@ -1,7 +1,6 @@
 """Raspberry Pi SPI scaffold aligned to the Arm Sensor Hub SPI contract."""
 
 from .spi_bus import SpiBackend, SpiBus, SpiBusConfig
-from .spi_device import SpiDevice
 from .spi_protocol import (
     BUILD_FLAG_DIRTY,
     COMMAND_REPLY_PAYLOAD_BYTES,
@@ -40,7 +39,6 @@ __all__ = [
     'SpiBackend',
     'SpiBus',
     'SpiBusConfig',
-    'SpiDevice',
     'SpiFrame',
     'VersionInfo',
     'crc32_iso_hdlc',
