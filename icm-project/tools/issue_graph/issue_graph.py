@@ -46,7 +46,16 @@ def graphql(query: str, **variables):
 # ----------------------------------------------------------------------------- issues and edges
 
 def open_issues(repo: str) -> list[dict]:
-    items = gh("api", f"repos/{repo}/issues?state=open&per_page=100")
+    # Page by hand (gh 2.45 has no --slurp): PRs share the listing, and a missing issue would cut
+    # every downstream count that runs through it.
+    items: list[dict] = []
+    page = 1
+    while True:
+        batch = gh("api", f"repos/{repo}/issues?state=open&per_page=100&page={page}")
+        items.extend(batch)
+        if len(batch) < 100:
+            break
+        page += 1
     issues = []
     for it in items:
         if "pull_request" in it:
@@ -88,8 +97,24 @@ def compute(issues: list[dict]) -> list[dict]:
             i["computed"] = "Ready"
         else:
             i["computed"] = "Backlog"
-    # Order: stage, then the issue that unblocks the most others first, then number.
-    issues.sort(key=lambda i: (stage_key(i["milestone"]), -i["blocking"], i["number"]))
+    # Order: stage, then the issue with the most open issues downstream (all it holds up through
+    # the edges, in any stage, not only its direct dependents), then number (#97). Stage comes
+    # first, so a no-milestone blocker (a bench phase) sorts after the staged issues it blocks;
+    # the dependent's Blocked status carries that edge.
+    dependents: dict[int, list[int]] = {}
+    for i in issues:
+        for b in i["blocked_by"]:
+            dependents.setdefault(b, []).append(i["number"])
+    for i in issues:
+        seen: set[int] = set()
+        stack = list(dependents.get(i["number"], []))
+        while stack:
+            n = stack.pop()
+            if n not in seen:
+                seen.add(n)
+                stack.extend(dependents.get(n, []))
+        i["downstream"] = len(seen)
+    issues.sort(key=lambda i: (stage_key(i["milestone"]), -i["downstream"], i["number"]))
     return issues
 
 
@@ -100,7 +125,7 @@ def print_plan(issues: list[dict]) -> None:
             print(f"\n{i['milestone'] or 'No milestone (cross-stage)'}")
             last = i["milestone"]
         blockers = ", ".join(f"#{n}" for n in i["blocked_by"]) or "-"
-        print(f"  #{i['number']:<3} {i['computed']:<8} blocks {i['blocking']:<2} blocked by {blockers:<14} {i['title']}")
+        print(f"  #{i['number']:<3} {i['computed']:<8} blocks {i['blocking']:<2} down {i['downstream']:<2} blocked by {blockers:<14} {i['title']}")
     ready = [i for i in issues if i["computed"] == "Ready"]
     print(f"\nReady now: {', '.join(f'#{i['number']}' for i in ready) or 'nothing'}")
 

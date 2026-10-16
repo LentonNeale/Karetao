@@ -279,7 +279,7 @@ Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Pr
 
 ### 7.2 Order
 
-The board's manual item order within a milestone is the priority. It is not a safety classification or engineering severity.
+The board order is the priority. It is computed from the native issue dependencies by `icm-project/tools/issue_graph` and never set by hand; a deliberate sequence is a native edge with its reason in the issue (`ISSUE_CONTRACT.md`, Order; decided in #97). It is not a safety classification or engineering severity.
 
 ### 7.3 Retired fields
 

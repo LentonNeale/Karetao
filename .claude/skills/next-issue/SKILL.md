@@ -26,12 +26,17 @@ Run it whenever he is choosing: at the start of a session, or straight after a m
 3. **Background each Ready issue.** For every issue the plan lists under "Ready now", read the
    issue (`gh issue view <n> --comments`) and the documents its body cites, then write one
    paragraph: what the issue changes, which requirement or ruling it serves (cite the file and
-   row), what it unblocks (from the plan's "blocks" count and the graph), and the one concept he
-   will meet doing it (name it so he can look it up). Done when every Ready issue has its
+   row), what it unblocks (the plan's "down" count, `downstream` in `--json`, which is what the
+   order ranks by; name the direct dependents from the graph), and the one concept he will meet
+   doing it (name it so he can look it up). Done when every Ready issue has its
    paragraph and no paragraph repeats the issue title as its content.
-4. **Recommend one.** Pick the issue that unblocks the most others; break ties toward the lowest
-   stage. Say why in one sentence, and name the command to start it: `/work-issue <n>`. If step 2
-   found work in flight that is not parked, recommend finishing it first (`/work-issue <n>` on
+4. **Recommend one.** Pick the first Ready issue with a milestone in the plan's order (the graph is
+   the order, decided in #97). Ready no-milestone issues (bench phases, decision tickets) stay in
+   the list for him to pick by hand, for example when he is at the bench; never recommend a
+   Wayfinder map. If no milestone issue is Ready, say the stage is waiting on the bench (or
+   another no-milestone issue) and name the Ready one with the largest "down" count. Say why in
+   one sentence, and name the command to start it: `/work-issue <n>`. If step 2 found work in
+   flight that is not parked, recommend finishing it first (`/work-issue <n>` on
    that issue resumes it) and give the pick for after the merge.
 
 ## Reply shape
