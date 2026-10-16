@@ -6,6 +6,8 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'src'))
 
 from spi.spi_protocol import (
+    initial_sequence,
+    is_newer_sequence,
     COMMAND_REPLY_OFFSET_REQUEST_SEQ,
     COMMAND_REPLY_PAYLOAD_BYTES,
     CRC_SIZE,
@@ -358,6 +360,20 @@ class SequencerTests(unittest.TestCase):
     def test_seed_range_checked(self) -> None:
         with self.assertRaises(ValueError):
             Sequencer(1 << 32)
+
+    def test_restarted_transmitter_does_not_reuse_earlier_sequences(self) -> None:
+        """The firmware keeps its accepted-sequence high-water mark until it is power-cycled and
+        refuses anything not strictly newer, so a new transmitter must not restart where an
+        earlier one began, even one built moments later in the same process."""
+        first = Sequencer()
+        first_run = [first.next() for _ in range(5)]
+        second_start = Sequencer().next()
+        self.assertTrue(all(is_newer_sequence(second_start, seq) for seq in first_run))
+
+    def test_seed_fits_the_wire_field(self) -> None:
+        seed = initial_sequence()
+        self.assertGreater(seed, 0)  # zero means "no correlation", so it is skipped
+        self.assertLess(seed, 1 << 32)
 
 
 class PayloadEncoderTests(unittest.TestCase):

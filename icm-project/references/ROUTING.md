@@ -22,7 +22,7 @@ comes from the source, not from memory; if the note lacks it, say so.
 | `Core/Src/freertos.c`, `app_init.c`, tasks and delays | `cmsis-rtos2/kernel-thread-delay.md`, `cmsis-rtos2/freertos-wrapper-and-usage.md` | The calls used |
 | `FreeRTOSConfig.h`, queues, semaphores, notifications, interrupt priorities | `freertos-kernel/config-in-use.md`, `freertos-kernel/kernel-source-semantics.md`, `freertos-kernel/manual-api.md` | The setting or call the change touches |
 | HAL module enable or version | `stm32f4-hal-cmsis/version-and-usage.md` | Version and module rows |
-| `RaspberryPi_Sensor_Hub/src/spi/spi_bus.py`, `spi_device.py` | `linux-spidev/py-spidev-api.md`, `linux-spidev/py-spidev-source.md`, `linux-spidev/spidev-kernel-api.md` | The attributes and methods used; transfer size limits |
+| `RaspberryPi_Sensor_Hub/src/spi/spi_bus.py` | `linux-spidev/py-spidev-api.md`, `linux-spidev/py-spidev-source.md`, `linux-spidev/spidev-kernel-api.md` | The attributes and methods used; transfer size limits |
 | Pi SPI pins, overlays, clock | `raspberry-pi-5-spi/pi-spi-docs.md`, `raspberry-pi-5-spi/rp1-spi-gpio.md` | SPI0 pins, chip selects, clock rows |
 | `RaspberryPi_Sensor_Hub/src/spi/data_ready.py` | `libgpiod-v1/gpiod-v1-python-api.md`, `libgpiod-v1/gpiod-v1-vs-v2.md` | The v1 calls used; never use a v2 name |
 | `CMakeLists.txt`, `CMakePresets.json`, `cmake/` | `cmake-presets/presets-fields-used.md`; `arm-gnu-toolchain/gcc-arm-flags.md` | The preset fields changed; the `-mcpu`, `-mfpu`, `-mfloat-abi` rows |

@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import multiprocessing as mp
 import os
 import platform
@@ -41,22 +42,55 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 from spi.data_ready import DataReadyWatcher  # noqa: E402
+from spi.exchange import (  # noqa: E402
+    CSV_FIELDS, GET_REQUEST_PAYLOAD, ExchangeSession, Outcome, Request, nack_codes)
+from spi.fake_backend import FakeFirmware  # noqa: E402
 from spi.spi_bus import SpiBus, SpiBusConfig  # noqa: E402
-from spi.spi_device import SpiDevice  # noqa: E402
-from spi.spi_protocol import MessageType, SpiFrame  # noqa: E402
-from spi.timing import CSV_FIELDS, TimingSession, summarise  # noqa: E402
+from spi.spi_protocol import MessageType, NackReason, VersionInfo  # noqa: E402
 
 DEFAULT_MIN_INTERVAL_MS = 10.0
 
 DEFAULT_CLOCKS = '1000000,2000000,5000000'
 DEFAULT_LOADS = '0,2,4'
 DEFAULT_MESSAGES = 'GET_STATUS,GET_VERSION'
-REQUEST_PAYLOADS = {
-    # Contract: GET requests carry a one-byte schema_version.
-    MessageType.GET_STATUS: b'\x01',
-    MessageType.GET_VERSION: b'\x01',
-    MessageType.GET_SNAPSHOT: b'\x01',
-}
+# Most transactions the firmware-identity read may clock, its own request included (eight, as
+# SpiDevice.get_version allowed before #102 replaced it with the exchange session).
+DEFAULT_VERSION_BUDGET = 8
+GET_REQUESTS = frozenset({MessageType.GET_STATUS, MessageType.GET_VERSION, MessageType.GET_SNAPSHOT})
+
+
+def request_for(message_type: MessageType) -> Request:
+    """The request a block clocks: a GET carries the session's GET payload (ruling R1, #88)."""
+    return Request(message_type, GET_REQUEST_PAYLOAD if message_type in GET_REQUESTS else b'')
+
+
+# --------------------------------------------------------------------------
+# Statistics
+# --------------------------------------------------------------------------
+
+def percentiles(values: list[int], points=(50, 90, 99, 99.9)) -> dict[str, float]:
+    """Nearest-rank percentiles. Empty input yields an empty mapping."""
+    if not values:
+        return {}
+    ordered = sorted(values)
+    result = {}
+    for point in points:
+        rank = max(1, min(len(ordered), math.ceil(point / 100.0 * len(ordered))))
+        result[f'p{point:g}'] = float(ordered[rank - 1])
+    return result
+
+
+def summarise(values: list[int]) -> dict[str, float]:
+    if not values:
+        return {'count': 0}
+    summary = {
+        'count': len(values),
+        'min': float(min(values)),
+        'mean': sum(values) / len(values),
+        'max': float(max(values)),
+    }
+    summary.update(percentiles(values))
+    return summary
 
 
 # --------------------------------------------------------------------------
@@ -171,53 +205,6 @@ class LoadGenerator:
 
 
 # --------------------------------------------------------------------------
-# Off-hardware simulation
-# --------------------------------------------------------------------------
-
-class PipelinedFakeBackend:
-    """Mimics the firmware's one-behind response staging, for dry runs.
-
-    Exists so the harness itself can be exercised without the STM32 attached.
-    Timing produced this way is meaningless; only the plumbing is real.
-    """
-
-    def __init__(self) -> None:
-        # Stands in for the firmware's boot status frame, which is what a real
-        # device returns on the first transaction before anything is staged.
-        self._staged = SpiFrame(message_type=MessageType.DIAGNOSTIC, seq=0).encode()
-        self._tx_seq = 1
-
-    def open(self, config: SpiBusConfig) -> None:
-        self._config = config
-
-    def transfer(self, tx_data: bytes) -> bytes:
-        previous = self._staged
-        try:
-            request = SpiFrame.decode(tx_data)
-            self._staged = self._build_response(request)
-        except ValueError:
-            pass
-        time.sleep(0.0002)
-        return previous.ljust(512, b'\x00')
-
-    def _build_response(self, request: SpiFrame) -> bytes:
-        self._tx_seq += 1
-        if request.message_type is MessageType.GET_VERSION:
-            payload = bytes([1, 1, 0, 1, 0, 0]) + b'\x00\x00' + \
-                request.seq.to_bytes(4, 'little') + (0x1A2B3C4D).to_bytes(4, 'little') + \
-                (1700000000).to_bytes(4, 'little')
-            return SpiFrame(message_type=MessageType.VERSION, seq=self._tx_seq,
-                            frame_time_us=int(time.monotonic() * 1e6), payload=payload).encode()
-        payload = bytes([1, int(request.message_type), 0, 0]) + \
-            request.seq.to_bytes(4, 'little') + (0).to_bytes(4, 'little')
-        return SpiFrame(message_type=MessageType.ACK, seq=self._tx_seq,
-                        frame_time_us=int(time.monotonic() * 1e6), payload=payload).encode()
-
-    def close(self) -> None:
-        return None
-
-
-# --------------------------------------------------------------------------
 # Run orchestration
 # --------------------------------------------------------------------------
 
@@ -240,7 +227,7 @@ def run_block(args, clock_hz: int, workers: int, message_type: MessageType,
     block_id = f'{clock_hz}hz_load{workers}_{message_type.name}'
     config = SpiBusConfig(device=args.device, max_speed_hz=clock_hz)
     bus = SpiBus(config, backend=backend) if backend is not None else SpiBus(config)
-    payload = REQUEST_PAYLOADS.get(message_type, b'\x01')
+    request = request_for(message_type)
 
     load_cpus = None
     if args.load_avoids_harness_cpu and args.affinity is not None:
@@ -257,15 +244,15 @@ def run_block(args, clock_hz: int, workers: int, message_type: MessageType,
 
         bus.open()
         try:
-            session = TimingSession(
+            session = ExchangeSession(
                 bus=bus, block_id=block_id, data_ready=data_ready,
                 data_ready_timeout_s=args.data_ready_timeout_ms / 1000.0,
                 min_interval_s=0.0 if data_ready is not None else args.min_interval_ms / 1000.0,
             )
             for _ in range(args.warmup):
-                session.transact(message_type, payload)
+                session.transact(request)
             session.reset_counters()
-            records = [session.transact(message_type, payload) for _ in range(args.iterations)]
+            records = [session.transact(request) for _ in range(args.iterations)]
         finally:
             bus.close()
 
@@ -278,7 +265,7 @@ def run_block(args, clock_hz: int, workers: int, message_type: MessageType,
     return result
 
 
-def collect_metadata(args, backend) -> dict:
+def collect_metadata(args, backend, data_ready=None) -> dict:
     metadata = {
         'started_utc': datetime.now(timezone.utc).isoformat(),
         'host': {
@@ -300,7 +287,12 @@ def collect_metadata(args, backend) -> dict:
         bus = SpiBus(config, backend=backend) if backend is not None else SpiBus(config)
         bus.open()
         try:
-            version = SpiDevice(bus).get_version()
+            # Paced like the blocks: unpaced back-to-back transfers return stale or zeroed frames.
+            session = ExchangeSession(
+                bus=bus, block_id='identity', data_ready=data_ready,
+                data_ready_timeout_s=args.data_ready_timeout_ms / 1000.0,
+                min_interval_s=0.0 if data_ready is not None else args.min_interval_ms / 1000.0)
+            version = read_version(session, args.version_budget)
         finally:
             bus.close()
         metadata['firmware'] = {
@@ -318,6 +310,23 @@ def collect_metadata(args, backend) -> dict:
     except Exception as exc:  # noqa: BLE001 - identity is best-effort, the run still proceeds
         metadata['firmware_warning'] = f'could not read firmware identity: {exc}'
     return metadata
+
+
+def read_version(session: ExchangeSession, budget: int) -> VersionInfo:
+    """The firmware's build identity, or an exception naming why it could not be read."""
+    request = request_for(MessageType.GET_VERSION)
+    result = session.exchange(request, budget=budget)
+    if result.outcome is Outcome.REFUSED:
+        status_code, _ = nack_codes(result.reply)
+        if status_code is None:
+            raise RuntimeError(f'firmware refused GET_VERSION seq {result.request_seq} with an undecodable NACK')
+        raise RuntimeError(f'firmware refused GET_VERSION seq {result.request_seq} with '
+                           f'{NackReason.describe(status_code)}. {NackReason.remedy(status_code)}'.strip())
+    if result.outcome is Outcome.EXHAUSTED:
+        raise TimeoutError(f'no reply to GET_VERSION seq {result.request_seq} within {budget} transactions')
+    if result.reply.message_type is not MessageType.VERSION:
+        raise RuntimeError(f'GET_VERSION seq {result.request_seq} answered with {result.reply.message_type.name}')
+    return VersionInfo.decode(result.reply.payload)
 
 
 def _git_describe() -> dict:
@@ -426,7 +435,10 @@ def main(argv=None) -> int:
     parser.add_argument('--load-avoids-harness-cpu', action='store_true',
                         help='keep synthetic load off the pinned harness CPU')
     parser.add_argument('--fake', action='store_true',
-                        help='run against a simulated device; validates plumbing, not timing')
+                        help='run against the firmware-rules fake (spi/fake_backend.py); validates '
+                             'plumbing, not timing')
+    parser.add_argument('--version-budget', type=int, default=DEFAULT_VERSION_BUDGET,
+                        help='most transactions the firmware-identity read may clock (at least 2)')
     parser.add_argument('--data-ready', action='store_true',
                         help='wait on the wired DATA_READY GPIO (GPIO25/pin 22, SD-17) before each '
                              'transfer instead of a fixed delay; requires python3-libgpiod on the Pi')
@@ -468,9 +480,12 @@ def main(argv=None) -> int:
         except Exception as exc:  # noqa: BLE001 - report and fail; pacing silently disabled would be worse
             parser.error(f'could not set up DATA_READY on line {args.data_ready_line}: {exc}')
 
-    backend = PipelinedFakeBackend() if args.fake else None
+    if args.version_budget < 2:
+        parser.error('--version-budget must be at least 2: the reply arrives one transaction late')
+
+    backend = FakeFirmware() if args.fake else None
     run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    metadata = collect_metadata(args, backend)
+    metadata = collect_metadata(args, backend, data_ready)
     if metadata.get('firmware_warning'):
         print(f'warning: {metadata["firmware_warning"]}', file=sys.stderr)
 
@@ -482,7 +497,7 @@ def main(argv=None) -> int:
                     print(f'running {clock_hz} Hz, load {workers}, {message_type.name} ...',
                           flush=True)
                     blocks.append(run_block(args, clock_hz, workers, message_type,
-                                            PipelinedFakeBackend() if args.fake else None,
+                                            FakeFirmware() if args.fake else None,
                                             data_ready))
     except KeyboardInterrupt:
         print('\ninterrupted; writing partial results', file=sys.stderr)

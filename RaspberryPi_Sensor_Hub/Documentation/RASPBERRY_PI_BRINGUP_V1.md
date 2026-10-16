@@ -745,7 +745,7 @@ Suggested sequence: 1 MHz → 2 MHz → 5 MHz, each with a soak run, logging CRC
 
 Test only these message types first: `GET_STATUS`, `GET_SNAPSHOT`, `GET_VERSION`, `TIME_SYNC`. Do not send `SET_MOTOR_COMMAND` to prove the link works; its payload is not frozen (SPI_PAYLOAD_SCHEMA).
 
-The host must, before accepting any frame, validate magic, protocol version, length, CRC32 and sequence, reject stale or duplicate responses, and never use SPI reception time as measurement time (SPI_SYSTEM_INTERFACE §13). The current `spi_device.py` provides only stateless `transact` and `get_status` helpers; outstanding-transaction tracking is still to be written (register §3.5).
+The host must, before accepting any frame, validate magic, protocol version, length, CRC32 and sequence, reject stale or duplicate responses, and never use SPI reception time as measurement time (SPI_SYSTEM_INTERFACE §13). `src/spi/exchange.py` tracks outstanding requests: `ExchangeSession` keeps a pending table and correlates each response to the request it names (`request_seq` or `response_to_seq`), so a response naming an unknown or already-answered request is counted as a correlation miss and carries no clock-sync observation.
 
 Record as SPI evidence (`EVIDENCE_RECORD_FORMAT.md`): DMA/NSS behaviour under a real master, DATA_READY electrical timing if wired, SCK/MISO signal integrity at 5 MHz, sustained 512-byte transactions, request/response correlation, host-stall recovery, and the cable length used.
 
@@ -928,7 +928,7 @@ Findings from checking the previous text of this guide against `Documentation/01
 | 13 | `-a3` affinity in cyclictest alongside "no affinity yet" | Minor internal inconsistency | Affinity flag removed from the baseline run |
 | 14 | No console recovery despite key-only, password-locked login | Guide's own operations section demands a recovery method, but a locked-password console cannot log in either | Documented the actual recovery route: offline repair of `authorized_keys` on the card (Appendix B), added key-substitution verification at A6.1/A8 to catch the fault before boot |
 
-Observations recorded but **not** resolvable here because they are component or system decisions still open: clock source for `pi_time_us` and NTP step interaction with SD-21 (Part C); heartbeat carrier and acknowledgement semantics (F4); outstanding-transaction tracking in `spi_device.py` (E4).
+Observations recorded but **not** resolvable here because they are component or system decisions still open: clock source for `pi_time_us` and NTP step interaction with SD-21 (Part C); heartbeat carrier and acknowledgement semantics (F4).
 
 ---
 
