@@ -14,7 +14,7 @@ When an issue conflicts with an authoritative document, the authoritative docume
 2. Use a clear, action-oriented title.
 3. Reference the relevant `LIVE-xx`, `SD-xx`, or other project identifier when one exists.
 4. Apply labels from the approved taxonomy below.
-5. Set the Project `Status` and the item's order on the board where the issue is managed in that Project; labels carry the nature of the work.
+5. Record blocking as GitHub native issue dependencies; `icm-project/tools/issue_graph` derives the board order and the `Blocked`, `Ready` and `Backlog` Statuses from them (see Status and Order). Labels carry the nature of the work.
 6. Do not invent new labels for individual projects, components, states, priorities, or IDs.
 7. Put detailed technical decisions in the appropriate documentation; link the issue to that record.
 8. Close an issue when its acceptance criteria are met, or mark it as not planned/duplicate where appropriate.
@@ -107,7 +107,7 @@ Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Pr
 
 ### Order
 
-The board's manual item order within a milestone is the priority. There is no `Priority` field, and order is not a safety classification, requirement status, or severity.
+The board order is the priority, and it is computed, never set by hand: `issue_graph --apply` re-places every open issue by stage, then by how many open issues lie downstream of it (everything it holds up through the edges, in any stage), then by number, so a hand-dragged order is lost at the next refresh. To put one issue before another within a stage, add a native edge (the earlier issue blocks the later one) and say in the later issue why it needs the earlier one; a preference with no such reason is left to the tie-break. Issues with no milestone (bench bring-up phases, decision tickets, maps) sort after the stages, even when they block a staged issue (that issue's `Blocked` status shows the edge), and are picked by hand. Decided in #97 (2026-10-16). There is no `Priority` field, and order is not a safety classification, requirement status, or severity.
 
 ### Retired fields
 
