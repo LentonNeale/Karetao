@@ -14,9 +14,11 @@ STATUS` sets one Status by hand.
 
 RULES (from `.github/ISSUE_CONTRACT.md`, "Karetao Engineering Project Fields"):
 - Status `Blocked`: the issue has at least one open blocker (`issue_dependencies_summary.blocked_by`).
-- Status `Ready`: no open blocker, and the issue is in the current stage (the lowest-numbered
-  milestone with open issues) or has no milestone.
+- Status `Ready`: no open blocker, and the issue is in the current stage (the lowest `Stage N` by
+  milestone title, not GitHub's milestone number, that holds an open issue) or has no milestone.
 - Status `Backlog`: no open blocker, but a later stage.
+- The source of the stage gate and of the no-milestone slot is `.github/ISSUE_CONTRACT.md`,
+  "Milestones" (#95, #98).
 - `In Progress`, `Verification`, `Done` are set by people (or GitHub's auto-close workflow) and are
   never overwritten by `--apply`.
 - Order: by stage, then the issue with the most open issues downstream first (every issue it holds

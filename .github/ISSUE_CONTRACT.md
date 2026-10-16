@@ -107,7 +107,7 @@ Use `Backlog`, `Ready`, `In Progress`, `Blocked`, `Verification`, and `Done`. Pr
 
 ### Order
 
-The board order is the priority, and it is computed, never set by hand: `issue_graph --apply` re-places every open issue by stage, then by how many open issues lie downstream of it (everything it holds up through the edges, in any stage), then by number, so a hand-dragged order is lost at the next refresh. To put one issue before another within a stage, add a native edge (the earlier issue blocks the later one) and say in the later issue why it needs the earlier one; a preference with no such reason is left to the tie-break. Issues with no milestone (bench bring-up phases, decision tickets, maps) sort after the stages, even when they block a staged issue (that issue's `Blocked` status shows the edge), and are picked by hand. Decided in #97 (2026-10-16). There is no `Priority` field, and order is not a safety classification, requirement status, or severity.
+The board order is the priority, and it is computed, never set by hand: `issue_graph --apply` re-places every open issue by stage, then by how many open issues lie downstream of it (everything it holds up through the edges, in any stage), then by number, so a hand-dragged order is lost at the next refresh. To put one issue before another within a stage, add a native edge (the earlier issue blocks the later one) and say in the later issue why it needs the earlier one; a preference with no such reason is left to the tie-break. Issues with no milestone (non-stage work, see Milestones) sort after the stages, even when they block a staged issue (that issue's `Blocked` status shows the edge), and are picked by hand. Decided in #97 (2026-10-16). There is no `Priority` field, and order is not a safety classification, requirement status, or severity.
 
 ### Retired fields
 
@@ -115,7 +115,9 @@ The board order is the priority, and it is computed, never set by hand: `issue_g
 
 ### Milestones
 
-Use native GitHub Milestones for major engineering objectives or release groupings. Do not duplicate milestones in labels or custom Project fields. Milestones remain the stage grouping. Milestones are stages named after charter goals (Stage 1 Fitted encoders … Stage 5 Remaining joints), not dates.
+Use native GitHub Milestones for major engineering objectives or release groupings. Do not duplicate milestones in labels or custom Project fields. Milestones remain the stage grouping. Milestones are stages, not dates: `Stage 0 — Foundation`, then `Stage 1 — Fitted encoders` … `Stage 5 — Remaining joints`, the five named after the charter goals.
+
+A stage is a gate: it closes before the next one opens. The current stage is the lowest `Stage N`, by the number in the milestone title (not GitHub's milestone number), that still holds an open issue, and `icm-project/tools/issue_graph` marks an unblocked staged issue `Ready` only there. An issue belongs in the lower of two stages: the stage whose goal it delivers, if any, and the lowest stage holding an issue it blocks by a native GitHub dependency, so a blocker never sits in a later stage than what it blocks. Enabling work that blocks nothing is closed as not planned until something needs it. "No milestone" is reserved for work that is not a charter stage: planning tickets (decision tickets, maps) and bench bring-up (the `Hardware/bench-wiring/BRING_UP.md` phases, today #103 to #108). Such an issue is `Ready` whenever unblocked. Bench bring-up is the one stated exception to membership by edge: its phases block staged issues by native edges yet carry no milestone, so the bench never waits on the gate. Decided in #95 and #98.
 
 ## Adding a New Label
 
