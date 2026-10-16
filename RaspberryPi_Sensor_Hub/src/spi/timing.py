@@ -81,13 +81,7 @@ def nack_codes(frame: SpiFrame) -> tuple[Optional[int], Optional[int]]:
 
 @dataclass(frozen=True)
 class TransactionRecord:
-    """One clocked 512-byte transaction. Durations are nanoseconds.
-
-    DATA_READY timing fields (microseconds):
-    - data_ready_to_nss_low_us: DATA_READY rise to NSS fall (transfer start latency)
-    - nss_high_to_data_ready_low_us: NSS rise to DATA_READY fall (pipelined latency)
-    - data_ready_interval_us: Time between consecutive DATA_READY rising edges
-    """
+    """One clocked 512-byte transaction. Durations are nanoseconds."""
 
     index: int
     block_id: str
@@ -113,21 +107,9 @@ class TransactionRecord:
     data_ready_timed_out: bool = False
     time_sync_seq: Optional[int] = None
     time_sync_status: Optional[int] = None
-    data_ready_to_nss_low_us: Optional[int] = None
-    nss_high_to_data_ready_low_us: Optional[int] = None
-    data_ready_interval_us: Optional[int] = None
 
     def as_row(self) -> dict:
         return asdict(self)
-
-    def data_ready_latency_ms(self) -> Optional[float]:
-        """Latency from DATA_READY to transfer start (ms).
-
-        Converts data_ready_to_nss_low_us from microseconds to milliseconds.
-        """
-        if self.data_ready_to_nss_low_us is None:
-            return None
-        return self.data_ready_to_nss_low_us / 1000.0
 
 
 CSV_FIELDS = list(TransactionRecord.__dataclass_fields__)

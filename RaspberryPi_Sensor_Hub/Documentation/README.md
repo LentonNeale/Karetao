@@ -87,7 +87,7 @@ STM32 SPI3 side, for reference (`Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTE
 
 ## SPI Timing Harness
 
-`tools/spi_timing_harness.py` sweeps clock rate x CPU load x message type and writes one row per transaction for offline analysis. It measures the polled request/response path only; DATA_READY assert-to-service latency is out of scope until the GPIO watcher exists (SD-17).
+`tools/spi_timing_harness.py` sweeps clock rate x CPU load x message type and writes one row per transaction for offline analysis. By default it measures the polled request/response path. With `--data-ready` it waits on the DATA_READY line (GPIO25/PA8, SD-17) and records the Pi-side wait as `data_ready_wait_ns`. The Pi cannot see NSS edges (spidev drives chip-select), so DATA_READY-to-NSS timing and the electrical path are a Stage 3 logic-analyser measurement (`SPI_SYSTEM_INTERFACE.md` §16, ruling R7), not a harness output.
 
 ```bash
 python3 tools/spi_timing_harness.py --clocks 1000000,2000000,5000000 --loads 0,2,4 \
