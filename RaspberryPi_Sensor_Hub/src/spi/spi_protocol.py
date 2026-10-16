@@ -5,7 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum
 import struct
+import threading
 import time
+from typing import Optional
 import zlib
 
 # Contract constants (SPI_SYSTEM_INTERFACE.md section 3). Each is defined once here;
@@ -96,15 +98,58 @@ def initial_sequence() -> int:
     """
     global _last_seed
     seed = (time.time_ns() // 1_000_000) & 0xFFFFFFFF
-    if _last_seed and not _is_newer(seed, _last_seed + _SEED_STRIDE):
+    if _last_seed and not is_newer_sequence(seed, _last_seed + _SEED_STRIDE):
         seed = (_last_seed + _SEED_STRIDE) & 0xFFFFFFFF
     _last_seed = seed
     return seed or 1
 
 
-def _is_newer(candidate: int, previous: int) -> bool:
+def is_newer_sequence(candidate: int, previous: int) -> bool:
     """Wrap-tolerant ordering matching SpiProtocol_IsNewer in the firmware."""
     return candidate != previous and ((candidate - previous) & 0xFFFFFFFF) < 0x80000000
+
+
+class Sequencer:
+    """Supplier of request `seq` values for one host transmitter.
+
+    The contract makes `seq` monotonic per transmitter (SPI_SYSTEM_INTERFACE.md section 6) and
+    ruling R3 makes the Pi one transmitter: every session in a process draws from the one
+    `process_sequencer()`, so two sessions never both start from the seed and race the
+    firmware's high-water mark. Zero is skipped so an unset correlation field (zero in an
+    unsolicited payload) stays distinguishable from a real request. R3's bounded jump after
+    BAD_SEQUENCE is added here by #87, with the firmware's first-sequence acceptance.
+    """
+
+    def __init__(self, seed: Optional[int] = None) -> None:
+        start = initial_sequence() if seed is None else seed
+        if not 0 <= start <= 0xFFFFFFFF:
+            raise ValueError('sequence seed exceeds uint32 range')
+        self._next = start or 1
+        self._lock = threading.Lock()
+
+    def next(self) -> int:
+        with self._lock:
+            sequence = self._next
+            self._next = (sequence + 1) & 0xFFFFFFFF or 1
+            return sequence
+
+    def peek(self) -> int:
+        """The sequence the next call to next() returns."""
+        with self._lock:
+            return self._next
+
+
+_process_sequencer: Optional[Sequencer] = None
+_process_sequencer_lock = threading.Lock()
+
+
+def process_sequencer() -> Sequencer:
+    """The process-wide Sequencer, created on first use and seeded by initial_sequence()."""
+    global _process_sequencer
+    with _process_sequencer_lock:
+        if _process_sequencer is None:
+            _process_sequencer = Sequencer()
+        return _process_sequencer
 
 
 @dataclass(frozen=True)
@@ -200,6 +245,15 @@ class VersionInfo:
                    firmware_major=major, firmware_minor=minor, firmware_patch=patch,
                    build_flags=build_flags, response_to_seq=response_to_seq,
                    git_hash_abbrev=git_hash, commit_epoch_secs=commit_epoch)
+
+    def encode(self) -> bytes:
+        """The VERSION payload bytes; the fake firmware builds its reply with this."""
+        try:
+            return _VERSION_STRUCT.pack(self.schema_version, self.protocol_version, self.firmware_major,
+                                        self.firmware_minor, self.firmware_patch, self.build_flags, 0,
+                                        self.response_to_seq, self.git_hash_abbrev, self.commit_epoch_secs)
+        except struct.error as exc:
+            raise ValueError(f'VERSION field out of range: {exc}') from exc
 
     @property
     def firmware_version(self) -> str:
@@ -336,6 +390,15 @@ def encode_time_sync_payload(pi_time_us: int, sync_seq: int, flags: int = 0) -> 
                        flags,                      # flags
                        pi_time_us,                 # pi_time_us
                        sync_seq)                   # sync_seq
+
+
+def encode_command_reply(request_type: int, status_code: int, request_seq: int, detail_code: int = 0) -> bytes:
+    """ACK/NACK payload as SpiProtocol_BuildCommandReply writes it (SPI_PAYLOAD_SCHEMA.md)."""
+    try:
+        return _COMMAND_REPLY_STRUCT.pack(COMMAND_REPLY_SCHEMA_VERSION, request_type, status_code,
+                                          request_seq, detail_code)
+    except struct.error as exc:
+        raise ValueError(f'ACK/NACK field out of range: {exc}') from exc
 
 
 def decode_command_reply(payload: bytes) -> tuple:

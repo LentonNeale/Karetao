@@ -19,10 +19,12 @@ from spi.spi_protocol import (
     VERSION_OFFSET_RESPONSE_TO_SEQ,
     VERSION_PAYLOAD_BYTES,
     MessageType,
+    Sequencer,
     SpiFrame,
     VersionInfo,
     crc32_iso_hdlc,
     decode_command_reply,
+    encode_command_reply,
     encode_time_sync_payload,
     extract_time_sync_from_ack_nack,
     SENSOR_RECORD_BYTES,
@@ -337,6 +339,47 @@ class TimeSyncFrameExtensionTests(unittest.TestCase):
         self.assertTrue(records[1].is_not_fitted)
         with self.assertRaises(ValueError):
             decode_snapshot_sensor_records(payload[:-1])
+
+
+class SequencerTests(unittest.TestCase):
+    def test_increments_from_its_seed(self) -> None:
+        sequencer = Sequencer(41)
+        self.assertEqual([sequencer.next(), sequencer.next()], [41, 42])
+        self.assertEqual(sequencer.peek(), 43)
+
+    def test_zero_is_skipped_at_the_wrap(self) -> None:
+        sequencer = Sequencer(0xFFFFFFFF)
+        self.assertEqual(sequencer.next(), 0xFFFFFFFF)
+        self.assertEqual(sequencer.next(), 1)
+
+    def test_zero_seed_starts_at_one(self) -> None:
+        self.assertEqual(Sequencer(0).next(), 1)
+
+    def test_seed_range_checked(self) -> None:
+        with self.assertRaises(ValueError):
+            Sequencer(1 << 32)
+
+
+class PayloadEncoderTests(unittest.TestCase):
+    def test_command_reply_round_trips(self) -> None:
+        payload = encode_command_reply(0x11, 5, 1234, 7)
+        self.assertEqual(len(payload), COMMAND_REPLY_PAYLOAD_BYTES)
+        self.assertEqual(decode_command_reply(payload), (0x11, 5, 1234, 7))
+
+    def test_version_round_trips(self) -> None:
+        info = VersionInfo(schema_version=1, protocol_version=1, firmware_major=0, firmware_minor=1,
+                           firmware_patch=2, build_flags=1, response_to_seq=9, git_hash_abbrev=0xDEADBEEF,
+                           commit_epoch_secs=1700000000)
+        self.assertEqual(VersionInfo.decode(info.encode()), info)
+
+    def test_out_of_range_fields_raise_value_error(self) -> None:
+        with self.assertRaises(ValueError):
+            encode_command_reply(0x11, 0, 1 << 32)
+        info = VersionInfo(schema_version=1, protocol_version=1, firmware_major=0, firmware_minor=1,
+                           firmware_patch=0, build_flags=0, response_to_seq=0, git_hash_abbrev=1 << 32,
+                           commit_epoch_secs=0)
+        with self.assertRaises(ValueError):
+            info.encode()
 
 
 if __name__ == '__main__':

@@ -60,6 +60,17 @@ outstanding-request table is added in `spi_device.py`. `_MAX_PENDING =
 4096` is left unchanged unless the design later moves to
 asynchronous/multi-outstanding transactions.
 
+**Amended 2026-10-16 (Lenton Neale, #78; designed in the 2026-10-15
+architecture review):** the intent stands: one outstanding-request table,
+reused for clock sync. The table is now `ExchangeSession`'s (`exchange.py`,
+grown from `TimingSession`; one session owns the link, and other consumers
+read its records), and the call direction is reversed: the session
+does not depend on ClockSync. Each correlated `TransactionRecord` carries T1
+(`t1_request_sent_ns`), T2 (`request_received_local_us`, once item 1 fixes its
+wire placement) and T4 (`t4_response_received_ns`), so one record is one
+observation, and ClockSync's owner feeds `ClockSync.record_exchange()` from
+the records.
+
 ---
 
 ## 5. `seq` versus `sync_seq`
@@ -184,8 +195,8 @@ synchronized domain — Gate A passing does not imply Gate B is met.
    `counter_extension_gap_us` guard (item 11) and its still-open recovery
    behavior.
 4. Add `request_received_local_us` to the versioned wire schema (item 1).
-5. Extend `TimingSession.transact()` → `ClockSync.record_exchange()`
-   (item 4).
+5. Feed `ClockSync.record_exchange()` from the `ExchangeSession`
+   transaction records (item 4, as amended 2026-10-16).
 6. Implement DIAGNOSTIC v2 + `GET_DIAGNOSTIC` (item 8).
 7. Migrate/remove STM32 `SyncStateAccept`/`Refresh` (architecture change
    underlying items 3/7).
