@@ -229,7 +229,9 @@ SENSOR_VALIDITY_COMMUNICATION_ERROR = 0x0002
 SENSOR_VALIDITY_MAGNET_NOT_DETECTED = 0x0004
 SENSOR_VALIDITY_MAGNET_TOO_WEAK = 0x0008
 SENSOR_VALIDITY_MAGNET_TOO_STRONG = 0x0010
-SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED = 0x0020
+# Bit 5 (timestamp synchronized) is retired by ruling R16: the firmware writes it zero and it is
+# reserved, like bits 7-15. A stale sample arrives with SAMPLE_VALID clear and its last values
+# and acquisition timestamp kept (SPI_PAYLOAD_SCHEMA.md, SNAPSHOT).
 SENSOR_VALIDITY_NOT_FITTED = 0x0040
 # sensor_id u8, status u8, validity_flags u16, measurement_timestamp_us u64, raw_angle u16,
 # processed_angle_mdeg i32, magnitude u16, agc u8, reserved u8, reserved_2 u16

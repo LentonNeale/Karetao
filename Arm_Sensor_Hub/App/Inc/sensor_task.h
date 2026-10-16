@@ -11,7 +11,6 @@
 #include <stdint.h>
 
 #include "lifecycle.h"
-#include "sensor_latest_value.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +20,8 @@ extern "C" {
 #define SENSOR_TASK_AXIS_COUNT 6u
 /** Highest selectable TCA9548A channel index. */
 #define SENSOR_TASK_MAX_MUX_CHANNEL 7u
+/** Sensor sweep period (PRM-ACQ-05); the sensor freshness window derives from it (app_init.c). */
+#define SENSOR_TASK_BRINGUP_POLL_PERIOD_MS 20u
 
 typedef enum
 {
@@ -77,8 +78,9 @@ bool SensorTask_ConfigureMuxChannels(const uint8_t *mux_channels, size_t count);
  * @brief Declare which logical axes carry an encoder.
  *
  * `encoder_fitted[axis]` false marks the axis NOT_FITTED: bring-up and polling
- * never address it and its record carries only the NOT_FITTED validity bit, with
- * no fault. The default, until this is called, is every axis fitted. Returns
+ * never address it. Its record's NOT_FITTED property is a latest-value slot
+ * property, set by LatestValue_Configure from the same table (app_init.c). The
+ * default, until this is called, is every axis fitted. Returns
  * false when the table is NULL, the count is not SENSOR_TASK_AXIS_COUNT, or the
  * service is already ACTIVE.
  */
@@ -108,7 +110,6 @@ uint32_t SensorTask_GetBringupDiagWord(void);
  * @brief Executes task is active.
  */
 uint8_t SensorTask_IsActive(void);
-const Sensor_LatestValue *SensorTask_GetLatestValues(size_t *record_count);
 
 #ifdef __cplusplus
 }

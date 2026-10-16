@@ -1,5 +1,6 @@
 #include "spi_protocol.h"
 
+#include <stddef.h>
 #include <string.h>
 
 #include "crc32_iso_hdlc.h"
@@ -85,6 +86,86 @@ SpiProtocol_Result SpiProtocol_BuildSnapshotFrame(SpiProtocol_State *state,
     }
 
     SpiProtocol_BuildFrame(state, SPI_MESSAGE_SNAPSHOT, payload, payload_length, response);
+    return SPI_PROTOCOL_OK;
+}
+
+_Static_assert(LATEST_VALUE_SENSOR_COUNT == SPI_SNAPSHOT_SENSOR_RECORD_COUNT,
+               "Every sensor slot is one fixed snapshot record");
+_Static_assert(LATEST_VALUE_MOTOR_COUNT <= SPI_SNAPSHOT_MOTOR_RECORD_MAX_COUNT,
+               "Every motor slot must fit in the snapshot");
+_Static_assert(LATEST_VALUE_POSITION_REPLY_BYTES <= 8u, "The position reply fits the motor record payload");
+
+static uint16_t SpiProtocol_SensorValidity(const LatestValue_SensorRecord *record)
+{
+    if (!record->fitted) { return SPI_SENSOR_VALIDITY_NOT_FITTED; }
+    if (!record->has_sample) { return 0u; }
+    switch (record->condition) {
+    case LATEST_VALUE_SAMPLE_OK:
+        /* Stale: bit 0 clear, the last values and timestamp kept (SPI_PAYLOAD_SCHEMA.md). */
+        return (record->freshness == LATEST_VALUE_FRESHNESS_FRESH) ? SPI_SENSOR_VALIDITY_SAMPLE_VALID : 0u;
+    case LATEST_VALUE_SAMPLE_COMM_ERROR: return SPI_SENSOR_VALIDITY_COMMUNICATION_ERROR;
+    case LATEST_VALUE_SAMPLE_MAGNET_MISSING: return SPI_SENSOR_VALIDITY_MAGNET_NOT_DETECTED;
+    case LATEST_VALUE_SAMPLE_MAGNET_WEAK: return SPI_SENSOR_VALIDITY_MAGNET_TOO_WEAK;
+    case LATEST_VALUE_SAMPLE_MAGNET_STRONG: return SPI_SENSOR_VALIDITY_MAGNET_TOO_STRONG;
+    default: return 0u;
+    }
+}
+
+static void SpiProtocol_SerializeSensorRecord(uint8_t *out, const LatestValue_SensorRecord *record)
+{
+    out[SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] = record->logical_id;
+    out[SPI_SENSOR_RECORD_OFFSET_STATUS] = record->status;
+    LeBytes_WriteU16(&out[SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS], SpiProtocol_SensorValidity(record));
+    LeBytes_WriteU64(&out[SPI_SENSOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US], record->measurement_timestamp_us);
+    LeBytes_WriteU16(&out[SPI_SENSOR_RECORD_OFFSET_RAW_ANGLE], record->raw_angle_counts);
+    LeBytes_WriteU32(&out[SPI_SENSOR_RECORD_OFFSET_PROCESSED_ANGLE_MDEG], (uint32_t)record->processed_angle_mdeg);
+    LeBytes_WriteU16(&out[SPI_SENSOR_RECORD_OFFSET_MAGNITUDE], record->magnitude);
+    out[SPI_SENSOR_RECORD_OFFSET_AGC] = record->agc;
+}
+
+/* The v1 motor record carries the last position reply only (ruling R10); speed stays in the copy.
+ * Neither polled reply (30H position, 32H speed) has a status byte, so `status` is 0 and
+ * CONTROLLER_STATUS_VALID is never set. */
+static void SpiProtocol_SerializeMotorRecord(uint8_t *out, const LatestValue_MotorRecord *record)
+{
+    out[SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX] = record->motor_index;
+    LeBytes_WriteU16(&out[SPI_MOTOR_RECORD_OFFSET_VALIDITY_FLAGS],
+                     (record->freshness == LATEST_VALUE_FRESHNESS_FRESH) ? SPI_MOTOR_VALIDITY_FEEDBACK_VALID : 0u);
+    LeBytes_WriteU16(&out[SPI_MOTOR_RECORD_OFFSET_CAN_ID], record->can_id);
+    out[SPI_MOTOR_RECORD_OFFSET_COMMAND_CODE] = record->position_command_code;
+    LeBytes_WriteU64(&out[SPI_MOTOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US], record->position_timestamp_us);
+    if (record->has_position) {
+        out[SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] = LATEST_VALUE_POSITION_REPLY_BYTES;
+        memcpy(&out[SPI_MOTOR_RECORD_OFFSET_PAYLOAD], record->position_reply, LATEST_VALUE_POSITION_REPLY_BYTES);
+    }
+}
+
+SpiProtocol_Result SpiProtocol_SerializeSnapshot(const LatestValue_Snapshot *copy,
+                                                 uint16_t dropped_snapshot_count_low,
+                                                 uint8_t payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES],
+                                                 uint16_t *payload_length)
+{
+    uint8_t motor_count = 0u;
+    size_t index;
+
+    if ((copy == NULL) || (payload == NULL) || (payload_length == NULL)) { return SPI_PROTOCOL_BAD_LENGTH; }
+
+    /* Zero first: every reserved byte and unused payload byte must be zero on the wire. */
+    memset(payload, 0, SPI_SNAPSHOT_MAX_PAYLOAD_BYTES);
+    for (index = 0u; index < LATEST_VALUE_SENSOR_COUNT; ++index) {
+        SpiProtocol_SerializeSensorRecord(&payload[SPI_SNAPSHOT_PREFIX_BYTES + (index * SPI_SENSOR_RECORD_BYTES)],
+                                          &copy->sensors[index]);
+    }
+    for (index = 0u; index < LATEST_VALUE_MOTOR_COUNT; ++index) {
+        if (!copy->motors[index].registered) { continue; }
+        SpiProtocol_SerializeMotorRecord(&payload[SPI_SNAPSHOT_PAYLOAD_BYTES(motor_count)], &copy->motors[index]);
+        motor_count++;
+    }
+    payload[SPI_SNAPSHOT_OFFSET_SCHEMA_VERSION] = SPI_SNAPSHOT_SCHEMA_VERSION;
+    payload[SPI_SNAPSHOT_OFFSET_SENSOR_COUNT] = (uint8_t)SPI_SNAPSHOT_SENSOR_RECORD_COUNT;
+    payload[SPI_SNAPSHOT_OFFSET_MOTOR_COUNT] = motor_count;
+    LeBytes_WriteU16(&payload[SPI_SNAPSHOT_OFFSET_DROPPED_SNAPSHOT_COUNT_LOW], dropped_snapshot_count_low);
+    *payload_length = (uint16_t)SPI_SNAPSHOT_PAYLOAD_BYTES(motor_count);
     return SPI_PROTOCOL_OK;
 }
 

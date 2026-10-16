@@ -23,19 +23,18 @@ Application code is in `App/` ([`Inc`](../App/Inc/), [`Src`](../App/Src/)). The 
 flowchart TB
   subgraph SENS["Sensor path"]
     ST["SensorTask"] --> AS["AS5600"] --> MUX["TCA9548A mux"] --> I2CM["I2CManager"]
-    ST --> SLV["sensor_latest_value"]
+    ST --> LV["latest_value"]
   end
   subgraph MOT["Motor path"]
     CS["CanService"] --> MKS["MksServo via mks_api.h"]
     CS --> TXP["can_tx_policy"]
-    CS --> MLV["motor_latest_value"]
+    CS --> LV
   end
   subgraph HOST["Host path"]
     SS["SpiSlaveService"] --> SB["snapshot_builder"]
     SS --> SP["spi_protocol"] --> CRC["crc32_iso_hdlc"]
     SS --> DR["spi_data_ready"]
-    SS -. reads .-> SLV
-    SS -. reads .-> MLV
+    SS -- copies --> LV
   end
   subgraph CROSS["Cross-cutting"]
     AI["app_init"] --> LC["lifecycle - used by every service"]
@@ -55,10 +54,10 @@ flowchart TB
 | `app_init` | Initialise services in order, hold the commissioning tables, activate services once | [`app_init.h`](../App/Inc/app_init.h) | [`SYSTEM_CONFIGURATION.md`](../../Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md) |
 | `i2c_manager` | Own I2C1: one mutex, polled transfers, atomic mux-select-then-read | [`i2c_manager.h`](../App/Inc/i2c_manager.h) | [`I2C_MANAGER_CONTRACT.md`](I2C_MANAGER_CONTRACT.md) |
 | `tca9548a_mux`, `as5600` | Select a mux channel; read encoder registers and build a sample | [`tca9548a_mux.h`](../App/Inc/tca9548a_mux.h), [`as5600.h`](../App/Inc/as5600.h) | Vendor datasheets |
-| `sensor_task` | Sweep the fitted axes, validate samples, write the latest values | [`sensor_task.h`](../App/Inc/sensor_task.h) | [`SYSTEM_CONFIGURATION.md`](../../Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md) |
+| `sensor_task` | Sweep the fitted axes, classify each read, accept it into the latest-value store | [`sensor_task.h`](../App/Inc/sensor_task.h) | [`SYSTEM_CONFIGURATION.md`](../../Documentation/06_CONFIGURATION/SYSTEM_CONFIGURATION.md) |
 | `can_service` | Own CAN1: filter, receive, poll scheduler, transmit, bus-off handling | [`can_service.h`](../App/Inc/can_service.h) | [`CAN_SYSTEM_INTERFACE.md`](../../Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md) |
 | `can_tx_policy` | Priority transmit queue and bus-off recovery schedule | [`can_tx_policy.h`](../App/Inc/can_tx_policy.h) | [`CAN_SYSTEM_INTERFACE.md`](../../Documentation/02_INTERFACES/CAN/CAN_SYSTEM_INTERFACE.md) |
-| `sensor_latest_value`, `motor_latest_value` | Per-axis and per-motor latest-value records | [`sensor_latest_value.h`](../App/Inc/sensor_latest_value.h), [`motor_latest_value.h`](../App/Inc/motor_latest_value.h) | [`SPI_PAYLOAD_SCHEMA.md`](../../Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md) |
+| `latest_value` | The one owner of the newest sample per axis and feedback per motor: Configure, AcceptSample, AcceptFeedback, CopySnapshot; ageing at copy time; the implementation of snapshot coherency | [`latest_value.h`](../App/Inc/latest_value.h) | [`SPI_SYSTEM_INTERFACE.md`](../../Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md) §8, [`SPI_PAYLOAD_SCHEMA.md`](../../Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md), PRM-ACQ-07, PRM-MOT-01 |
 | `spi_slave_service` | Own SPI3 and DATA_READY: DMA arm, request handling, stage and publish | [`spi_slave_service.h`](../App/Inc/spi_slave_service.h) | [`SPI_SYSTEM_INTERFACE.md`](../../Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md) |
 | `spi_protocol`, `crc32_iso_hdlc` | Frame validate, build, reply and CRC (mirrored in Python) | [`spi_protocol.h`](../App/Inc/spi_protocol.h), [`spi_payload_layout.h`](../App/Inc/spi_payload_layout.h), [`crc32_iso_hdlc.h`](../App/Inc/crc32_iso_hdlc.h) | [`SPI_SYSTEM_INTERFACE.md`](../../Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md) |
 | `snapshot_builder`, `spi_data_ready` | Staged-frame pool between build and DMA; DATA_READY state and recovery decisions | [`snapshot_builder.h`](../App/Inc/snapshot_builder.h), [`spi_data_ready.h`](../App/Inc/spi_data_ready.h) | [`SPI_SYSTEM_INTERFACE.md`](../../Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md) |
@@ -166,11 +165,10 @@ This stops the MCU's own outputs. It cannot stop the drives, which hold their la
 ```mermaid
 flowchart LR
   ENC["AS5600 via mux"] --> ST["SensorTask_Process"]
-  ST --> SLV["sensor latest values"]
+  ST -- AcceptSample --> LV["latest_value store"]
   DRV["MKS drive reply"] --> RX["CanService_ProcessRxFrames"]
-  RX --> MLV["motor latest values"]
-  SLV -.-> SER["SerializeLatestSnapshot"]
-  MLV -.-> SER
+  RX -- AcceptFeedback --> LV
+  LV -. CopySnapshot .-> SER["SpiProtocol_SerializeSnapshot"]
   SER --> SB["snapshot_builder stage"]
   SB --> SP["spi_protocol frame + CRC"]
   SP --> ARM["arm DMA"]
@@ -178,7 +176,7 @@ flowchart LR
   DR --> PI["Pi clocks the frame"]
 ```
 
-Solid arrows are as-built. Dashed arrows and the serialize step are **not connected today**: `SpiSlaveService_StageLatestSnapshot` and `SpiSlaveService_SetUnsolicitedSnapshot` exist, but nothing calls them, so `GET_SNAPSHOT` is answered with an ACK and the Pi cannot read the sensor and motor data yet (B65, WP10).
+Solid arrows are as-built. The dashed arrow is built but **not triggered today**: `SpiSlaveService_StageLatestSnapshot` copies the store and serialises the copy, but nothing calls it yet, so `GET_SNAPSHOT` is answered with an ACK and the Pi cannot read the sensor and motor data (GitHub #81 answers GET_SNAPSHOT from a fresh copy; GitHub #82 adds the periodic snapshot at PRM-ACQ-01).
 
 Order of operations for a reply, from `SpiSlaveService_PublishStagedFrame`:
 
@@ -190,7 +188,7 @@ Order of operations for a reply, from `SpiSlaveService_PublishStagedFrame`:
 
 Recovery paths in `SpiSlaveService_Process`: a periodic poll re-arms a staged frame whose line is low (`PRM-SPI-03`), and a host-stall timeout aborts an armed transfer that the Pi never clocked (`PRM-SPI-04`). On a DMA error the service aborts and re-arms a boot-status frame. The pipelined request and response sequence, the frame layout and the DATA_READY rules are contracts, not defined here: [`SPI_SYSTEM_INTERFACE.md`](../../Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTERFACE.md), [`SPI_PAYLOAD_SCHEMA.md`](../../Documentation/02_INTERFACES/SPI/SPI_PAYLOAD_SCHEMA.md). The C and Python frame code stay in lockstep.
 
-The latest-value stores have no protection today because one task writes and reads them. When sensor acquisition moves to its own task (R15, B81) they need a mutex or critical section, and so does the time-service wrap state.
+Snapshot coherency (`SPI_SYSTEM_INTERFACE.md` §8) is implemented by the latest-value store, `latest_value.c`. Producers only accept; the SPI service takes a copy into its own static buffer and serialises that copy, so no record changes during serialisation or DMA. Every accept and the copy run in a FreeRTOS task critical section (R15's protection, in place before acquisition moves to its own task, B81). On this port that raises BASEPRI to `configMAX_SYSCALL_INTERRUPT_PRIORITY`, holding SPI3, its DMA streams and the HAL tick pending for the few microseconds of the copy; serialisation runs outside it. `LatestValue_Configure` takes no lock: it runs in `App_Init`, before the scheduler, when a critical section would leave interrupts masked. Freshness is judged at copy time against PRM-ACQ-07 (sensor) and PRM-MOT-01 (motor). The time-service wrap state still needs its own protection when B81 lands.
 
 ## 7. Lifecycle and health
 
@@ -248,12 +246,12 @@ Hand-written code in `USER CODE` blocks that the design depends on: `App_Init` a
 
 | Gap | As built | Planned | Story or ruling | Package |
 |---|---|---|---|---|
-| No SNAPSHOT is staged | `GET_SNAPSHOT` is answered with ACK; the stage functions have no caller | Serve the latest sensor and motor records | B65 | WP10 |
+| No SNAPSHOT is staged | `GET_SNAPSHOT` is answered with ACK; the snapshot build (a coherent latest-value copy, serialised by `spi_protocol`, GitHub #80) has no caller | Serve the latest sensor and motor records | B65 (GitHub #81) | WP10 |
 | CAN bit rate | `hcan1.Init.Prescaler` in `main.c` gives a rate that differs from the decided rate (`PRM-CAN-03`) | Set the prescaler in the `.ioc` and regenerate | R9, B79 | WP11 |
 | CAN automatic retransmission | `hcan1.Init.AutoRetransmission` is disabled | Enabled; TX counters added | R13, B86 | WP11 |
 | CAN bus-off detection | `CanService_ProcessBusOff` tests a HAL error flag that is only set from a CAN interrupt, and none is enabled, so bus-off is not detected | Detect from the hardware flag; recovery per R12 | R12, B85 | WP11 |
 | No watchdog | The IWDG module is not enabled in `stm32f4xx_hal_conf.h`; faults and NMI loop forever | IWDG through CubeMX, refreshed only when every task has run; reset cause latched | R24, B113 | WP14 |
-| Single application task | Sensor sweep blocks CAN and SPI handling in the one loop | Sensor acquisition in its own lower-priority task; stores protected | R15, B81 | WP11 |
+| Single application task | Sensor sweep blocks CAN and SPI handling in the one loop; the latest-value store is already protected (GitHub #80) | Sensor acquisition in its own lower-priority task | R15, B81 | WP11 |
 | TIME_SYNC design | Older one-way TIME_SYNC with an STM32-held offset in `time_service.c` | STM32 reports raw local time; the Pi converts (Issue #12) | R16 | WP12 |
 | `motion_permission` not compiled | In `App/` but absent from both source lists, exempted in `cmake/app_source_exemptions.cmake` (the B54 check is built) | Built and wired with the gated-motion work; the exemption is removed then | B106 | WP14 |
 | Drive safety | No stop from the STM32 side on a fault or overflow | Controlled stop at boot and CAN activation; drive-side heartbeat | R23, B110 | WP14 |

@@ -13,6 +13,7 @@
 #include "crc32_iso_hdlc.h"
 #include "health_monitor.h"
 #include "i2c_manager.h"
+#include "latest_value.h"
 #include "sensor_task.h"
 #include "spi_slave_service.h"
 #include "stack_monitor.h"
@@ -630,21 +631,44 @@ static void TestMuxAndAs5600Core(void)
     assert(s_i2c_writes[1].data[0] == 0x0Bu);
 }
 
+#define TEST_SENSOR_WINDOW_US UINT64_C(100000)
+#define TEST_MOTOR_WINDOW_US UINT64_C(200000)
+
+/* App_Init configures the store from the commissioning tables; a test that drives one service
+ * alone configures it here. NULL fitted means every axis is fitted. */
+static void ConfigureStore(const bool *fitted, bool motor0_registered, uint16_t motor0_can_id)
+{
+    LatestValue_Config config;
+    size_t axis;
+
+    memset(&config, 0, sizeof(config));
+    for (axis = 0u; axis < LATEST_VALUE_SENSOR_COUNT; ++axis) {
+        config.sensor_fitted[axis] = (fitted == NULL) || fitted[axis];
+    }
+    config.motors[0].registered = motor0_registered;
+    config.motors[0].logical_joint_id = 0u;
+    config.motors[0].can_id = motor0_can_id;
+    config.motors[0].configuration_version = 1u;
+    config.sensor_window_us = TEST_SENSOR_WINDOW_US;
+    config.motor_window_us = TEST_MOTOR_WINDOW_US;
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_OK);
+}
+
 static void TestSensorTaskCore(void)
 {
-    size_t record_count = 0u;
-    const Sensor_LatestValue *records;
+    static LatestValue_Snapshot copy;
 
+    ConfigureStore(NULL, false, 0u);
     SensorTask_Init();
     assert(SensorTask_Activate() == LIFECYCLE_RESULT_OK);
     s_hal_tick = 20u;
     s_i2c_tx_statuses[0] = HAL_ERROR;
     SensorTask_Process();
     assert(SensorTask_GetBringupResult() == SENSOR_TASK_BRINGUP_FAIL_COMM);
-    records = SensorTask_GetLatestValues(&record_count);
-    assert(records != NULL);
-    assert(record_count == 6u);
-    assert(records[0].freshness == SENSOR_FRESHNESS_INVALID);
+    /* The mux probe failed before any axis was read: nothing was accepted. */
+    LatestValue_CopySnapshot(s_time_now_us, &copy);
+    assert(!copy.sensors[0].has_sample);
+    assert(copy.sensors[0].freshness == LATEST_VALUE_FRESHNESS_NONE);
     s_i2c_tx_statuses[0] = HAL_OK;
 }
 
@@ -655,6 +679,7 @@ static void TestSensorTaskMuxMapping(void)
     static const uint8_t duplicated[SENSOR_TASK_AXIS_COUNT] = {2u, 3u, 4u, 5u, 6u, 6u};
 
     TCA9548A_Init(TCA9548A_ADDR_0);
+    ConfigureStore(NULL, false, 0u);
     SensorTask_Init();
 
     /* Rejected maps change nothing. */
@@ -688,15 +713,12 @@ static void TestSensorTaskMuxMapping(void)
 
     /* Logical identity stays 0-5 no matter which channels are bound. */
     {
-        size_t record_count = 0u;
-        const Sensor_LatestValue *records = SensorTask_GetLatestValues(&record_count);
+        static LatestValue_Snapshot copy;
         size_t axis;
 
-        assert(records != NULL);
-        assert(record_count == SENSOR_TASK_AXIS_COUNT);
-        for (axis = 0u; axis < record_count; ++axis) {
-            assert(records[axis].logical_joint_id == (uint8_t)axis);
-            assert(records[axis].sensor_id == (uint8_t)axis);
+        LatestValue_CopySnapshot(s_time_now_us, &copy);
+        for (axis = 0u; axis < LATEST_VALUE_SENSOR_COUNT; ++axis) {
+            assert(copy.sensors[axis].logical_id == (uint8_t)axis);
         }
     }
 }
@@ -705,12 +727,15 @@ static void TestSensorTaskNotFitted(void)
 {
     static const uint8_t commissioned[SENSOR_TASK_AXIS_COUNT] = {2u, 3u, 4u, 5u, 6u, 7u};
     static const bool fitted[SENSOR_TASK_AXIS_COUNT] = {true, true, true, false, true, true};
-    size_t record_count = 0u;
-    const Sensor_LatestValue *records;
+    static LatestValue_Snapshot copy;
+    static uint8_t payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
+    uint16_t payload_length = 0u;
+    unsigned critical_entries;
     uint32_t write;
     size_t axis;
 
     TCA9548A_Init(TCA9548A_ADDR_0);
+    ConfigureStore(fitted, false, 0u);
     SensorTask_Init();
     assert(SensorTask_ConfigureMuxChannels(commissioned, SENSOR_TASK_AXIS_COUNT));
 
@@ -730,41 +755,133 @@ static void TestSensorTaskNotFitted(void)
     assert(SensorTask_GetBringupResult() == SENSOR_TASK_BRINGUP_PASS);
     assert(SensorTask_GetBringupSnapshot()->comm_error_count == 0u);
 
-    /* Polling does not address it either, and keeps refreshing the record. */
+    /* Polling does not address it either. Every fitted axis is read and accepted, each accept
+     * inside the store's critical section. */
     s_i2c_write_count = 0u;
     s_i2c_tx_call_count = 0u;
     s_i2c_rx_call_count = 0u;
     s_hal_tick = 40u;
+    critical_entries = HostStub_CriticalEntryCount();
     SensorTask_Process();
+    assert(HostStub_CriticalEntryCount() == critical_entries + 5u);
+    assert(HostStub_CriticalDepth() == 0u);
     for (write = 0u; write < s_i2c_write_count; ++write) {
         assert(s_i2c_writes[write].data[0] != (1u << 5u));
     }
     assert(SensorTask_GetBringupSnapshot()->comm_error_count == 0u);
 
-    records = SensorTask_GetLatestValues(&record_count);
-    assert(records != NULL);
-    assert(record_count == SENSOR_TASK_AXIS_COUNT);
-    for (axis = 0u; axis < record_count; ++axis) {
+    /* The not-fitted axis is a slot property, refreshed at copy time and serialised with only
+     * the NOT_FITTED bit; the fitted axes hold the samples the sweep accepted. */
+    s_time_now_us = 5000u;
+    LatestValue_CopySnapshot(s_time_now_us, &copy);
+    assert(SpiProtocol_SerializeSnapshot(&copy, 0u, payload, &payload_length) == SPI_PROTOCOL_OK);
+    for (axis = 0u; axis < LATEST_VALUE_SENSOR_COUNT; ++axis) {
+        const uint8_t *record = &payload[SPI_SNAPSHOT_PREFIX_BYTES + (axis * SPI_SENSOR_RECORD_BYTES)];
+        uint16_t flags = ReadU16(&record[SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS]);
         if (axis == 3u) {
-            assert(records[axis].validity_flags == SENSOR_VALIDITY_NOT_FITTED);
+            assert(!copy.sensors[axis].fitted);
+            assert(flags == SPI_SENSOR_VALIDITY_NOT_FITTED);
+            assert(ReadU64(&record[SPI_SENSOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US]) == UINT64_C(5000));
         } else {
-            assert((records[axis].validity_flags & SENSOR_VALIDITY_NOT_FITTED) == 0u);
+            assert(copy.sensors[axis].fitted && copy.sensors[axis].has_sample);
+            assert((flags & SPI_SENSOR_VALIDITY_NOT_FITTED) == 0u);
         }
     }
 }
 
 static void TestCanServiceCore(void)
 {
-    assert(CanService_RegisterMotor(CAN_SERVICE_MAX_MKS_MOTORS, 0u, 0u, CAN_SERVICE_MKS_SERVO42, 1u) ==
+    assert(CanService_RegisterMotor(CAN_SERVICE_MAX_MKS_MOTORS, CAN_SERVICE_MKS_SERVO42, 1u) ==
            MKS_INVALID_ARGUMENT);
 
     CanService_Init();
     assert(CanService_RequestEncoderValue(0u) == MKS_INVALID_ARGUMENT);
     assert(CanService_Activate() == LIFECYCLE_RESULT_OK);
-    assert(CanService_RegisterMotor(0u, 0u, 1u, CAN_SERVICE_MKS_SERVO42, 0x800u) ==
+    assert(CanService_RegisterMotor(0u, CAN_SERVICE_MKS_SERVO42, 0x800u) ==
            MKS_CAN_ID_OUT_OF_RANGE);
-    assert(CanService_RegisterMotor(0u, 0u, 1u, CAN_SERVICE_MKS_SERVO42, 0x123u) == MKS_OK);
+    assert(CanService_RegisterMotor(0u, CAN_SERVICE_MKS_SERVO42, 0x123u) == MKS_OK);
     assert(CanService_RequestEncoderValue(0u) == MKS_OK);
+}
+
+/* Queues one received frame for motor CAN ID can_id. The host build stubs mks_decode (above), so
+ * the decoded reply is set directly: code, then the bytes between the code and the checksum. */
+static void ScriptMksReply(uint16_t can_id, const uint8_t *reply, uint8_t reply_length)
+{
+    CanRxScript *entry = &s_can_rx_script[s_can_rx_count++];
+
+    memset(entry, 0, sizeof(*entry));
+    entry->header.StdId = can_id;
+    entry->header.IDE = CAN_ID_STD;
+    entry->header.DLC = (uint32_t)reply_length + 1u;
+    memset(&s_mks_decoded_response, 0, sizeof(s_mks_decoded_response));
+    s_mks_decoded_response.can_id = can_id;
+    s_mks_decoded_response.code = reply[0];
+    s_mks_decoded_response.payload_len = (uint8_t)(reply_length - 1u);
+    memcpy(s_mks_decoded_response.payload, &reply[1], (size_t)reply_length - 1u);
+    s_mks_decode_status = MKS_OK;
+}
+
+static void TestCanServiceFeedbackIntoStore(void)
+{
+    /* 30H: carry -1 (int32) and value 0x3FFE (uint16), big-endian, so -2 counts; the first data
+     * byte 0x00 variant is covered by the status check below. 32H: speed -300 rpm as int16. */
+    static const uint8_t position_reply[7] = {0x30u, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0x3Fu, 0xFEu};
+    static const uint8_t low_position_reply[7] = {0x30u, 0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x05u};
+    static const uint8_t speed_reply[3] = {0x32u, 0xFEu, 0xD4u};
+    static LatestValue_Snapshot copy;
+    static uint8_t first[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
+    static uint8_t second[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
+    uint16_t length = 0u;
+    const uint8_t *motor_record = &first[SPI_SNAPSHOT_PAYLOAD_BYTES(0u)];
+
+    CanService_Init();
+    assert(CanService_Activate() == LIFECYCLE_RESULT_OK);
+    assert(CanService_RegisterMotor(0u, CAN_SERVICE_MKS_SERVO42, 0x001u) == MKS_OK);
+    ConfigureStore(NULL, true, 0x001u);
+    CanService_SetPollPeriodMs(0u);
+
+    s_time_now_us = 1000u;
+    ScriptMksReply(0x001u, position_reply, sizeof(position_reply));
+    CanService_Process();
+    assert(CanService_GetRxOkCount(0u) == 1u);
+    LatestValue_CopySnapshot(UINT64_C(1500), &copy);
+    assert(copy.motors[0].has_position);
+    assert(copy.motors[0].position_counts == INT64_C(-2));
+    assert(copy.motors[0].position_timestamp_us == UINT64_C(1000));
+    assert(copy.motors[0].freshness == LATEST_VALUE_FRESHNESS_FRESH);
+    assert(!copy.motors[0].has_speed);
+    assert(SpiProtocol_SerializeSnapshot(&copy, 0u, first, &length) == SPI_PROTOCOL_OK);
+    assert(length == SPI_SNAPSHOT_PAYLOAD_BYTES(1u));
+    assert(motor_record[SPI_MOTOR_RECORD_OFFSET_COMMAND_CODE] == 0x30u);
+    assert(motor_record[SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] == 6u);
+    assert(memcmp(&motor_record[SPI_MOTOR_RECORD_OFFSET_PAYLOAD], &position_reply[1], 6u) == 0);
+    assert(ReadU64(&motor_record[SPI_MOTOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US]) == UINT64_C(1000));
+
+    /* A speed reply is merged with its own timestamp and leaves the v1 record unchanged (R10). */
+    s_time_now_us = 1200u;
+    ScriptMksReply(0x001u, speed_reply, sizeof(speed_reply));
+    CanService_Process();
+    LatestValue_CopySnapshot(UINT64_C(1500), &copy);
+    assert(copy.motors[0].has_speed);
+    assert(copy.motors[0].speed_rpm == -300);
+    assert(copy.motors[0].speed_timestamp_us == UINT64_C(1200));
+    assert(copy.motors[0].position_counts == INT64_C(-2));
+    assert(SpiProtocol_SerializeSnapshot(&copy, 0u, second, &length) == SPI_PROTOCOL_OK);
+    assert(memcmp(first, second, length) == 0);
+
+    /* A position whose first data byte is 0x00 (or 0x01) looks like a status byte to the decoder
+     * (has_status); the record must not report a drive status for it. */
+    s_time_now_us = 1300u;
+    ScriptMksReply(0x001u, low_position_reply, sizeof(low_position_reply));
+    s_mks_decoded_response.has_status = true;
+    s_mks_decoded_response.status = 0u;
+    CanService_Process();
+    LatestValue_CopySnapshot(UINT64_C(1500), &copy);
+    assert(copy.motors[0].position_counts == INT64_C(0x4005));
+    assert(SpiProtocol_SerializeSnapshot(&copy, 0u, first, &length) == SPI_PROTOCOL_OK);
+    assert(motor_record[SPI_MOTOR_RECORD_OFFSET_STATUS] == 0u);
+    assert(ReadU16(&motor_record[SPI_MOTOR_RECORD_OFFSET_VALIDITY_FLAGS]) == SPI_MOTOR_VALIDITY_FEEDBACK_VALID);
+    assert(HostStub_CriticalDepth() == 0u);
 }
 
 static void TestSpiSlaveServiceCore(void)
@@ -966,7 +1083,8 @@ static void TestSpiSlaveServiceLatestSnapshot(void)
     SensorTask_Init();
     assert(SensorTask_ConfigureFittedAxes(fitted, SENSOR_TASK_AXIS_COUNT));
     CanService_Init();
-    assert(CanService_RegisterMotor(0u, 0u, 1u, CAN_SERVICE_MKS_SERVO42, 0x123u) == MKS_OK);
+    assert(CanService_RegisterMotor(0u, CAN_SERVICE_MKS_SERVO42, 0x123u) == MKS_OK);
+    ConfigureStore(fitted, true, 0x123u);
     s_time_now_us = 700u;
     /* Leave the DMA idle after activation so the staged snapshot is the frame armed. */
     s_spi_dma_status = HAL_ERROR;
@@ -1094,6 +1212,9 @@ int main(void)
 
     ResetHalState();
     TestCanServiceCore();
+
+    ResetHalState();
+    TestCanServiceFeedbackIntoStore();
 
     ResetHalState();
     TestSpiSlaveServiceCore();

@@ -84,28 +84,43 @@ def version_payload(response_to_seq: int) -> bytes:
                        identity['git_hash_abbrev'], identity['commit_epoch_secs'])
 
 
-def sensor_record(sensor_id: int, flags: int, ts: int, raw: int, mdeg: int, mag: int, agc: int) -> bytes:
-    return struct.pack('<BBHQHiHBBH', sensor_id, 0, flags, ts, raw, mdeg, mag, agc, 0, 0)
+def sensor_record(sensor_id: int, status: int, flags: int, ts: int, raw: int, mdeg: int, mag: int, agc: int) -> bytes:
+    return struct.pack('<BBHQHiHBBH', sensor_id, status, flags, ts, raw, mdeg, mag, agc, 0, 0)
 
 
 def motor_record(index: int, flags: int, can_id: int, cmd: int, ts: int, payload: bytes) -> bytes:
     return struct.pack('<BBHHBBQ8s', index, 0, flags, can_id, cmd, len(payload), ts, payload.ljust(8, b'\0'))
 
 
+def mdeg(raw: int) -> int:
+    # processed_angle_mdeg is RAW ANGLE scaled to millidegrees (ruling R6), truncated.
+    return raw * 360_000 // 4096
+
+
+# The snapshot the latest-value store produces (Arm_Sensor_Hub/App/Src/latest_value.c) for these
+# inputs, copied at SNAPSHOT_COPY_US: spi_golden_vector_tests.c feeds the same samples and
+# feedback, serialises the copy and compares it with this payload byte for byte.
+SNAPSHOT_COPY_US = 1_000_700
+
+
 def snapshot_payload(response_to_seq: int) -> bytes:
     # Prefix (spi_payload_layout.h SPI_SNAPSHOT_*): schema 1, six sensor records, one motor record.
     prefix = struct.pack('<BBBBHHI', 1, 6, 1, 0, 0, 0, response_to_seq)
-    valid = 0x0001 | 0x0020          # SAMPLE_VALID | TIMESTAMP_SYNCHRONIZED
+    valid = 0x0001                   # SAMPLE_VALID; bit 5 is retired by R16 and written zero
     not_fitted = 0x0040
+    md = 0x20                        # AS5600 STATUS with MD (magnet detected) set
     sensors = b''.join([
-        sensor_record(0, valid, 1_000_100, 0x0123, 25_620, 1_480, 96),
-        sensor_record(1, valid, 1_000_250, 0x0800, 180_000, 1_502, 93),
-        sensor_record(2, valid, 1_000_400, 0x0FFF, 359_912, 1_431, 101),
-        sensor_record(3, not_fitted, 0, 0, 0, 0, 0),
-        sensor_record(4, not_fitted, 0, 0, 0, 0, 0),
-        sensor_record(5, not_fitted, 0, 0, 0, 0, 0),
+        sensor_record(0, md, valid, 1_000_100, 0x0123, mdeg(0x0123), 1_480, 96),
+        sensor_record(1, md, valid, 1_000_250, 0x0800, mdeg(0x0800), 1_502, 93),
+        sensor_record(2, md, valid, 1_000_400, 0x0FFF, mdeg(0x0FFF), 1_431, 101),
+        # A not-fitted record is stamped with the time it was last refreshed: the copy time.
+        sensor_record(3, 0, not_fitted, SNAPSHOT_COPY_US, 0, 0, 0, 0),
+        sensor_record(4, 0, not_fitted, SNAPSHOT_COPY_US, 0, 0, 0, 0),
+        sensor_record(5, 0, not_fitted, SNAPSHOT_COPY_US, 0, 0, 0, 0),
     ])
-    motor = motor_record(0, 0x0001, 0x0001, 0x31, 1_000_600, bytes.fromhex('31 00 00 12 34 56 00 00'))
+    # The raw 30H reply after the command code (the encoder read the firmware polls): carry 0x48
+    # as int32 then value 0x3456 as uint16, big-endian. Status 0 and bit 1 clear: no status byte.
+    motor = motor_record(0, 0x0001, 0x0001, 0x30, 1_000_600, bytes.fromhex('00 00 00 48 34 56'))
     return prefix + sensors + motor
 
 

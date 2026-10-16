@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include "lifecycle.h"
-#include "motor_latest_value.h"
 #include "time_service.h"
 
 #ifdef __cplusplus

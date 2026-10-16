@@ -5,10 +5,12 @@
 
 #include "can_service.h"
 #include "can_tx_policy.h"
+#include "latest_value.h"
 
 #include <string.h>
 
 #include "main.h"
+#include "time_service.h"
 
 extern CAN_HandleTypeDef hcan1;
 
@@ -22,7 +24,6 @@ typedef struct {
 } CanService_MotorSlot;
 
 static CanService_MotorSlot s_motor_slots[CAN_SERVICE_MAX_MKS_MOTORS];
-static Motor_LatestValue s_latest_motor_values[CAN_SERVICE_MAX_MKS_MOTORS];
 static bool s_can_started;
 static Lifecycle_Record s_lifecycle;
 static uint32_t s_poll_period_ms;
@@ -34,9 +35,22 @@ static CanBusOff_State s_bus_off;
 static uint32_t s_tx_retry_exhausted_count;
 static uint32_t s_bus_off_count;
 
-#define CAN_SERVICE_DEFAULT_POLL_PERIOD_MS 20u
 #define CAN_SERVICE_MAX_TX_RETRIES 3u
 #define CAN_SERVICE_BUS_OFF_FAULT_CODE 1u
+/* MKS read replies (icm-project/references/mks-servo42d-57d-can/read-commands.md), big-endian
+ * (manual p. 14). The scheduler polls 30H, which carries an int32 carry and a uint16 value of
+ * 0..0x3FFF (one carry per motor turn, p. 26); 32H carries the speed as int16 rpm (p. 27). The
+ * move to 31H (int48 cumulative value, the same 0x4000-per-turn unit) is ruling R11, GitHub #61. */
+#define CAN_SERVICE_MKS_READ_ENCODER 0x30u
+#define CAN_SERVICE_MKS_READ_SPEED 0x32u
+#define CAN_SERVICE_ENCODER_REPLY_BYTES 6u
+#define CAN_SERVICE_ENCODER_COUNTS_PER_CARRY 0x4000
+#define CAN_SERVICE_SPEED_REPLY_BYTES 2u
+
+_Static_assert(CAN_SERVICE_MAX_MKS_MOTORS == LATEST_VALUE_MOTOR_COUNT,
+               "Each drive slot is one latest-value motor slot");
+_Static_assert(CAN_SERVICE_ENCODER_REPLY_BYTES == LATEST_VALUE_POSITION_REPLY_BYTES,
+               "The store keeps the whole encoder reply");
 
 static MksStatus CanService_TransmitFrame(const MksCanFrame *frame);
 
@@ -152,6 +166,37 @@ static int32_t CanService_FindMotorIndexByCanId(uint16_t can_id)
 }
 
 /**
+ * Turns a decoded position or speed reply into typed feedback for the latest-value store.
+ * Returns false for every other reply (acknowledgements do not enter the snapshot, ruling R10).
+ */
+static bool CanService_DecodeFeedback(const MksParsedResponse *parsed, uint64_t timestamp_us,
+                                      LatestValue_Feedback *feedback)
+{
+	memset(feedback, 0, sizeof(*feedback));
+	feedback->timestamp_us = timestamp_us;
+	/* The decoder's has_status guess (first payload byte 0 or 1) is not used: an encoder reply
+	 * has no status byte, so its top data byte would be read as a drive status. */
+	if ((parsed->code == CAN_SERVICE_MKS_READ_ENCODER) && (parsed->payload_len == CAN_SERVICE_ENCODER_REPLY_BYTES)) {
+		const uint8_t *p = parsed->payload;
+		int32_t carry = (int32_t)(((uint32_t)p[0] << 24u) | ((uint32_t)p[1] << 16u) |
+		                          ((uint32_t)p[2] << 8u) | (uint32_t)p[3]);
+		uint16_t value = (uint16_t)(((uint16_t)p[4] << 8u) | p[5]);
+
+		feedback->kind = LATEST_VALUE_FEEDBACK_POSITION;
+		feedback->position_counts = ((int64_t)carry * CAN_SERVICE_ENCODER_COUNTS_PER_CARRY) + (int64_t)value;
+		feedback->position_command_code = parsed->code;
+		memcpy(feedback->position_reply, parsed->payload, CAN_SERVICE_ENCODER_REPLY_BYTES);
+		return true;
+	}
+	if ((parsed->code == CAN_SERVICE_MKS_READ_SPEED) && (parsed->payload_len == CAN_SERVICE_SPEED_REPLY_BYTES)) {
+		feedback->kind = LATEST_VALUE_FEEDBACK_SPEED;
+		feedback->speed_rpm = (int16_t)(uint16_t)(((uint16_t)parsed->payload[0] << 8u) | parsed->payload[1]);
+		return true;
+	}
+	return false;
+}
+
+/**
  * @brief Executes service process rx frames.
  */
 static void CanService_ProcessRxFrames(void)
@@ -181,24 +226,17 @@ static void CanService_ProcessRxFrames(void)
 		}
 
 		if (mks_decode(&frame, &parsed) == MKS_OK) {
-			TimeService_SyncSnapshot time_sync_snapshot;
+			LatestValue_Feedback feedback;
 
 			s_motor_slots[motor_index].has_last_response = true;
 			s_motor_slots[motor_index].last_response = parsed;
 			s_motor_slots[motor_index].rx_ok_count++;
-			TimeService_GetSyncSnapshot(&time_sync_snapshot);
-			MotorLatestValue_SetValid(&s_latest_motor_values[motor_index],
-			                          parsed.code,
-			                          parsed.payload,
-			                          parsed.payload_len,
-			                          parsed.status,
-			                          parsed.has_status,
-			                          TimeService_NowUs(),
-			                          time_sync_snapshot.quality,
-			                          0u);
+			if (CanService_DecodeFeedback(&parsed, TimeService_NowUs(), &feedback)) {
+				(void)LatestValue_AcceptFeedback((uint8_t)motor_index, &feedback);
+			}
 		} else {
+			/* The record is not touched: it goes stale by age (latest_value.h). */
 			s_motor_slots[motor_index].rx_decode_error_count++;
-			MotorLatestValue_MarkStale(&s_latest_motor_values[motor_index], TimeService_NowUs());
 		}
 	}
 }
@@ -326,7 +364,6 @@ void CanService_Init(void)
 		s_motor_slots[i].device.max_working_current_ma = 0U;
 		s_motor_slots[i].has_last_response = false;
 		memset(&s_motor_slots[i].last_response, 0, sizeof(s_motor_slots[i].last_response));
-		MotorLatestValue_Init(&s_latest_motor_values[i], UINT8_MAX, i, 0u, 0u);
 		s_motor_slots[i].rx_ok_count = 0U;
 		s_motor_slots[i].rx_decode_error_count = 0U;
 	}
@@ -385,18 +422,12 @@ void CanService_Process(void)
 }
 
 MksStatus CanService_RegisterMotor(uint8_t motor_index,
-								   uint8_t logical_joint_id,
-								   uint32_t configuration_version,
 								   CanService_MksModel model,
 								   uint16_t can_id)
 {
 	MksDevice device;
 
 	if (motor_index >= CAN_SERVICE_MAX_MKS_MOTORS) {
-		return MKS_INVALID_ARGUMENT;
-	}
-
-	if (logical_joint_id > 5u) {
 		return MKS_INVALID_ARGUMENT;
 	}
 
@@ -416,11 +447,6 @@ MksStatus CanService_RegisterMotor(uint8_t motor_index,
 	s_motor_slots[motor_index].registered = true;
 	s_motor_slots[motor_index].has_last_response = false;
 	memset(&s_motor_slots[motor_index].last_response, 0, sizeof(s_motor_slots[motor_index].last_response));
-	MotorLatestValue_Init(&s_latest_motor_values[motor_index],
-	                      logical_joint_id,
-	                      motor_index,
-	                      can_id,
-	                      configuration_version);
 	s_motor_slots[motor_index].rx_ok_count = 0U;
 	s_motor_slots[motor_index].rx_decode_error_count = 0U;
 	return MKS_OK;
@@ -499,15 +525,6 @@ uint32_t CanService_GetRxDecodeErrorCount(uint8_t motor_index)
 	}
 
 	return s_motor_slots[motor_index].rx_decode_error_count;
-}
-
-const Motor_LatestValue *CanService_GetLatestMotorValues(size_t *record_count)
-{
-	if (record_count != NULL) {
-		*record_count = CAN_SERVICE_MAX_MKS_MOTORS;
-	}
-
-	return s_latest_motor_values;
 }
 
 /**

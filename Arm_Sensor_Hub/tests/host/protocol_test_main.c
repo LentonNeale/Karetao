@@ -10,13 +10,13 @@
 #include "health_monitor.h"
 #include "joint_mapping.h"
 #include "lifecycle.h"
-#include "motor_latest_value.h"
-#include "sensor_latest_value.h"
+#include "latest_value.h"
 #include "sensor_task.h"
 #include "snapshot_builder.h"
 #include "spi_payload_layout.h"
 #include "spi_protocol.h"
 #include "spi_data_ready.h"
+#include "task.h"
 #include "time_service.h"
 
 static uint64_t s_test_now_us;
@@ -412,105 +412,275 @@ static void TestJointMappingInvalidRatioAndRevision(void)
     assert(JointMapping_Validate(&record, 1u) == JOINT_MAPPING_RESULT_UNSUPPORTED_SCHEMA);
 }
 
-static void TestSensorLatestValue(void)
+#define TEST_SENSOR_WINDOW_US UINT64_C(100000)
+#define TEST_MOTOR_WINDOW_US UINT64_C(200000)
+
+static LatestValue_Config TestStoreConfig(void)
 {
-    Sensor_LatestValue record;
+    LatestValue_Config config;
+    size_t axis;
 
-    SensorLatestValue_Init(&record, 3u, 4u, 7u);
-    assert(record.logical_joint_id == 3u);
-    assert(record.sensor_id == 4u);
-    assert(record.freshness == SENSOR_FRESHNESS_INVALID);
-    assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) == 0u);
-
-    SensorLatestValue_SetValid(&record,
-                               1234u,
-                               108457,
-                               2048u,
-                               17u,
-                               UINT8_C(0x20),
-                               UINT64_C(1000),
-                               TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED,
-                               8u);
-    assert(record.raw_angle_counts == 1234u);
-    assert(record.processed_angle_mdeg == 108457);
-    assert(record.magnitude == 2048u);
-    assert(record.agc == 17u);
-    assert(record.measurement_timestamp_us == UINT64_C(1000));
-    assert(record.synchronization_quality == TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED);
-    assert(record.calibration_version == 8u);
-    assert(record.freshness == SENSOR_FRESHNESS_FRESH);
-    assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) != 0u);
-    assert((record.validity_flags & SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED) != 0u);
-
-    SensorLatestValue_SetInvalid(&record,
-                                 0u,
-                                 SENSOR_VALIDITY_COMMUNICATION_ERROR,
-                                 UINT64_C(2000));
-    assert(record.magnitude == 0u);
-    assert(record.agc == 0u);
-    assert(record.raw_angle_counts == 0u);
-    assert(record.processed_angle_mdeg == 0);
-    assert(record.measurement_timestamp_us == 0u);
-    assert(record.last_update_timestamp_us == UINT64_C(2000));
-    assert(record.freshness == SENSOR_FRESHNESS_INVALID);
-    assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) == 0u);
-    assert((record.validity_flags & SENSOR_VALIDITY_COMMUNICATION_ERROR) != 0u);
-
-    SensorLatestValue_SetNotFitted(NULL, UINT64_C(3000));
-    SensorLatestValue_SetNotFitted(&record, UINT64_C(3000));
-    assert(record.validity_flags == SENSOR_VALIDITY_NOT_FITTED);
-    assert((record.validity_flags & SENSOR_VALIDITY_SAMPLE_VALID) == 0u);
-    assert((record.validity_flags & SENSOR_VALIDITY_COMMUNICATION_ERROR) == 0u);
-    assert((record.validity_flags & (SENSOR_VALIDITY_MAGNET_NOT_DETECTED |
-                                     SENSOR_VALIDITY_MAGNET_TOO_WEAK |
-                                     SENSOR_VALIDITY_MAGNET_TOO_STRONG)) == 0u);
-    assert(record.status == 0u);
-    assert(record.raw_angle_counts == 0u);
-    assert(record.processed_angle_mdeg == 0);
-    assert(record.magnitude == 0u);
-    assert(record.agc == 0u);
-    assert(record.measurement_timestamp_us == UINT64_C(3000));
-    assert(record.last_update_timestamp_us == UINT64_C(3000));
-    assert(record.synchronization_quality == TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED);
-    assert(record.freshness == SENSOR_FRESHNESS_INVALID);
-    assert(record.calibration_version == 8u);
+    memset(&config, 0, sizeof(config));
+    for (axis = 0u; axis < LATEST_VALUE_SENSOR_COUNT; ++axis) {
+        config.sensor_fitted[axis] = (axis != 3u);
+    }
+    config.motors[2].registered = true;
+    config.motors[2].logical_joint_id = 1u;
+    config.motors[2].can_id = UINT16_C(0x002);
+    config.motors[2].configuration_version = 4u;
+    config.sensor_window_us = TEST_SENSOR_WINDOW_US;
+    config.motor_window_us = TEST_MOTOR_WINDOW_US;
+    return config;
 }
 
-static void TestMotorLatestValue(void)
+static LatestValue_Sample TestSample(LatestValue_SampleCondition condition, uint16_t raw, uint64_t timestamp_us)
 {
-    Motor_LatestValue record;
-    uint8_t payload[2] = {UINT8_C(0x12), UINT8_C(0x34)};
+    LatestValue_Sample sample;
 
-    MotorLatestValue_Init(&record, 2u, 3u, UINT16_C(0x123), 4u);
-    assert(record.logical_joint_id == 2u);
-    assert(record.motor_index == 3u);
-    assert(record.can_id == UINT16_C(0x123));
-    assert(record.freshness == MOTOR_FRESHNESS_INVALID);
+    memset(&sample, 0, sizeof(sample));
+    sample.condition = condition;
+    sample.status = UINT8_C(0x20);
+    sample.raw_angle_counts = raw;
+    sample.magnitude = 1500u;
+    sample.agc = 90u;
+    sample.timestamp_us = timestamp_us;
+    return sample;
+}
 
-    MotorLatestValue_SetValid(&record,
-                              UINT8_C(0x30),
-                              payload,
-                              2u,
-                              1u,
-                              true,
-                              UINT64_C(1000),
-                              TIME_SERVICE_SYNC_QUALITY_SYNCHRONIZED,
-                              5u);
-    assert(record.command_code == UINT8_C(0x30));
-    assert(record.payload[0] == UINT8_C(0x12));
-    assert(record.payload_length == 2u);
-    assert(record.acquisition_timestamp_us == UINT64_C(1000));
-    assert(record.calibration_version == 5u);
-    assert(record.freshness == MOTOR_FRESHNESS_FRESH);
-    assert(record.rx_ok_count == 1u);
-    assert((record.validity_flags & MOTOR_VALIDITY_FEEDBACK_VALID) != 0u);
-    assert((record.validity_flags & MOTOR_VALIDITY_TIMESTAMP_SYNCHRONIZED) != 0u);
+static const uint8_t *TestSensorRecordBytes(const uint8_t *payload, size_t axis)
+{
+    return &payload[SPI_SNAPSHOT_PREFIX_BYTES + (axis * SPI_SENSOR_RECORD_BYTES)];
+}
 
-    MotorLatestValue_MarkStale(&record, UINT64_C(2000));
-    assert(record.freshness == MOTOR_FRESHNESS_STALE);
-    assert(record.last_update_timestamp_us == UINT64_C(2000));
-    assert(record.rx_decode_error_count == 1u);
-    assert((record.validity_flags & MOTOR_VALIDITY_FEEDBACK_VALID) == 0u);
+static uint16_t TestSensorFlags(const LatestValue_Snapshot *copy, size_t axis)
+{
+    static uint8_t payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
+    uint16_t length = 0u;
+    const uint8_t *record;
+
+    assert(SpiProtocol_SerializeSnapshot(copy, 0u, payload, &length) == SPI_PROTOCOL_OK);
+    record = TestSensorRecordBytes(payload, axis);
+    return (uint16_t)(record[SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS] |
+                      (record[SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS + 1u] << 8u));
+}
+
+static void TestLatestValueConfigure(void)
+{
+    static LatestValue_Snapshot copy;
+    LatestValue_Config config = TestStoreConfig();
+    LatestValue_Sample sample = TestSample(LATEST_VALUE_SAMPLE_OK, 0x800u, 1000u);
+
+    assert(LatestValue_Configure(NULL) == LATEST_VALUE_INVALID_ARGUMENT);
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_OK);
+    assert(LatestValue_AcceptSample(1u, &sample) == LATEST_VALUE_OK);
+
+    /* A rejected config changes nothing: the accepted sample survives each refusal. */
+    config.sensor_window_us = 0u;
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_INVALID_ARGUMENT);
+    config = TestStoreConfig();
+    config.motor_window_us = 0u;
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_INVALID_ARGUMENT);
+    config = TestStoreConfig();
+    config.motors[2].logical_joint_id = 6u;
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_INVALID_ARGUMENT);
+    config = TestStoreConfig();
+    config.motors[2].can_id = UINT16_C(0x800);
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_INVALID_ARGUMENT);
+    LatestValue_CopySnapshot(1000u, &copy);
+    assert(copy.sensors[1].has_sample);
+    assert(copy.sensors[1].raw_angle_counts == 0x800u);
+
+    /* An accepted config clears every record and sets the slot properties. */
+    config = TestStoreConfig();
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_OK);
+    LatestValue_CopySnapshot(1000u, &copy);
+    assert(!copy.sensors[1].has_sample);
+    assert(copy.sensors[1].logical_id == 1u);
+    assert(!copy.sensors[3].fitted);
+    assert(copy.motors[2].registered);
+    assert(copy.motors[2].motor_index == 2u);
+    assert(copy.motors[2].logical_joint_id == 1u);
+    assert(copy.motors[2].can_id == UINT16_C(0x002));
+    assert(copy.motors[2].configuration_version == 4u);
+    assert(!copy.motors[0].registered);
+}
+
+static void TestLatestValueSampleAgeing(void)
+{
+    static LatestValue_Snapshot copy;
+    static uint8_t payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
+    LatestValue_Config config = TestStoreConfig();
+    LatestValue_Sample sample = TestSample(LATEST_VALUE_SAMPLE_OK, 0x800u, 1000u);
+    uint16_t length = 0u;
+    const uint8_t *record;
+
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_OK);
+    assert(LatestValue_AcceptSample(1u, &sample) == LATEST_VALUE_OK);
+
+    /* Raw counts become millidegrees by scale only (R6), calibration version 0. */
+    LatestValue_CopySnapshot(1000u, &copy);
+    assert(copy.sensors[1].processed_angle_mdeg == 180000);
+    assert(copy.sensors[1].calibration_version == LATEST_VALUE_CALIBRATION_VERSION);
+
+    /* Fresh up to and including the window; stale one microsecond past it. */
+    LatestValue_CopySnapshot(1000u + TEST_SENSOR_WINDOW_US, &copy);
+    assert(copy.sensors[1].freshness == LATEST_VALUE_FRESHNESS_FRESH);
+    assert(TestSensorFlags(&copy, 1u) == SPI_SENSOR_VALIDITY_SAMPLE_VALID);
+    LatestValue_CopySnapshot(1001u + TEST_SENSOR_WINDOW_US, &copy);
+    assert(copy.copied_at_us == 1001u + TEST_SENSOR_WINDOW_US);
+    assert(copy.sensors[1].freshness == LATEST_VALUE_FRESHNESS_STALE);
+
+    /* Stale on the wire: bit 0 clear, the last values and their timestamp kept. */
+    assert(SpiProtocol_SerializeSnapshot(&copy, 0u, payload, &length) == SPI_PROTOCOL_OK);
+    record = TestSensorRecordBytes(payload, 1u);
+    assert(TestSensorFlags(&copy, 1u) == 0u);
+    assert(record[SPI_SENSOR_RECORD_OFFSET_RAW_ANGLE] == 0x00u);
+    assert(record[SPI_SENSOR_RECORD_OFFSET_RAW_ANGLE + 1u] == 0x08u);
+    assert(record[SPI_SENSOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US] == (uint8_t)1000u);
+    assert(record[SPI_SENSOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US + 1u] == (uint8_t)(1000u >> 8u));
+
+    /* A sample stamped after the caller read `now` is age zero, not a wrapped huge age. */
+    sample = TestSample(LATEST_VALUE_SAMPLE_OK, 0x400u, 5000u);
+    assert(LatestValue_AcceptSample(1u, &sample) == LATEST_VALUE_OK);
+    LatestValue_CopySnapshot(4000u, &copy);
+    assert(copy.sensors[1].freshness == LATEST_VALUE_FRESHNESS_FRESH);
+
+    /* A fitted axis never sampled, and the not-fitted axis, carry no usable value. */
+    assert(copy.sensors[2].freshness == LATEST_VALUE_FRESHNESS_NONE);
+    assert(TestSensorFlags(&copy, 2u) == 0u);
+    assert(copy.sensors[3].freshness == LATEST_VALUE_FRESHNESS_NONE);
+    assert(copy.sensors[3].measurement_timestamp_us == 4000u);
+    assert(TestSensorFlags(&copy, 3u) == SPI_SENSOR_VALIDITY_NOT_FITTED);
+}
+
+static void TestLatestValueSampleConditions(void)
+{
+    static const struct {
+        LatestValue_SampleCondition condition;
+        uint16_t flags;
+    } cases[] = {
+        {LATEST_VALUE_SAMPLE_COMM_ERROR, SPI_SENSOR_VALIDITY_COMMUNICATION_ERROR},
+        {LATEST_VALUE_SAMPLE_MAGNET_MISSING, SPI_SENSOR_VALIDITY_MAGNET_NOT_DETECTED},
+        {LATEST_VALUE_SAMPLE_MAGNET_WEAK, SPI_SENSOR_VALIDITY_MAGNET_TOO_WEAK},
+        {LATEST_VALUE_SAMPLE_MAGNET_STRONG, SPI_SENSOR_VALIDITY_MAGNET_TOO_STRONG},
+    };
+    static LatestValue_Snapshot copy;
+    LatestValue_Config config = TestStoreConfig();
+    size_t index;
+
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_OK);
+    for (index = 0u; index < sizeof(cases) / sizeof(cases[0]); ++index) {
+        LatestValue_Sample sample = TestSample(cases[index].condition, 0x123u, 2000u);
+        assert(LatestValue_AcceptSample(0u, &sample) == LATEST_VALUE_OK);
+        LatestValue_CopySnapshot(2000u, &copy);
+        /* A failed read keeps its status byte but no angle and no timestamp. */
+        assert(copy.sensors[0].status == UINT8_C(0x20));
+        assert(copy.sensors[0].raw_angle_counts == 0u);
+        assert(copy.sensors[0].processed_angle_mdeg == 0);
+        assert(copy.sensors[0].magnitude == 0u);
+        assert(copy.sensors[0].measurement_timestamp_us == 0u);
+        assert(copy.sensors[0].freshness == LATEST_VALUE_FRESHNESS_NONE);
+        assert(TestSensorFlags(&copy, 0u) == cases[index].flags);
+    }
+}
+
+static void TestLatestValueRefusedWrites(void)
+{
+    static LatestValue_Snapshot copy;
+    LatestValue_Config config = TestStoreConfig();
+    LatestValue_Sample sample = TestSample(LATEST_VALUE_SAMPLE_OK, 0x123u, 1000u);
+    LatestValue_Feedback feedback;
+    unsigned entries;
+
+    memset(&feedback, 0, sizeof(feedback));
+    feedback.kind = LATEST_VALUE_FEEDBACK_POSITION;
+    feedback.timestamp_us = 1000u;
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_OK);
+
+    entries = HostStub_CriticalEntryCount();
+    assert(LatestValue_AcceptSample(3u, &sample) == LATEST_VALUE_NOT_FITTED);
+    assert(LatestValue_AcceptSample(LATEST_VALUE_SENSOR_COUNT, &sample) == LATEST_VALUE_INVALID_ARGUMENT);
+    assert(LatestValue_AcceptSample(0u, NULL) == LATEST_VALUE_INVALID_ARGUMENT);
+    /* A count above 12 bits is no AS5600 reading (and would overflow the mdeg scaling). */
+    sample.raw_angle_counts = LATEST_VALUE_MAX_RAW_ANGLE + 1u;
+    assert(LatestValue_AcceptSample(0u, &sample) == LATEST_VALUE_INVALID_ARGUMENT);
+    sample.raw_angle_counts = 0x123u;
+    assert(LatestValue_AcceptFeedback(0u, &feedback) == LATEST_VALUE_NOT_REGISTERED);
+    assert(LatestValue_AcceptFeedback(LATEST_VALUE_MOTOR_COUNT, &feedback) == LATEST_VALUE_INVALID_ARGUMENT);
+    assert(LatestValue_AcceptFeedback(2u, NULL) == LATEST_VALUE_INVALID_ARGUMENT);
+    feedback.kind = (LatestValue_FeedbackKind)7;
+    assert(LatestValue_AcceptFeedback(2u, &feedback) == LATEST_VALUE_INVALID_ARGUMENT);
+    /* A refused write takes no lock and changes no record. */
+    assert(HostStub_CriticalEntryCount() == entries);
+    LatestValue_CopySnapshot(1000u, &copy);
+    assert(!copy.sensors[3].has_sample);
+    assert(!copy.motors[0].has_position && !copy.motors[2].has_position);
+    LatestValue_CopySnapshot(1000u, NULL);
+}
+
+static void TestLatestValueFeedbackMerge(void)
+{
+    static LatestValue_Snapshot copy;
+    static uint8_t payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
+    static const uint8_t reply[LATEST_VALUE_POSITION_REPLY_BYTES] = {0x00u, 0x00u, 0x00u, 0x48u, 0x34u, 0x56u};
+    LatestValue_Config config = TestStoreConfig();
+    LatestValue_Feedback feedback;
+    uint16_t length = 0u;
+    const uint8_t *motor = &payload[SPI_SNAPSHOT_PAYLOAD_BYTES(0u)];
+    unsigned entries;
+
+    assert(LatestValue_Configure(&config) == LATEST_VALUE_OK);
+
+    /* Speed first: merged, but the record is not valid until a position has arrived. */
+    memset(&feedback, 0, sizeof(feedback));
+    feedback.kind = LATEST_VALUE_FEEDBACK_SPEED;
+    feedback.timestamp_us = 900u;
+    feedback.speed_rpm = 120;
+    entries = HostStub_CriticalEntryCount();
+    assert(LatestValue_AcceptFeedback(2u, &feedback) == LATEST_VALUE_OK);
+    LatestValue_CopySnapshot(1000u, &copy);
+    assert(HostStub_CriticalEntryCount() == entries + 2u);
+    assert(HostStub_CriticalDepth() == 0u);
+    assert(copy.motors[2].has_speed && !copy.motors[2].has_position);
+    assert(copy.motors[2].freshness == LATEST_VALUE_FRESHNESS_NONE);
+    assert(SpiProtocol_SerializeSnapshot(&copy, 0u, payload, &length) == SPI_PROTOCOL_OK);
+    assert(length == SPI_SNAPSHOT_PAYLOAD_BYTES(1u));
+    assert(payload[SPI_SNAPSHOT_OFFSET_MOTOR_COUNT] == 1u);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX] == 2u);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_VALIDITY_FLAGS] == 0u);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_COMMAND_CODE] == 0u);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] == 0u);
+
+    /* Position: valid and fresh, the v1 record carrying the raw position reply. */
+    memset(&feedback, 0, sizeof(feedback));
+    feedback.kind = LATEST_VALUE_FEEDBACK_POSITION;
+    feedback.timestamp_us = 1000u;
+    feedback.position_counts = (INT64_C(0x48) * 0x4000) + 0x3456;
+    feedback.position_command_code = 0x30u;
+    memcpy(feedback.position_reply, reply, sizeof(reply));
+    assert(LatestValue_AcceptFeedback(2u, &feedback) == LATEST_VALUE_OK);
+    LatestValue_CopySnapshot(1000u + TEST_MOTOR_WINDOW_US, &copy);
+    assert(copy.motors[2].freshness == LATEST_VALUE_FRESHNESS_FRESH);
+    assert(copy.motors[2].speed_rpm == 120 && copy.motors[2].speed_timestamp_us == 900u);
+    assert(copy.motors[2].position_counts == (INT64_C(0x48) * 0x4000) + 0x3456);
+    assert(SpiProtocol_SerializeSnapshot(&copy, 0u, payload, &length) == SPI_PROTOCOL_OK);
+    /* No polled reply carries a drive status: status 0, bit 1 never set. */
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_STATUS] == 0u);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_VALIDITY_FLAGS] == SPI_MOTOR_VALIDITY_FEEDBACK_VALID);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_CAN_ID] == 0x02u);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_COMMAND_CODE] == 0x30u);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] == LATEST_VALUE_POSITION_REPLY_BYTES);
+    assert(memcmp(&motor[SPI_MOTOR_RECORD_OFFSET_PAYLOAD], reply, sizeof(reply)) == 0);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_PAYLOAD + 6u] == 0u && motor[SPI_MOTOR_RECORD_OFFSET_PAYLOAD + 7u] == 0u);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US] == (uint8_t)1000u);
+
+    /* Stale past PRM-MOT-01's window: FEEDBACK_VALID clear, the reply kept. */
+    LatestValue_CopySnapshot(1001u + TEST_MOTOR_WINDOW_US, &copy);
+    assert(copy.motors[2].freshness == LATEST_VALUE_FRESHNESS_STALE);
+    assert(SpiProtocol_SerializeSnapshot(&copy, 0u, payload, &length) == SPI_PROTOCOL_OK);
+    assert(motor[SPI_MOTOR_RECORD_OFFSET_VALIDITY_FLAGS] == 0u);
+    assert(memcmp(&motor[SPI_MOTOR_RECORD_OFFSET_PAYLOAD], reply, sizeof(reply)) == 0);
+    assert(SpiProtocol_SerializeSnapshot(NULL, 0u, payload, &length) == SPI_PROTOCOL_BAD_LENGTH);
 }
 
 static void TestSnapshotLayout(void)
@@ -530,8 +700,15 @@ static void TestSnapshotLayout(void)
     assert(SPI_SNAPSHOT_MAX_PAYLOAD_BYTES == 348u);
     assert(SPI_SNAPSHOT_MAX_FRAME_BYTES == 370u);
     assert(SPI_SNAPSHOT_MAX_FRAME_BYTES <= SPI_FRAME_MAX_BYTES);
-    assert(SPI_SENSOR_VALIDITY_NOT_FITTED == SENSOR_VALIDITY_NOT_FITTED);
-    assert(SENSOR_VALIDITY_NOT_FITTED == 0x0040u);
+    /* Validity bits as SPI_PAYLOAD_SCHEMA.md numbers them; bit 5 is reserved (R16). */
+    assert(SPI_SENSOR_VALIDITY_SAMPLE_VALID == 0x0001u);
+    assert(SPI_SENSOR_VALIDITY_COMMUNICATION_ERROR == 0x0002u);
+    assert(SPI_SENSOR_VALIDITY_MAGNET_NOT_DETECTED == 0x0004u);
+    assert(SPI_SENSOR_VALIDITY_MAGNET_TOO_WEAK == 0x0008u);
+    assert(SPI_SENSOR_VALIDITY_MAGNET_TOO_STRONG == 0x0010u);
+    assert(SPI_SENSOR_VALIDITY_NOT_FITTED == 0x0040u);
+    assert(SPI_MOTOR_VALIDITY_FEEDBACK_VALID == 0x0001u);
+    assert(SPI_MOTOR_VALIDITY_CONTROLLER_STATUS_VALID == 0x0002u);
 }
 
 static bool SerializeTestFrame(uint8_t *frame_buffer,
@@ -833,8 +1010,11 @@ int main(void)
     TestCalibrationGenerationSelection();
     TestJointMappingValidation();
     TestJointMappingInvalidRatioAndRevision();
-    TestSensorLatestValue();
-    TestMotorLatestValue();
+    TestLatestValueConfigure();
+    TestLatestValueSampleAgeing();
+    TestLatestValueSampleConditions();
+    TestLatestValueRefusedWrites();
+    TestLatestValueFeedbackMerge();
     TestSnapshotLayout();
     TestSnapshotFrameOwnership();
     TestCrc32IsoHdlc();

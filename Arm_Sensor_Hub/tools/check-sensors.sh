@@ -3,7 +3,7 @@
 # check-sensors.sh - read every commissioned AS5600 axis from the running firmware.
 #
 # Quick confidence check after changing sensor wiring. It reads the live
-# Sensor_LatestValue records out of the STM32 over SWD and reports, per axis,
+# latest-value sensor records (s_sensors in latest_value.c) out of the STM32 over SWD and reports, per axis,
 # which mux channel it is bound to and whether that sensor is producing a valid
 # sample. It does NOT build or flash anything, so it only ever reports what the
 # firmware already on the board is seeing.
@@ -22,7 +22,7 @@
 #                    not depend on it.
 #
 # Exit status:
-#   0  every axis reported a valid sample
+#   0  every fitted axis reported a valid sample (a not-fitted axis is skipped)
 #   1  one or more axes did not
 #   2  could not run the check at all
 #
@@ -69,16 +69,20 @@ target extended-remote localhost:4242
 python
 import gdb
 
-VALID, COMM, NO_MAG, WEAK, STRONG = 0x01, 0x02, 0x04, 0x08, 0x10
 MD, ML, MH = 0x20, 0x10, 0x08
 
-def verdict(flags):
-    if flags & COMM:   return "FAIL", "no I2C response (power or wiring)"
-    if flags & NO_MAG: return "FAIL", "magnet not detected"
-    if flags & WEAK:   return "FAIL", "magnet too weak"
-    if flags & STRONG: return "FAIL", "magnet too strong"
-    if flags & VALID:  return "PASS", "valid sample"
-    return "FAIL", "no sample yet"
+# The store keeps the read's condition (LatestValue_SampleCondition, latest_value.h); freshness
+# is judged only when a snapshot is copied, so it is not in the live record.
+def verdict(r):
+    if not bool(r["fitted"]):     return "SKIP", "not fitted"
+    if not bool(r["has_sample"]): return "FAIL", "no sample yet"
+    cond = str(r["condition"]).replace("LATEST_VALUE_SAMPLE_", "")
+    if cond == "OK":             return "PASS", "valid sample"
+    if cond == "COMM_ERROR":     return "FAIL", "no I2C response (power or wiring)"
+    if cond == "MAGNET_MISSING": return "FAIL", "magnet not detected"
+    if cond == "MAGNET_WEAK":    return "FAIL", "magnet too weak"
+    if cond == "MAGNET_STRONG":  return "FAIL", "magnet too strong"
+    return "FAIL", "unknown condition " + cond
 
 def decode_status(s):
     bits = [n for b, n in ((MD, "MD"), (ML, "ML"), (MH, "MH")) if s & b]
@@ -94,22 +98,21 @@ def agc_note(agc, vdd_5v):
 
 import os
 VDD_5V = os.environ.get("AS5600_VDD_5V", "1") not in ("0", "false", "False")
-recs = gdb.parse_and_eval("s_latest_values")
+recs = gdb.parse_and_eval("s_sensors")
 encs = gdb.parse_and_eval("s_encoders")
 snap = gdb.parse_and_eval("g_sensor_task_snapshot_dbg")
 
 print("")
-print("axis  mux  status   raw   degrees   magn  agc  fresh    result")
-print("----  ---  ------  ----  --------  -----  ---  -------  ------")
+print("axis  mux  status   raw   degrees   magn  agc  result")
+print("----  ---  ------  ----  --------  -----  ---  ------")
 failed = 0
 for axis in range(6):
     r = recs[axis]
-    flags = int(r["validity_flags"])
-    res, why = verdict(flags)
-    if res != "PASS":
+    res, why = verdict(r)
+    if res == "FAIL":
         failed += 1
     agc = int(r["agc"])
-    print("  %d   SD%-2d %-6s  %4d  %8.2f  %5d  %3d  %-7s  %s: %s%s" % (
+    print("  %d   SD%-2d %-6s  %4d  %8.2f  %5d  %3d  %s: %s%s" % (
         axis,
         int(encs[axis]["mux_channel"]),
         decode_status(int(r["status"])),
@@ -117,7 +120,6 @@ for axis in range(6):
         int(r["processed_angle_mdeg"]) / 1000.0,
         int(r["magnitude"]),
         agc,
-        str(r["freshness"]).replace("SENSOR_FRESHNESS_", ""),
         res, why,
         agc_note(agc, VDD_5V) if res == "PASS" else ""))
 

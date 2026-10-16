@@ -33,8 +33,9 @@ Code symbols were checked against `Arm_Sensor_Hub/App` on 2026-10-03.
 | PRM-ACQ-02 | Six-axis encoder sweep time | ≈ 46 | ms | Measured | `tools/check-sensors.sh` run; archived `CONTRACT_STATUS.md` in git history | 2026-09-17 | SYS-TS-001 | The only Measured row. |
 | PRM-ACQ-03 | I2C protocol floor for six sensors | ≈ 690 | µs | Derived | `I2C_SCAN_TIMING_ANALYSIS.md` (AS5600 datasheet, 400 kHz) | 2026-10-03 | improvement target only | Theoretical floor, not a measurement. |
 | PRM-ACQ-04 | I2C bus clock | 400 | kHz | Datasheet | AS5600 and TCA9548A fast mode; CubeMX `.ioc` | 2026-10-03 | sensor path | none |
-| PRM-ACQ-05 | Sensor task poll period | 20 | ms | Provisional | `SENSOR_TASK_BRINGUP_POLL_PERIOD_MS`, `sensor_task.c` | 2026-10-03 | sensor path | Code default is 20 ms, which is 50 Hz and differs from PRM-ACQ-01 (100 Hz). Recorded, not changed. |
+| PRM-ACQ-05 | Sensor task poll period | 20 | ms | Provisional | `SENSOR_TASK_BRINGUP_POLL_PERIOD_MS`, `sensor_task.h` | 2026-10-03 | sensor path; PRM-ACQ-07 | Code default is 20 ms (50 Hz), faster than PRM-ACQ-01 (20 Hz since 2026-10-03). Recorded, not changed. |
 | PRM-ACQ-06 | AS5600 resolution | 12 bit, 4096 codes/rev, ≈ 0.001534 rad/code | bit, rad | Datasheet | AS5600 datasheet; `AS5600_PRECISION_AND_ACCURACY.md` | 2026-10-03 | SYS-IF-001 | none |
+| PRM-ACQ-07 | Sensor sample freshness window | 100 | ms | Derived | 5 × PRM-ACQ-05 (5 × 20 ms); `APP_SENSOR_WINDOW_US`, `app_init.c`, applied by `LatestValue_CopySnapshot`, `latest_value.c` | 2026-10-16 | snapshot sensor records (`SPI_SYSTEM_INTERFACE.md` §8) | Added by GitHub #80. A sample older than this at copy time is stale: sent with validity bit 0 clear, values and timestamp kept. Built on a Provisional row, so it is a working value; Stage 3 measures it. Caveat (code review, 2026-10-16): each axis is resampled once per sweep, and the measured sweep (PRM-ACQ-02, ≈ 46 ms) is longer than PRM-ACQ-05, so 100 ms tolerates about two sweeps, not five periods; a slow sweep can mark a healthy axis stale. |
 
 ### SPI link (SPI)
 
@@ -54,7 +55,7 @@ Code symbols were checked against `Arm_Sensor_Hub/App` on 2026-10-03.
 | PRM-CAN-02 | CAN bitrate as generated | 875 (prescaler 16, BS1 1, BS2 1, SJW 1, sample point 66.7 %, APB1 42 MHz) | kbps | Derived | `CAN_INTEGRATION_EVIDENCE.md`; `.ioc` | 2026-10-03 | as-built | Differs from PRM-CAN-01. |
 | PRM-CAN-03 | Candidate 1 Mbps bit timing | prescaler 3, BS1 11, BS2 2, SJW 1, sample point 85.7 % | n/a | Derived (not applied) | `CAN_INTEGRATION_EVIDENCE.md` | 2026-10-03 | Stage 3 | Not applied to the `.ioc`. |
 | PRM-CAN-04 | Average bus load ceiling | < 50–60 | % | Provisional | SD-05 | 2026-10-03 | Stage 3 measurement | none |
-| PRM-CAN-05 | Motor poll period | 20 | ms | Provisional | `CAN_SERVICE_DEFAULT_POLL_PERIOD_MS`, `can_service.c` | 2026-10-03 | SYS-MOT-001 | Code default matches. |
+| PRM-CAN-05 | Motor poll period | 20 | ms | Provisional | `CAN_SERVICE_DEFAULT_POLL_PERIOD_MS`, `can_service.h` | 2026-10-03 | SYS-MOT-001 | Code default matches. |
 | PRM-CAN-06 | TX HAL retry limit | 3 | count | Provisional | `CAN_SYSTEM_INTERFACE.md` §4; `CAN_SERVICE_MAX_TX_RETRIES`, `can_service.c` | 2026-10-03 | CAN transport | Code default matches. |
 | PRM-CAN-07 | Bus-off recovery delays | 100 ms, doubling per failed recovery, capped at 1 s | ms | Derived | `CAN_BUS_OFF_INITIAL_DELAY_MS`, `CAN_BUS_OFF_MAX_DELAY_MS` and the doubling rule in `CanBusOff_*`, `can_tx_policy.c` | 2026-10-03 | SYS-CAN-001 | Adopted from the code on 2026-10-03 (Lenton Neale); the former 100/500/1000 ms steps had no basis. The 1 s cap is confirmed by the Stage 3 bus-off test. |
 | PRM-CAN-08 | Bus-off escalation to ERROR | 3 events in 60 s | events, s | Provisional | `CAN_SYSTEM_INTERFACE.md` §5; `CAN_BUS_OFF_WINDOW_MS` and the `bus_off_events >= 3u` test in `CanBusOff_Record`, `can_tx_policy.c` | 2026-10-03 | SYS-CAN-001 | Code default matches. The count 3 is a literal, not a named symbol. |
@@ -63,7 +64,7 @@ Code symbols were checked against `Arm_Sensor_Hub/App` on 2026-10-03.
 
 | ID | Parameter | Working value | Unit | Basis | Source or evidence | Date | Used by | Notes |
 |---|---|---|---|---|---|---|---|---|
-| PRM-MOT-01 | Motor feedback timeout | 5 × commissioned feedback period | multiple | Provisional | SD-04 | 2026-10-03 | SYS-MOT-002 | none |
+| PRM-MOT-01 | Motor feedback timeout | 5 × commissioned feedback period | multiple | Provisional | SD-04 | 2026-10-03 | SYS-MOT-002 | As built (GitHub #80), no feedback period is commissioned yet, so `app_init.c` takes the poll scheduler's position-poll (30H) interval, 2 × PRM-CAN-05 × the registered motors (40 ms with one motor, window 200 ms, `App_MotorWindowUs`); a position older than the window at copy time is stale (validity bit 0 clear). The commissioned feedback period row arrives with ruling R11 (GitHub #61). Caveat (code review, 2026-10-16): the scheduler sends at most one request per pass of the single task loop, and a pass is held by the sensor sweep (PRM-ACQ-02), so the real position interval is about 2 × the loop pass × motors and the window covers about two or three polls, not five. |
 | PRM-MOT-02 | Feedback miss handling | 1 miss degraded; 3 consecutive inhibit and FAULT | count | Provisional | SD-04 | 2026-10-03 | SYS-MOT-002 | none |
 
 ### Pi link liveness (LINK)

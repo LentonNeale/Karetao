@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "latest_value.h"
 #include "spi_payload_layout.h"
 
 #define SPI_PROTOCOL_VERSION UINT8_C(1)
@@ -66,6 +67,16 @@ SpiProtocol_Result SpiProtocol_BuildSnapshotFrame(SpiProtocol_State *state,
                                                   const uint8_t *payload,
                                                   uint16_t payload_length,
                                                   uint8_t response[SPI_FRAME_MAX_BYTES]);
+/**
+ * Serialises a latest-value copy as a schema v1 SNAPSHOT payload: the prefix, six sensor records
+ * at their logical IDs and the registered motor records in slot order. It reads only the caller's
+ * copy (LatestValue_CopySnapshot), so no record changes while it runs. `response_to_seq` is zero;
+ * a correlated reply patches it. Returns SPI_PROTOCOL_BAD_LENGTH on a NULL argument.
+ */
+SpiProtocol_Result SpiProtocol_SerializeSnapshot(const LatestValue_Snapshot *copy,
+                                                 uint16_t dropped_snapshot_count_low,
+                                                 uint8_t payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES],
+                                                 uint16_t *payload_length);
 void SpiProtocol_BuildCommandReply(SpiProtocol_State *state, uint8_t frame_type, uint8_t request_type,
                                    uint32_t request_sequence, uint16_t status_code, uint32_t detail_code,
                                    uint8_t response[SPI_FRAME_MAX_BYTES]);
