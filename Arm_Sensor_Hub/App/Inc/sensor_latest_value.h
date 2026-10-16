@@ -67,11 +67,6 @@ void SensorLatestValue_SetInvalid(Sensor_LatestValue *record,
  * @brief Marks an axis that has no encoder fitted (never a communication error).
  */
 void SensorLatestValue_SetNotFitted(Sensor_LatestValue *record, uint64_t update_timestamp_us);
-/**
- * @brief Executes latest value mark stale.
- */
-void SensorLatestValue_MarkStale(Sensor_LatestValue *record, uint64_t update_timestamp_us);
-
 #ifdef __cplusplus
 }
 #endif

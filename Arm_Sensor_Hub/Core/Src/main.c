@@ -447,7 +447,6 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    I2CManager_Process();
     SensorTask_Process();
     CanService_Process();
     SpiSlaveService_Process();

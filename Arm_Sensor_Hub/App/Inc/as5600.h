@@ -75,9 +75,4 @@ AS5600_Status AS5600_ReadStatus(const AS5600_Device *dev, uint8_t *status, uint6
  */
 AS5600_Status AS5600_ReadSample(const AS5600_Device *dev, AS5600_Sample *sample);
 
-/**
- * @brief Executes raw to degrees.
- */
-float AS5600_RawToDegrees(uint16_t raw_angle);
-
 #endif /* AS5600_H */

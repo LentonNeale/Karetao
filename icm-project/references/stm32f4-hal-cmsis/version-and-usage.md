@@ -18,10 +18,7 @@ Rows cite project lines (`path:start-end`, relative to the Karetao repo root). V
 | CAN transmit: standard ID, data frame, any HAL status other than HAL_OK is mapped to one error | header.IDE = CAN_ID_STD; header.RTR = CAN_RTR_DATA; hal_status = HAL_CAN_AddTxMessage(&hcan1, &header, tx_data, &tx_mailbox); | Arm_Sensor_Hub/App/Src/can_service.c:299-306 |
 | CAN receive: drain RX FIFO0 by fill level, HAL_CAN_GetRxMessage | while (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) > 0U) { | Arm_Sensor_Hub/App/Src/can_service.c:159-166 |
 | I2C1 init: clock speed and duty cycle | hi2c1.Init.ClockSpeed = 400000; hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2; | Arm_Sensor_Hub/Core/Src/main.c:278-279 |
-| I2C blocking write passes the address shifted left by one and a caller timeout | HAL_I2C_Master_Transmit(&hi2c1, (uint16_t)(address_7bit << 1u), (uint8_t *)data, size, timeout_ms); | Arm_Sensor_Hub/App/Src/i2c_manager.c:83-83 |
-| I2C interrupt write uses HAL_I2C_Master_Transmit_IT | hal_status = HAL_I2C_Master_Transmit_IT(&hi2c1, | Arm_Sensor_Hub/App/Src/i2c_manager.c:450-450 |
-| I2C error callback stores HAL_I2C_GetError | s_pending_fault_code = HAL_I2C_GetError(hi2c); | Arm_Sensor_Hub/App/Src/i2c_manager.c:553-553 |
-| I2C interrupt priorities (EV and ER) | HAL_NVIC_SetPriority(I2C1_EV_IRQn, 5, 0); ... HAL_NVIC_SetPriority(I2C1_ER_IRQn, 5, 0); | Arm_Sensor_Hub/Core/Src/stm32f4xx_hal_msp.c:181-184 |
+| I2C blocking write passes the address shifted left by one and a caller timeout | HAL_I2C_Master_Transmit(&hi2c1, (uint16_t)(address_7bit << 1u), (uint8_t *)data, size, timeout_ms); | Arm_Sensor_Hub/App/Src/i2c_manager.c:56-56 |
 | SPI3 init: slave, hardware NSS input, CRC disabled | hspi3.Init.Mode = SPI_MODE_SLAVE; hspi3.Init.NSS = SPI_NSS_HARD_INPUT; hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE; | Arm_Sensor_Hub/Core/Src/main.c:313-321 |
 | SPI3 DMA arm and abort calls | HAL_SPI_TransmitReceive_DMA(&hspi3, tx_frame, s_rx_frame, SPI_FRAME_MAX_BYTES) != HAL_OK | Arm_Sensor_Hub/App/Src/spi_slave_service.c:110-110 |
 | SPI3 callbacks overridden: TxRxCplt and Error | void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) ... void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) | Arm_Sensor_Hub/App/Src/spi_slave_service.c:396-406 |

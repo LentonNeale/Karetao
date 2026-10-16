@@ -105,18 +105,3 @@ void SensorLatestValue_SetNotFitted(Sensor_LatestValue *record, uint64_t update_
     record->synchronization_quality = TIME_SERVICE_SYNC_QUALITY_UNSYNCHRONIZED;
     record->freshness = SENSOR_FRESHNESS_INVALID;
 }
-
-/**
- * @brief Executes latest value mark stale.
- */
-void SensorLatestValue_MarkStale(Sensor_LatestValue *record, uint64_t update_timestamp_us)
-{
-    if ((record == NULL) || (record->freshness != SENSOR_FRESHNESS_FRESH))
-    {
-        return;
-    }
-
-    record->validity_flags &= ~SENSOR_VALIDITY_SAMPLE_VALID;
-    record->last_update_timestamp_us = update_timestamp_us;
-    record->freshness = SENSOR_FRESHNESS_STALE;
-}

@@ -5,6 +5,8 @@
 
 #include "crc32_iso_hdlc.h"
 
+#include "le_bytes.h"
+
 /**
  * @brief Executes iso hdlc compute.
  */
@@ -41,10 +43,7 @@ void Crc32IsoHdlc_WriteLittleEndian(uint32_t crc32, uint8_t output[4])
         return;
     }
 
-    output[0] = (uint8_t)crc32;
-    output[1] = (uint8_t)(crc32 >> 8u);
-    output[2] = (uint8_t)(crc32 >> 16u);
-    output[3] = (uint8_t)(crc32 >> 24u);
+    LeBytes_WriteU32(output, crc32);
 }
 
 /**
@@ -57,10 +56,7 @@ uint32_t Crc32IsoHdlc_ReadLittleEndian(const uint8_t input[4])
         return 0u;
     }
 
-    return (uint32_t)input[0] |
-           ((uint32_t)input[1] << 8u) |
-           ((uint32_t)input[2] << 16u) |
-           ((uint32_t)input[3] << 24u);
+    return LeBytes_ReadU32(input);
 }
 
 bool Crc32IsoHdlc_Verify(const uint8_t *header_and_payload,

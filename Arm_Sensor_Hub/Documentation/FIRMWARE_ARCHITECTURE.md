@@ -77,12 +77,11 @@ Start-up order in `main()`: `HAL_Init`, `SystemClock_Config`, the `MX_*_Init` fu
 
 The loop calls, in this order, then yields with `osDelay`:
 
-1. `I2CManager_Process`
-2. `SensorTask_Process`
-3. `CanService_Process`
-4. `SpiSlaveService_Process`
-5. `HealthMonitor_Process`
-6. `StackMonitor_Process`
+1. `SensorTask_Process`
+2. `CanService_Process`
+3. `SpiSlaveService_Process`
+4. `HealthMonitor_Process`
+5. `StackMonitor_Process`
 
 The kernel adds two tasks of its own: the idle task and the timer service task (`configUSE_TIMERS` in [`FreeRTOSConfig.h`](../Core/Inc/FreeRTOSConfig.h)). Their stacks are static arrays in the CMSIS layer. The application creates no timers and no other tasks.
 
@@ -120,7 +119,7 @@ Clock tree: `SystemClock_Config` in [`main.c`](../Core/Src/main.c), values in `P
 
 | Peripheral | Use | Pins | DMA | Interrupt | Configured in | Owner |
 |---|---|---|---|---|---|---|
-| I2C1 | Sensor bus to the mux (`hi2c1`) | PB6 SCL, PB7 SDA | none | EV and ER enabled in `HAL_I2C_MspInit` (only the dormant async path uses them) | `MX_I2C1_Init`, msp | `i2c_manager` |
+| I2C1 | Sensor bus to the mux (`hi2c1`) | PB6 SCL, PB7 SDA | none | none enabled; transfers are polled | `MX_I2C1_Init`, msp | `i2c_manager` |
 | CAN1 | Motor bus (`hcan1`) | PB8 RX, PB9 TX | none | none enabled | `MX_CAN1_Init`, msp | `can_service` |
 | SPI3 | Slave to the Pi (`hspi3`) | PA15 NSS, PC10 SCK, PC11 MISO, PC12 MOSI | RX on DMA1 Stream 0, TX on DMA1 Stream 5 (channel in `hdma_spi3_*.Init.Channel`) | SPI3, DMA1 Stream 0, DMA1 Stream 5 | `MX_SPI3_Init`, msp | `spi_slave_service` |
 | GPIO PA8 (`Data_Ready_Pin`) | DATA_READY output | PA8 | none | none | `MX_GPIO_Init` | `spi_slave_service` |
@@ -143,15 +142,14 @@ Handlers are in [`stm32f4xx_it.c`](../Core/Src/stm32f4xx_it.c):
 | `DMA1_Stream5_IRQHandler` | `HAL_DMA_IRQHandler` for SPI3 TX. No application work. |
 | `SPI3_IRQHandler` | `HAL_SPI_IRQHandler`, which reaches `HAL_SPI_ErrorCallback` on an error. |
 | `TIM6_DAC_IRQHandler` | `HAL_TIM_IRQHandler`, then `HAL_IncTick` through `HAL_TIM_PeriodElapsedCallback` in [`main.c`](../Core/Src/main.c). |
-| `I2C1_EV_IRQHandler`, `I2C1_ER_IRQHandler` | HAL I2C handlers. Only the dormant async path uses them (B64). |
 | `NMI_Handler` | Clock-security handling, then an endless loop. |
 | Fault handlers | Endless loops. No state is captured and nothing resets (R24, B113). |
 
-There is no CAN interrupt and no EXTI interrupt. CAN is polled from the task. DATA_READY is an output.
+There is no I2C, CAN or EXTI interrupt. I2C and CAN are polled from the task. DATA_READY is an output.
 
 Each ISR is a hand-off. It copies or flags, and the task does the work in its next loop pass. The DMA streams run without the CPU, so the SPI response is clocked out while the task is busy.
 
-**Priority rule.** FreeRTOS enters a critical section by raising `BASEPRI` to `configMAX_SYSCALL_INTERRUPT_PRIORITY`. Interrupts with a numeric priority at or above `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` are masked. More urgent ones are not. Therefore any ISR that calls a FreeRTOS `...FromISR` function must sit at or below that ceiling in urgency (numerically at or above it). The priority-grouping setting must keep all bits as preemption bits (`NVIC.PriorityGroup` in the `.ioc`). The application interrupts take their priority from the `NVIC.*` keys in the `.ioc` and from `HAL_NVIC_SetPriority` calls in `MX_DMA_Init`, `HAL_SPI_MspInit` and `HAL_I2C_MspInit`. Keep every one of them inside the rule even if the callback does not call the kernel today, so the callback can grow safely. The kernel and the HAL tick run at the least urgent level (`NVIC.SysTick_IRQn`, `NVIC.TIM6_DAC_IRQn`, `TICK_INT_PRIORITY` in [`stm32f4xx_hal_conf.h`](../Core/Inc/stm32f4xx_hal_conf.h)).
+**Priority rule.** FreeRTOS enters a critical section by raising `BASEPRI` to `configMAX_SYSCALL_INTERRUPT_PRIORITY`. Interrupts with a numeric priority at or above `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` are masked. More urgent ones are not. Therefore any ISR that calls a FreeRTOS `...FromISR` function must sit at or below that ceiling in urgency (numerically at or above it). The priority-grouping setting must keep all bits as preemption bits (`NVIC.PriorityGroup` in the `.ioc`). The application interrupts take their priority from the `NVIC.*` keys in the `.ioc` and from `HAL_NVIC_SetPriority` calls in `MX_DMA_Init` and `HAL_SPI_MspInit`. Keep every one of them inside the rule even if the callback does not call the kernel today, so the callback can grow safely. The kernel and the HAL tick run at the least urgent level (`NVIC.SysTick_IRQn`, `NVIC.TIM6_DAC_IRQn`, `TICK_INT_PRIORITY` in [`stm32f4xx_hal_conf.h`](../Core/Inc/stm32f4xx_hal_conf.h)).
 
 **Stack overflow stop.** `configCHECK_FOR_STACK_OVERFLOW` ([`FreeRTOSConfig.h`](../Core/Inc/FreeRTOSConfig.h)) makes the kernel call `vApplicationStackOverflowHook` ([`freertos.c`](../Core/Src/freertos.c)), which calls `StackMonitor_OnOverflow`. That function:
 
@@ -203,7 +201,6 @@ A service does its work only while its record is active:
 - `SensorTask_Process` returns at once unless the sensor service is active, and `App_Start` activates it only when the joint mapping and the mux map are valid and I2C is already active.
 - `CanService_Process` receives, polls and transmits only while CAN is started and active. Bus-off handling calls `Lifecycle_Fail` and, on a successful restart, `Lifecycle_Apply` with the recover transition.
 - `SpiSlaveService_Process` returns at once unless SPI is active. Activation publishes the first staged frame.
-- `I2CManager_Process` marks I2C failed on a pending fault.
 
 `HealthMonitor_Process` only observes. It reads the service lifecycle states and the CAN, I2C and SPI counters into a read-only snapshot and recovers nothing. Its levels, thresholds, required-service set and reporting are a design target in [`HEALTH_MONITOR_CONTRACT.md`](HEALTH_MONITOR_CONTRACT.md). Watchdog ownership is open there, and ruling R24 decides the watchdog (B113, not built).
 
@@ -243,7 +240,7 @@ The `.ioc` is the source of truth for everything CubeMX owns (ruling R28). To ch
 
 Regeneration also works headless, which suits review: `STM32CubeMX -q <script>`, where the script holds the three lines `config load <path to Arm_Sensor_Hub.ioc>`, `project generate` and `exit`. On 2026-10-15, with CubeMX at the version the `.ioc` records (`MxCube.Version`), regenerating an unchanged `.ioc` reproduced `Core/` exactly. So after an `.ioc` change, the diff in `Core/` shows only what the change generated. The regeneration review process as a whole is still an open item in [`BUILD_CONTRACT.md`](BUILD_CONTRACT.md).
 
-Hand-written code in `USER CODE` blocks that the design depends on: `App_Init` and the application loop in `main.c`, the I2C1 interrupt enable in `stm32f4xx_hal_msp.c`, the I2C1 handlers in `stm32f4xx_it.c`, and the overflow hook in `freertos.c`. Everything else is in `App/`. Adding an `App/Src` module needs entries in both `CMakeLists.txt` and `tests/host/CMakeLists.txt`. Configure checks this, and deliberate omissions are listed with their reasons in `cmake/app_source_exemptions.cmake` (B54, [`BUILD_CONTRACT.md`](BUILD_CONTRACT.md)).
+Hand-written code in `USER CODE` blocks that the design depends on: `App_Init` and the application loop in `main.c`, and the overflow hook in `freertos.c`. Everything else is in `App/`. Adding an `App/Src` module needs entries in both `CMakeLists.txt` and `tests/host/CMakeLists.txt`. Configure checks this, and deliberate omissions are listed with their reasons in `cmake/app_source_exemptions.cmake` (B54, [`BUILD_CONTRACT.md`](BUILD_CONTRACT.md)).
 
 ## 10. Known gaps and planned changes
 
@@ -258,7 +255,6 @@ Hand-written code in `USER CODE` blocks that the design depends on: `App_Init` a
 | No watchdog | The IWDG module is not enabled in `stm32f4xx_hal_conf.h`; faults and NMI loop forever | IWDG through CubeMX, refreshed only when every task has run; reset cause latched | R24, B113 | WP14 |
 | Single application task | Sensor sweep blocks CAN and SPI handling in the one loop | Sensor acquisition in its own lower-priority task; stores protected | R15, B81 | WP11 |
 | TIME_SYNC design | Older one-way TIME_SYNC with an STM32-held offset in `time_service.c` | STM32 reports raw local time; the Pi converts (Issue #12) | R16 | WP12 |
-| Async I2C path is dead code | `I2CManager_SubmitAsync` and the I2C1 interrupts have no caller; the completion callbacks give a mutex from an interrupt | Remove the path and the interrupt hooks together | B64 | WP9 |
 | `motion_permission` not compiled | In `App/` but absent from both source lists, exempted in `cmake/app_source_exemptions.cmake` (the B54 check is built) | Built and wired with the gated-motion work; the exemption is removed then | B106 | WP14 |
 | Drive safety | No stop from the STM32 side on a fault or overflow | Controlled stop at boot and CAN activation; drive-side heartbeat | R23, B110 | WP14 |
 | Sensor warning flags | Weak or strong magnet flags invalidate a sample | Warnings only | R6, B74 | WP10 |

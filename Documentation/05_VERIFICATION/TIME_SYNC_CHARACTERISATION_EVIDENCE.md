@@ -70,11 +70,11 @@ Five known implementation gaps are documented without proposed fixes:
 
 ### Gap 1: `frame_time_us` uses raw local time instead of hub time
 
-**Location:** `Arm_Sensor_Hub/App/Src/spi_protocol.c`, line 33
+**Location:** `Arm_Sensor_Hub/App/Src/spi_protocol.c`, line 21
 
 **Issue:**
 ```c
-SpiProtocol_WriteU64(&response[SPI_FRAME_OFFSET_TIME_US], TimeService_NowUs());
+LeBytes_WriteU64(&response[SPI_FRAME_OFFSET_TIME_US], TimeService_NowUs());
 ```
 
 Contract (SPI_SYSTEM_INTERFACE.md §3) requires:
