@@ -85,6 +85,12 @@ STM32 SPI3 side, for reference (`Documentation/02_INTERFACES/SPI/SPI_SYSTEM_INTE
 | MOSI | PC12 | Input |
 | DATA_READY | PA8 | Output |
 
+## Exchange Session
+
+`src/spi/exchange.py` is the one owner of the SPI exchange on the Pi. `ExchangeSession.transact(request)` paces, clocks one 512-byte transaction, decodes and correlates it, and returns one `TransactionRecord`; `exchange(request, filler, budget=...)` clocks the request and then the filler until the request's reply or NACK correlates or the budget is spent, and returns the outcome (replied, refused, exhausted) without raising for firmware outcomes. Sequences come from the process-wide `Sequencer` in `spi_protocol.py` (ruling R3). A correlated record carries the T1 and T4 of its exchange for ClockSync's owner (`Documentation/02_INTERFACES/TIME/TIME_SYSTEM_INTERFACE.md` §3); the session does not depend on ClockSync.
+
+`src/spi/fake_backend.py` holds `FakeFirmware`, one `SpiBackend` that enforces the firmware's SPI rules (reply one transaction late, sequence high-water mark, BAD_STATE while not active, SNAPSHOT and VERSION replies, request CRC, garbage mode) and reproduces the shared golden frames byte for byte (`tests/spi/test_fake_backend.py`), and `FakeDataReady` for pacing tests. `timing.TimingSession` remains only as an adapter for the timing harness until #102 moves the tools to the exchange session.
+
 ## SPI Timing Harness
 
 `tools/spi_timing_harness.py` sweeps clock rate x CPU load x message type and writes one row per transaction for offline analysis. By default it measures the polled request/response path. With `--data-ready` it waits on the DATA_READY line (GPIO25/PA8, SD-17) and records the Pi-side wait as `data_ready_wait_ns`. The Pi cannot see NSS edges (spidev drives chip-select), so DATA_READY-to-NSS timing and the electrical path are a Stage 3 logic-analyser measurement (`SPI_SYSTEM_INTERFACE.md` §16, ruling R7), not a harness output.

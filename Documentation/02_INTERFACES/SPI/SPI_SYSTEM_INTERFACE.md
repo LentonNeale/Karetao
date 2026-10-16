@@ -220,7 +220,7 @@ The Raspberry Pi shall:
 - validate magic, version, length, and CRC32;
 - track sequence numbers;
 - reject stale and duplicate responses;
-- record T1/T4 for every correlated exchange and feed ClockSync (`TimingSession.transact()` → `ClockSync.record_exchange()`);
+- record T1/T4 for every correlated exchange and feed ClockSync (`ExchangeSession` transaction records → `ClockSync.record_exchange()`, by ClockSync's owner);
 - maintain the authoritative system clock and convert STM32 local timestamps through ClockSync;
 - timestamp measurements received directly through other interfaces;
 - correlate measurements using the common time domain;

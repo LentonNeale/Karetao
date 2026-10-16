@@ -82,7 +82,7 @@ The system startup sequence ensures dependency ordering and safe initialization:
 **Time synchronization path:**
 1. Pi records T1 and sends any request. The STM32 SPI DMA-complete ISR captures the raw TIM2 counter (T2).
 2. The STM32 extends T2 to 64 bits in task context and returns it as `request_received_local_us` in the response. The Pi records T4.
-3. `TimingSession.transact()` passes the correlated exchange to `ClockSync.record_exchange()`, which estimates offset and frequency.
+3. `ExchangeSession` (`exchange.py`, the one session that owns the link) correlates the response and records T1 and T4 on the transaction record, and T2 once the `request_received_local_us` extension has a wire placement (not yet: `request_received_local_us` is always empty as built). ClockSync's owner passes each correlated record to `ClockSync.record_exchange()`, which estimates offset and frequency; the session does not depend on ClockSync (Issue #12 item 4, amended 2026-10-16). ClockSync itself is not yet implemented.
 4. Target (Issue #12): the STM32 exports raw local acquisition timestamps, ClockSync converts them to synchronized `measurement_timestamp_us`, and the STM32 performs no clock math. The Pi-side ClockSync conversion is not yet implemented.
 
 ## Architectural Decisions and Constraints

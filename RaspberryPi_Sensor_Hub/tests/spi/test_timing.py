@@ -6,6 +6,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'src'))
 
+from spi.fake_backend import FakeDataReady
 from spi.spi_bus import SpiBus, SpiBusConfig
 from spi.spi_protocol import MessageType, SpiFrame
 from spi.timing import (
@@ -131,29 +132,18 @@ class TimingSessionTests(unittest.TestCase):
         self.assertEqual(session.counters.decode_failures, 1)
         self.assertEqual(record.response_type, '')
 
-    def test_sequence_never_reuses_zero(self) -> None:
-        session = self._session(PipelinedBackend())
-        session._seq = 0xFFFFFFFF
+    def test_positional_constructor_order_is_unchanged(self) -> None:
+        bus = SpiBus(SpiBusConfig(), backend=PipelinedBackend())
+        bus.open()
+        session = TimingSession(bus, 'b', None, 0.1, 0.0, 12345)
+        self.assertEqual(session.next_sequence(), 12345)
+
+    def test_start_sequence_seeds_its_own_sequencer(self) -> None:
+        bus = SpiBus(SpiBusConfig(), backend=PipelinedBackend())
+        bus.open()
+        session = TimingSession(bus=bus, start_sequence=0xFFFFFFFF)
         self.assertEqual(session.next_sequence(), 0xFFFFFFFF)
-        self.assertEqual(session.next_sequence(), 1)
-
-
-class FakeDataReady:
-    """Fake satisfying DataReadyLike, so pacing logic is testable without a real GPIO chip."""
-
-    def __init__(self, ready_sequence=None, always_ready=True) -> None:
-        self._ready_sequence = list(ready_sequence) if ready_sequence is not None else None
-        self._always_ready = always_ready
-        self.wait_calls = 0
-
-    def is_ready(self) -> bool:
-        return self._always_ready
-
-    def wait_for_ready(self, timeout_s: float) -> bool:
-        self.wait_calls += 1
-        if self._ready_sequence is not None:
-            return self._ready_sequence.pop(0) if self._ready_sequence else False
-        return self._always_ready
+        self.assertEqual(session.next_sequence(), 1)  # zero skipped (Sequencer)
 
 
 class PacingTests(unittest.TestCase):
