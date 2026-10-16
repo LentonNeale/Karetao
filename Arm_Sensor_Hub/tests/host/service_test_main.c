@@ -5,7 +5,6 @@
 #include "host_test_assert.h"
 
 #include "FreeRTOS.h"
-#include "queue.h"
 #include "semphr.h"
 #include "task.h"
 #include "app_init.h"
@@ -27,12 +26,6 @@ TIM_HandleTypeDef htim2 = {.Instance = (void *)0x3};
 SPI_HandleTypeDef hspi3 = {.Instance = SPI3};
 void *Data_Ready_GPIO_Port = (void *)0x4;
 uint16_t Data_Ready_Pin = 9u;
-
-typedef struct
-{
-    I2CManager_Event event;
-    uint32_t count;
-} TestQueue;
 
 typedef struct
 {
@@ -65,17 +58,6 @@ static uint8_t s_i2c_rx_payloads[16][8];
 static uint16_t s_i2c_rx_sizes[16];
 static uint32_t s_i2c_tx_call_count;
 static uint32_t s_i2c_rx_call_count;
-static HAL_StatusTypeDef s_i2c_tx_it_status = HAL_OK;
-static HAL_StatusTypeDef s_i2c_rx_it_status = HAL_OK;
-static uint32_t s_i2c_error_code;
-static TestQueue s_test_queue;
-static uint32_t s_notify_bits_value;
-static uint32_t s_event_hook_count;
-static bool s_event_hook_from_isr;
-static I2CManager_Event s_last_i2c_event;
-static uint32_t s_completion_count;
-static I2CManager_Status s_last_completion_status;
-static uint64_t s_last_completion_timestamp;
 static HAL_StatusTypeDef s_can_filter_status = HAL_OK;
 static HAL_StatusTypeDef s_can_start_status = HAL_OK;
 static HAL_StatusTypeDef s_can_stop_status = HAL_OK;
@@ -96,8 +78,6 @@ static uint32_t s_spi_abort_count;
 static const uint8_t *s_spi_last_tx_buffer;
 static uint8_t *s_spi_last_rx_buffer;
 static uint16_t s_spi_last_transfer_size;
-
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c);
 
 static void ResetHalState(void)
 {
@@ -123,17 +103,6 @@ static void ResetHalState(void)
         s_i2c_rx_sizes[i] = 0u;
         memset(s_i2c_rx_payloads[i], 0, sizeof(s_i2c_rx_payloads[i]));
     }
-    s_i2c_tx_it_status = HAL_OK;
-    s_i2c_rx_it_status = HAL_OK;
-    s_i2c_error_code = 0u;
-    s_test_queue = (TestQueue){0};
-    s_notify_bits_value = 0u;
-    s_event_hook_count = 0u;
-    s_event_hook_from_isr = true;
-    s_last_i2c_event = (I2CManager_Event){0};
-    s_completion_count = 0u;
-    s_last_completion_status = I2C_MANAGER_STATUS_OK;
-    s_last_completion_timestamp = 0u;
     s_can_filter_status = HAL_OK;
     s_can_start_status = HAL_OK;
     s_can_stop_status = HAL_OK;
@@ -320,33 +289,6 @@ HAL_StatusTypeDef HAL_I2C_Master_Receive(I2C_HandleTypeDef *hi2c,
     return (index < 16u) ? s_i2c_rx_statuses[index] : HAL_OK;
 }
 
-HAL_StatusTypeDef HAL_I2C_Master_Transmit_IT(I2C_HandleTypeDef *hi2c,
-                                             uint16_t address,
-                                             uint8_t *data,
-                                             uint16_t size)
-{
-    (void)HAL_I2C_Master_Transmit(hi2c, address, data, size, 0u);
-    return s_i2c_tx_it_status;
-}
-
-HAL_StatusTypeDef HAL_I2C_Master_Receive_IT(I2C_HandleTypeDef *hi2c,
-                                            uint16_t address,
-                                            uint8_t *data,
-                                            uint16_t size)
-{
-    (void)hi2c;
-    (void)address;
-    (void)data;
-    (void)size;
-    return s_i2c_rx_it_status;
-}
-
-uint32_t HAL_I2C_GetError(I2C_HandleTypeDef *hi2c)
-{
-    (void)hi2c;
-    return s_i2c_error_code;
-}
-
 HAL_StatusTypeDef HAL_CAN_ConfigFilter(CAN_HandleTypeDef *hcan, CAN_FilterTypeDef *filter)
 {
     (void)hcan;
@@ -443,59 +385,6 @@ BaseType_t xSemaphoreGive(SemaphoreHandle_t semaphore)
 
     semaphore->locked = pdFALSE;
     return pdTRUE;
-}
-
-BaseType_t xSemaphoreGiveFromISR(SemaphoreHandle_t semaphore, BaseType_t *higher_priority_task_woken)
-{
-    if (higher_priority_task_woken != NULL) {
-        *higher_priority_task_woken = pdFALSE;
-    }
-    return xSemaphoreGive(semaphore);
-}
-
-BaseType_t xQueueSend(QueueHandle_t queue, const void *item, TickType_t wait_ticks)
-{
-    TestQueue *typed_queue = (TestQueue *)queue;
-    (void)wait_ticks;
-    if ((typed_queue == NULL) || (item == NULL)) {
-        return pdFALSE;
-    }
-
-    typed_queue->event = *(const I2CManager_Event *)item;
-    typed_queue->count++;
-    return pdTRUE;
-}
-
-BaseType_t xQueueSendFromISR(QueueHandle_t queue, const void *item, BaseType_t *higher_priority_task_woken)
-{
-    if (higher_priority_task_woken != NULL) {
-        *higher_priority_task_woken = pdFALSE;
-    }
-    return xQueueSend(queue, item, 0u);
-}
-
-BaseType_t xTaskNotify(TaskHandle_t task, uint32_t value, eNotifyAction action)
-{
-    uint32_t *notify_bits = (uint32_t *)task;
-    (void)action;
-
-    if (notify_bits == NULL) {
-        return pdFALSE;
-    }
-
-    *notify_bits |= value;
-    return pdTRUE;
-}
-
-BaseType_t xTaskNotifyFromISR(TaskHandle_t task,
-                              uint32_t value,
-                              eNotifyAction action,
-                              BaseType_t *higher_priority_task_woken)
-{
-    if (higher_priority_task_woken != NULL) {
-        *higher_priority_task_woken = pdFALSE;
-    }
-    return xTaskNotify(task, value, action);
 }
 
 static MksStatus FillTestFrame(const MksDevice *dev, uint8_t code, MksCanFrame *out, uint16_t can_id)
@@ -607,27 +496,6 @@ MksStatus mks_decode(const MksCanFrame *frame, MksParsedResponse *out)
     return s_mks_decode_status;
 }
 
-static void TestI2cEventHook(const I2CManager_Event *event, bool from_isr)
-{
-    if (event != NULL) {
-        s_last_i2c_event = *event;
-    }
-    s_event_hook_count++;
-    s_event_hook_from_isr = from_isr;
-}
-
-static void TestI2cCompletion(I2CManager_Status status, void *context, uint64_t timestamp_us)
-{
-    uint8_t *completion_cookie = context;
-
-    if (completion_cookie != NULL) {
-        *completion_cookie = 0x5Au;
-    }
-    s_completion_count++;
-    s_last_completion_status = status;
-    s_last_completion_timestamp = timestamp_us;
-}
-
 static bool SerializeTestFrame(uint8_t *frame_buffer,
                                uint16_t frame_capacity,
                                uint16_t *frame_length,
@@ -720,41 +588,22 @@ static void BuildTimeSyncRequest(uint8_t frame[SPI_FRAME_MAX_BYTES],
 static void TestI2CManagerCore(void)
 {
     uint8_t data = 0x12u;
-    uint8_t async_cookie = 0u;
-    I2CManager_Transfer transfer = {
-        .address_7bit = 0x36u,
-        .buffer = &data,
-        .length = 1u,
-        .direction = I2C_MANAGER_DIR_WRITE,
-        .completion_cb = TestI2cCompletion,
-        .context = &async_cookie
-    };
+    uint8_t rx = 0u;
 
     I2CManager_Init();
     if (I2CManager_GetLifecycleState() == LIFECYCLE_STATE_INACTIVE) {
         assert(I2CManager_Activate() == LIFECYCLE_RESULT_OK);
     }
-    assert(I2CManager_MasterRead(0x36u, NULL, 1u, 1u) == I2C_MANAGER_STATUS_BAD_ARG);
+    assert(I2CManager_MasterWriteRead(0x36u, NULL, 1u, &rx, 1u, 1u) == I2C_MANAGER_STATUS_BAD_ARG);
+    assert(I2CManager_MasterWriteRead(0x36u, &data, 0u, &rx, 1u, 1u) == I2C_MANAGER_STATUS_BAD_ARG);
+    assert(I2CManager_MasterWriteRead(0x36u, &data, 1u, NULL, 1u, 1u) == I2C_MANAGER_STATUS_BAD_ARG);
+    assert(I2CManager_WriteThenWriteRead(0x70u, &data, 1u, 0x36u, &data, 1u, &rx, 0u, 1u) == I2C_MANAGER_STATUS_BAD_ARG);
 
-    I2CManager_SetEventHook(TestI2cEventHook);
-    I2CManager_SetEventQueue(&s_test_queue);
-    I2CManager_SetTaskNotifyTarget(&s_notify_bits_value, 0x20u);
-
-    s_time_now_us = 101u;
-    assert(I2CManager_SubmitAsync(&transfer) == I2C_MANAGER_STATUS_OK);
-    HAL_I2C_MasterTxCpltCallback(&hi2c1);
-    assert(s_completion_count == 0u);
-    I2CManager_Process();
-    assert(s_completion_count == 1u);
-    assert(async_cookie == 0x5Au);
-    assert(s_last_completion_status == I2C_MANAGER_STATUS_OK);
-    assert(s_last_completion_timestamp == 101u);
-    assert(s_event_hook_count == 1u);
-    assert(!s_event_hook_from_isr);
-    assert(s_last_i2c_event.type == I2C_MANAGER_EVENT_TX_COMPLETE);
-    assert(s_last_i2c_event.timestamp_us == 101u);
-    assert(s_test_queue.count == 1u);
-    assert(s_notify_bits_value == 0x20u);
+    assert(I2CManager_MasterWriteRead(0x70u, &data, 1u, &rx, 1u, 1u) == I2C_MANAGER_STATUS_OK);
+    assert(s_i2c_write_count == 1u);
+    assert(s_i2c_writes[0].address == (uint16_t)(0x70u << 1u));
+    assert(s_i2c_writes[0].data[0] == 0x12u);
+    assert(I2CManager_GetSuccessCount() == 2u);
 }
 
 static void TestMuxAndAs5600Core(void)
@@ -764,7 +613,7 @@ static void TestMuxAndAs5600Core(void)
     uint64_t timestamp_us = 0u;
 
     TCA9548A_Init(TCA9548A_ADDR_0);
-    assert(TCA9548A_SelectChannel(8u) == I2C_MANAGER_STATUS_BAD_ARG);
+    assert(TCA9548A_SelectChannelWriteRead(8u, AS5600_I2C_ADDR_7BIT, &status, 1u, &status, 1u, 10u) == I2C_MANAGER_STATUS_BAD_ARG);
 
     AS5600_InitDevice(&device, 2u);
     assert(AS5600_ReadStatus(&device, NULL, NULL) == AS5600_STATUS_BAD_ARG);
@@ -779,7 +628,6 @@ static void TestMuxAndAs5600Core(void)
     assert(s_i2c_writes[0].data[0] == (1u << 2u));
     assert(s_i2c_writes[1].address == (uint16_t)(AS5600_I2C_ADDR_7BIT << 1u));
     assert(s_i2c_writes[1].data[0] == 0x0Bu);
-    assert(TCA9548A_GetSelectedMask() == (1u << 2u));
 }
 
 static void TestSensorTaskCore(void)

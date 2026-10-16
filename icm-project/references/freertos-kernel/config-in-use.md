@@ -19,7 +19,6 @@ Rows cite project lines (`path:start-end`, relative to the Karetao repo root). K
 | Highest priority (numerically lowest) from which FromISR calls are allowed | #define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 5 | Arm_Sensor_Hub/Core/Inc/FreeRTOSConfig.h:142-142 |
 | Kernel and max-syscall priority shifted into the top bits | #define configKERNEL_INTERRUPT_PRIORITY 		( configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) ) | Arm_Sensor_Hub/Core/Inc/FreeRTOSConfig.h:146-149 |
 | configASSERT disables interrupts and loops forever on failure | #define configASSERT( x ) if ((x) == 0) {taskDISABLE_INTERRUPTS(); for( ;; );} | Arm_Sensor_Hub/Core/Inc/FreeRTOSConfig.h:154-154 |
-| Interrupt priority of the I2C event and error vectors | HAL_NVIC_SetPriority(I2C1_EV_IRQn, 5, 0); HAL_NVIC_SetPriority(I2C1_ER_IRQn, 5, 0); | Arm_Sensor_Hub/Core/Src/stm32f4xx_hal_msp.c:181-184 |
 | SPI3 interrupt priority | HAL_NVIC_SetPriority(SPI3_IRQn, 5, 0); | Arm_Sensor_Hub/Core/Src/stm32f4xx_hal_msp.c:300-300 |
 | DMA stream interrupt priorities | HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0); ... HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 6, 0); | Arm_Sensor_Hub/Core/Src/main.c:389-393 |
 | NVIC priority grouping set by HAL_Init | HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4); | Arm_Sensor_Hub/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c:173-173 |

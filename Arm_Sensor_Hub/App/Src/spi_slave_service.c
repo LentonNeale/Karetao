@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "can_service.h"
+#include "le_bytes.h"
 #include "main.h"
 #include "sensor_task.h"
 #include "time_service.h"
@@ -50,40 +51,6 @@ static void SpiSlaveService_SetDataReadyPin(bool high)
         g_spi_timing_dbg.request_type = s_last_request_type;
         g_spi_timing_dbg.request_seq = s_last_request_seq;
     }
-}
-
-static void SpiSlaveService_WriteU16(uint8_t *data, uint16_t value)
-{
-    data[0] = (uint8_t)value;
-    data[1] = (uint8_t)(value >> 8u);
-}
-
-static void SpiSlaveService_WriteU32(uint8_t *data, uint32_t value)
-{
-    data[0] = (uint8_t)value;
-    data[1] = (uint8_t)(value >> 8u);
-    data[2] = (uint8_t)(value >> 16u);
-    data[3] = (uint8_t)(value >> 24u);
-}
-
-static void SpiSlaveService_WriteU64(uint8_t *data, uint64_t value)
-{
-    data[0] = (uint8_t)value;
-    data[1] = (uint8_t)(value >> 8u);
-    data[2] = (uint8_t)(value >> 16u);
-    data[3] = (uint8_t)(value >> 24u);
-    data[4] = (uint8_t)(value >> 32u);
-    data[5] = (uint8_t)(value >> 40u);
-    data[6] = (uint8_t)(value >> 48u);
-    data[7] = (uint8_t)(value >> 56u);
-}
-
-static uint32_t SpiSlaveService_ReadU32(const uint8_t *data)
-{
-    return (uint32_t)data[0] |
-           ((uint32_t)data[1] << 8u) |
-           ((uint32_t)data[2] << 16u) |
-           ((uint32_t)data[3] << 24u);
 }
 
 static bool SpiSlaveService_SerializeResponse(uint8_t *frame_buffer,
@@ -151,25 +118,25 @@ static void SpiSlaveService_SerializeSensorRecord(uint8_t *record_buffer,
     record_buffer[SPI_SENSOR_RECORD_OFFSET_SENSOR_ID] =
         (record->logical_joint_id <= 5u) ? record->logical_joint_id : fallback_sensor_id;
     record_buffer[SPI_SENSOR_RECORD_OFFSET_STATUS] = record->status;
-    SpiSlaveService_WriteU16(&record_buffer[SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS], record->validity_flags);
-    SpiSlaveService_WriteU64(&record_buffer[SPI_SENSOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US], record->measurement_timestamp_us);
-    SpiSlaveService_WriteU16(&record_buffer[SPI_SENSOR_RECORD_OFFSET_RAW_ANGLE], record->raw_angle_counts);
-    SpiSlaveService_WriteU32(&record_buffer[SPI_SENSOR_RECORD_OFFSET_PROCESSED_ANGLE_MDEG], (uint32_t)record->processed_angle_mdeg);
-    SpiSlaveService_WriteU16(&record_buffer[SPI_SENSOR_RECORD_OFFSET_MAGNITUDE], record->magnitude);
+    LeBytes_WriteU16(&record_buffer[SPI_SENSOR_RECORD_OFFSET_VALIDITY_FLAGS], record->validity_flags);
+    LeBytes_WriteU64(&record_buffer[SPI_SENSOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US], record->measurement_timestamp_us);
+    LeBytes_WriteU16(&record_buffer[SPI_SENSOR_RECORD_OFFSET_RAW_ANGLE], record->raw_angle_counts);
+    LeBytes_WriteU32(&record_buffer[SPI_SENSOR_RECORD_OFFSET_PROCESSED_ANGLE_MDEG], (uint32_t)record->processed_angle_mdeg);
+    LeBytes_WriteU16(&record_buffer[SPI_SENSOR_RECORD_OFFSET_MAGNITUDE], record->magnitude);
     record_buffer[SPI_SENSOR_RECORD_OFFSET_AGC] = record->agc;
     record_buffer[SPI_SENSOR_RECORD_OFFSET_RESERVED] = 0u;
-    SpiSlaveService_WriteU16(&record_buffer[SPI_SENSOR_RECORD_OFFSET_RESERVED_2], 0u);
+    LeBytes_WriteU16(&record_buffer[SPI_SENSOR_RECORD_OFFSET_RESERVED_2], 0u);
 }
 
 static void SpiSlaveService_SerializeMotorRecord(uint8_t *record_buffer, const Motor_LatestValue *record)
 {
     record_buffer[SPI_MOTOR_RECORD_OFFSET_MOTOR_INDEX] = record->motor_index;
     record_buffer[SPI_MOTOR_RECORD_OFFSET_STATUS] = record->controller_status_valid ? record->controller_status : 0u;
-    SpiSlaveService_WriteU16(&record_buffer[SPI_MOTOR_RECORD_OFFSET_VALIDITY_FLAGS], record->validity_flags);
-    SpiSlaveService_WriteU16(&record_buffer[SPI_MOTOR_RECORD_OFFSET_CAN_ID], record->can_id);
+    LeBytes_WriteU16(&record_buffer[SPI_MOTOR_RECORD_OFFSET_VALIDITY_FLAGS], record->validity_flags);
+    LeBytes_WriteU16(&record_buffer[SPI_MOTOR_RECORD_OFFSET_CAN_ID], record->can_id);
     record_buffer[SPI_MOTOR_RECORD_OFFSET_COMMAND_CODE] = record->command_code;
     record_buffer[SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH] = record->payload_length;
-    SpiSlaveService_WriteU64(&record_buffer[SPI_MOTOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US], record->acquisition_timestamp_us);
+    LeBytes_WriteU64(&record_buffer[SPI_MOTOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US], record->acquisition_timestamp_us);
     memset(&record_buffer[SPI_MOTOR_RECORD_OFFSET_PAYLOAD], 0, 8u);
     memcpy(&record_buffer[SPI_MOTOR_RECORD_OFFSET_PAYLOAD], record->payload, record->payload_length);
 }
@@ -215,9 +182,9 @@ static bool SpiSlaveService_BuildLatestSnapshot(uint8_t *payload,
     payload[SPI_SNAPSHOT_OFFSET_SENSOR_COUNT] = (uint8_t)SPI_SNAPSHOT_SENSOR_RECORD_COUNT;
     payload[SPI_SNAPSHOT_OFFSET_MOTOR_COUNT] = published_motor_count;
     diagnostics = SnapshotFramePool_GetDiagnostics(&s_frame_pool);
-    SpiSlaveService_WriteU16(&payload[SPI_SNAPSHOT_OFFSET_FLAGS], 0u);
-    SpiSlaveService_WriteU16(&payload[SPI_SNAPSHOT_OFFSET_DROPPED_SNAPSHOT_COUNT_LOW], diagnostics == NULL ? 0u : (uint16_t)diagnostics->dropped_frame_count);
-    SpiSlaveService_WriteU32(&payload[SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE], 0u);
+    LeBytes_WriteU16(&payload[SPI_SNAPSHOT_OFFSET_FLAGS], 0u);
+    LeBytes_WriteU16(&payload[SPI_SNAPSHOT_OFFSET_DROPPED_SNAPSHOT_COUNT_LOW], diagnostics == NULL ? 0u : (uint16_t)diagnostics->dropped_frame_count);
+    LeBytes_WriteU32(&payload[SPI_SNAPSHOT_OFFSET_RESPONSE_TO_SEQUENCE], 0u);
 
     for (sensor_index = 0u; sensor_index < SPI_SNAPSHOT_SENSOR_RECORD_COUNT; ++sensor_index) {
         uint8_t *record_buffer = &payload[SPI_SNAPSHOT_PREFIX_BYTES + (sensor_index * SPI_SENSOR_RECORD_BYTES)];
@@ -388,7 +355,7 @@ SpiProtocol_Result SpiSlaveService_ProcessRequestFrame(const uint8_t request[SPI
     if (request == NULL) return SPI_PROTOCOL_BAD_MESSAGE;
     result = SpiProtocol_ValidateRequest(&s_protocol, request);
     request_type = request[SPI_FRAME_OFFSET_MESSAGE_TYPE];
-    request_seq = SpiSlaveService_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]);
+    request_seq = LeBytes_ReadU32(&request[SPI_FRAME_OFFSET_SEQUENCE]);
     /* Capture request type and sequence for timing mirror. */
     s_last_request_type = request_type;
     s_last_request_seq = request_seq;

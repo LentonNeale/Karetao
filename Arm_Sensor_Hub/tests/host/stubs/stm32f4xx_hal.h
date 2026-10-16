@@ -88,15 +88,6 @@ HAL_StatusTypeDef HAL_I2C_Master_Receive(I2C_HandleTypeDef *hi2c,
                                          uint8_t *data,
                                          uint16_t size,
                                          uint32_t timeout_ms);
-HAL_StatusTypeDef HAL_I2C_Master_Transmit_IT(I2C_HandleTypeDef *hi2c,
-                                             uint16_t address,
-                                             uint8_t *data,
-                                             uint16_t size);
-HAL_StatusTypeDef HAL_I2C_Master_Receive_IT(I2C_HandleTypeDef *hi2c,
-                                            uint16_t address,
-                                            uint8_t *data,
-                                            uint16_t size);
-uint32_t HAL_I2C_GetError(I2C_HandleTypeDef *hi2c);
 
 HAL_StatusTypeDef HAL_TIM_Base_Start(TIM_HandleTypeDef *htim);
 

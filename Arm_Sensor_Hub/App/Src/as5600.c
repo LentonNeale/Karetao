@@ -239,8 +239,3 @@ AS5600_Status AS5600_ReadSample(const AS5600_Device *dev, AS5600_Sample *sample)
     sample->timestamp_us = TimeService_NowUs();
     return AS5600_STATUS_OK;
 }
-
-float AS5600_RawToDegrees(uint16_t raw_angle)
-{
-    return ((float)(raw_angle & AS5600_RAW_ANGLE_MAX) * 360.0f) / 4096.0f;
-}
