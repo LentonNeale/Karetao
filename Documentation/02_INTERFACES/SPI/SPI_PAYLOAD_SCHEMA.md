@@ -81,7 +81,7 @@ Motor record size: 24 bytes. Unused payload bytes must be zero. `payload_length`
 - bit 2: magnet not detected;
 - bit 3: magnet too weak;
 - bit 4: magnet too strong;
-- bit 5: timestamp synchronized;
+- bit 5: reserved (formerly timestamp synchronized; retired by ruling R16 and written zero);
 - bit 6: not fitted (the axis has no encoder in the commissioning table; bit 0 is clear);
 - bits 7-15: reserved.
 
@@ -89,7 +89,11 @@ Motor record size: 24 bytes. Unused payload bytes must be zero. `payload_length`
 
 **NOT_FITTED (added 2026-10-03, D-10):** an axis without an encoder in the commissioning table (SYSTEM_CONFIGURATION.md §2.1) is serialised at its stable logical ID with validity bit 6 set, bit 0 clear, bits 1-4 clear, `status` 0, and zero in `raw_angle`, `processed_angle_mdeg`, `magnitude` and `agc`; `measurement_timestamp_us` is the time the record was last refreshed. It is never a communication error and never a fault (SYS-ENC-002). This addition is compatible with schema v1 because bit 6 was reserved; `schema_version` stays 1. A decoder that predates it treats the record as not valid, which is acceptable.
 
-**Implementation status:** implemented on both sides (checked 2026-10-15: `SPI_SENSOR_VALIDITY_NOT_FITTED` in the firmware payload layout, `SENSOR_VALIDITY_NOT_FITTED` in the Pi decoder, decode tests in both suites); the outstanding NOT_FITTED behaviour test and tooling are GitHub #66 (LIVE-17). The firmware freshness state (`Sensor_Freshness`: INVALID, FRESH, STALE in `sensor_latest_value.h`) is not on the wire today; whether to serialise it is a separate, versioned schema decision and is not part of LIVE-17.
+**Stale records (added 2026-10-16, GitHub #80):** freshness is judged when the snapshot is copied. A sensor sample older than PRM-ACQ-07, or a motor position older than PRM-MOT-01, is sent with validity bit 0 clear and its last values and `measurement_timestamp_us` kept, so the host can see its age. Schema v1 has no stale bit; a dedicated one is a separate, versioned schema decision (for the motor record, ruling R10's bit set). A failed sensor read (bits 1-4) carries `status` but zero values and a zero timestamp.
+
+**Motor validity flags and payload (as built, schema v1):** bit 0 feedback valid (a position has arrived and is not stale), bit 1 controller status valid (never set as built: no polled reply carries a drive status, so `status` is 0), bit 2 reserved (formerly timestamp synchronized, retired by R16), bits 3-15 reserved. `command_code` and `payload` are the last position reply: today the 30H reply the firmware polls (`0x30`, six bytes: big-endian int32 carry then uint16 value 0..0x3FFF, `payload_length` 6); speed and acknowledgements never replace them (R10). Ruling R10's 31H position, STALE and FAULT bits arrive with GitHub #61 (R11).
+
+**Implementation status:** implemented on both sides (checked 2026-10-15: `SPI_SENSOR_VALIDITY_NOT_FITTED` in the firmware payload layout, `SENSOR_VALIDITY_NOT_FITTED` in the Pi decoder, decode tests in both suites); the outstanding NOT_FITTED behaviour test and tooling are GitHub #66 (LIVE-17). The firmware freshness state (`LatestValue_Freshness`: NONE, FRESH, STALE in `latest_value.h`) reaches the wire only as bit 0, as above. The shared golden snapshot (`shared/test-vectors/spi`) is what the latest-value store produces, asserted by both suites.
 
 ---
 

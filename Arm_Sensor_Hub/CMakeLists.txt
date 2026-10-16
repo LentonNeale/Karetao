@@ -85,8 +85,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     App/Src/time_service.c
     App/Src/calibration_record.c
     App/Src/joint_mapping.c
-    App/Src/sensor_latest_value.c
-    App/Src/motor_latest_value.c
+    App/Src/latest_value.c
     App/Src/snapshot_builder.c
     App/Src/crc32_iso_hdlc.c
     App/Src/spi_protocol.c

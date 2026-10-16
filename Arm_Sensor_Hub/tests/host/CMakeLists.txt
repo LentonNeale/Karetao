@@ -5,16 +5,17 @@ add_executable(sprint1_protocol_tests
     ${CMAKE_SOURCE_DIR}/App/Src/time_service.c
     ${CMAKE_SOURCE_DIR}/App/Src/calibration_record.c
     ${CMAKE_SOURCE_DIR}/App/Src/joint_mapping.c
-    ${CMAKE_SOURCE_DIR}/App/Src/sensor_latest_value.c
-    ${CMAKE_SOURCE_DIR}/App/Src/motor_latest_value.c
+    ${CMAKE_SOURCE_DIR}/App/Src/latest_value.c
     ${CMAKE_SOURCE_DIR}/App/Src/snapshot_builder.c
     ${CMAKE_SOURCE_DIR}/App/Src/crc32_iso_hdlc.c
     ${CMAKE_SOURCE_DIR}/App/Src/spi_protocol.c
     ${CMAKE_SOURCE_DIR}/App/Src/spi_data_ready.c
     ${CMAKE_SOURCE_DIR}/App/Src/can_tx_policy.c
+    stubs/task_stub.c
 )
 
 target_include_directories(sprint1_protocol_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/stubs
     ${CMAKE_SOURCE_DIR}/App/Inc
 )
 
@@ -35,9 +36,12 @@ endif()
 add_executable(spi_golden_vector_tests
     spi_golden_vector_tests.c
     ${CMAKE_SOURCE_DIR}/App/Src/crc32_iso_hdlc.c
+    ${CMAKE_SOURCE_DIR}/App/Src/latest_value.c
     ${CMAKE_SOURCE_DIR}/App/Src/spi_protocol.c
+    stubs/task_stub.c
 )
 target_include_directories(spi_golden_vector_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/stubs
     ${CMAKE_SOURCE_DIR}/App/Inc
 )
 target_compile_definitions(spi_golden_vector_tests PRIVATE
@@ -55,9 +59,8 @@ add_executable(service_smoke_tests
     ${CMAKE_SOURCE_DIR}/App/Src/health_monitor.c
     ${CMAKE_SOURCE_DIR}/App/Src/i2c_manager.c
     ${CMAKE_SOURCE_DIR}/App/Src/joint_mapping.c
+    ${CMAKE_SOURCE_DIR}/App/Src/latest_value.c
     ${CMAKE_SOURCE_DIR}/App/Src/lifecycle.c
-    ${CMAKE_SOURCE_DIR}/App/Src/motor_latest_value.c
-    ${CMAKE_SOURCE_DIR}/App/Src/sensor_latest_value.c
     ${CMAKE_SOURCE_DIR}/App/Src/sensor_task.c
     ${CMAKE_SOURCE_DIR}/App/Src/snapshot_builder.c
     ${CMAKE_SOURCE_DIR}/App/Src/spi_data_ready.c
@@ -65,6 +68,7 @@ add_executable(service_smoke_tests
     ${CMAKE_SOURCE_DIR}/App/Src/spi_slave_service.c
     ${CMAKE_SOURCE_DIR}/App/Src/stack_monitor.c
     ${CMAKE_SOURCE_DIR}/App/Src/tca9548a_mux.c
+    stubs/task_stub.c
 )
 
 target_include_directories(service_smoke_tests PRIVATE

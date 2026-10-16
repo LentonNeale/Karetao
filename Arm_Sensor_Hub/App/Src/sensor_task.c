@@ -7,18 +7,17 @@
 
 #include "as5600.h"
 #include "main.h"
-#include "sensor_latest_value.h"
+#include "latest_value.h"
 #include "tca9548a_mux.h"
-#include "time_service.h"
 
-#define SENSOR_TASK_BRINGUP_POLL_PERIOD_MS 20u
 #define SENSOR_TASK_RECORD_COUNT SENSOR_TASK_AXIS_COUNT
-#define SENSOR_TASK_CALIBRATION_VERSION 0u
 #define SENSOR_TASK_MIN_HEALTHY_CHANNELS 1u
+
+_Static_assert(SENSOR_TASK_RECORD_COUNT == LATEST_VALUE_SENSOR_COUNT,
+               "Each logical axis is one latest-value sensor slot");
 
 static AS5600_Device s_encoders[SENSOR_TASK_RECORD_COUNT];
 static SensorTask_BringupSnapshot s_snapshot;
-static Sensor_LatestValue s_latest_values[SENSOR_TASK_RECORD_COUNT];
 static bool s_axis_fitted[SENSOR_TASK_RECORD_COUNT];
 static Lifecycle_Record s_lifecycle;
 static uint32_t s_last_poll_tick;
@@ -48,6 +47,16 @@ static void SensorTask_UpdateDebugMirrors(void)
 {
 	g_sensor_task_snapshot_dbg = s_snapshot;
 	g_sensor_task_diag_word_dbg = s_diag_word;
+}
+
+/* A failed read carries no angle and no timestamp; the store records why and the status byte. */
+static void SensorTask_AcceptFailure(uint8_t channel, uint8_t status, LatestValue_SampleCondition condition)
+{
+	LatestValue_Sample sample = {0};
+
+	sample.condition = condition;
+	sample.status = status;
+	(void)LatestValue_AcceptSample(channel, &sample);
 }
 
 static void SensorTask_RunInitChecks(void)
@@ -81,7 +90,6 @@ static void SensorTask_RunInitChecks(void)
 
 		if (!s_axis_fitted[channel])
 		{
-			SensorLatestValue_SetNotFitted(&s_latest_values[channel], TimeService_NowUs());
 			continue;
 		}
 
@@ -96,10 +104,7 @@ static void SensorTask_RunInitChecks(void)
 		else
 		{
 			s_snapshot.comm_error_count++;
-			SensorLatestValue_SetInvalid(&s_latest_values[channel],
-			                             0u,
-			                             SENSOR_VALIDITY_COMMUNICATION_ERROR,
-			                             TimeService_NowUs());
+			SensorTask_AcceptFailure(channel, 0u, LATEST_VALUE_SAMPLE_COMM_ERROR);
 		}
 	}
 
@@ -121,29 +126,17 @@ static void SensorTask_RunInitChecks(void)
 	SensorTask_UpdateDebugMirrors();
 }
 
-static void SensorTask_SetChannelInvalid(uint8_t channel, uint8_t status, uint16_t reason_flags)
-{
-	if (channel >= SENSOR_TASK_RECORD_COUNT)
-	{
-		return;
-	}
-
-	SensorLatestValue_SetInvalid(&s_latest_values[channel],
-	                             status,
-	                             reason_flags,
-	                             TimeService_NowUs());
-}
-
-static void SensorTask_ProcessChannel(uint8_t channel, const TimeService_SyncSnapshot *time_sync_snapshot)
+static void SensorTask_ProcessChannel(uint8_t channel)
 {
 	AS5600_Sample sample;
 	AS5600_Status status;
+	LatestValue_Sample accepted;
 
 	status = AS5600_ReadSample(&s_encoders[channel], &sample);
 	if (status != AS5600_STATUS_OK)
 	{
 		s_snapshot.comm_error_count++;
-		SensorTask_SetChannelInvalid(channel, 0u, SENSOR_VALIDITY_COMMUNICATION_ERROR);
+		SensorTask_AcceptFailure(channel, 0u, LATEST_VALUE_SAMPLE_COMM_ERROR);
 		return;
 	}
 
@@ -154,35 +147,33 @@ static void SensorTask_ProcessChannel(uint8_t channel, const TimeService_SyncSna
 	if ((sample.status & AS5600_STATUS_MD) == 0u)
 	{
 		s_snapshot.magnet_error_count++;
-		SensorTask_SetChannelInvalid(channel, sample.status, SENSOR_VALIDITY_MAGNET_NOT_DETECTED);
+		SensorTask_AcceptFailure(channel, sample.status, LATEST_VALUE_SAMPLE_MAGNET_MISSING);
 		return;
 	}
 
 	if ((sample.status & AS5600_STATUS_ML) != 0u)
 	{
 		s_snapshot.magnet_error_count++;
-		SensorTask_SetChannelInvalid(channel, sample.status, SENSOR_VALIDITY_MAGNET_TOO_WEAK);
+		SensorTask_AcceptFailure(channel, sample.status, LATEST_VALUE_SAMPLE_MAGNET_WEAK);
 		return;
 	}
 
 	if ((sample.status & AS5600_STATUS_MH) != 0u)
 	{
 		s_snapshot.magnet_error_count++;
-		SensorTask_SetChannelInvalid(channel, sample.status, SENSOR_VALIDITY_MAGNET_TOO_STRONG);
+		SensorTask_AcceptFailure(channel, sample.status, LATEST_VALUE_SAMPLE_MAGNET_STRONG);
 		return;
 	}
 
 	s_snapshot.result = SENSOR_TASK_BRINGUP_PASS;
 	s_snapshot.sample_ok_count++;
-	SensorLatestValue_SetValid(&s_latest_values[channel],
-	                           sample.raw_angle,
-	                           (int32_t)(((uint32_t)sample.angle * 360000u) / 4096u),
-	                           sample.magnitude,
-	                           sample.agc,
-	                           sample.status,
-	                           sample.timestamp_us,
-	                           time_sync_snapshot->quality,
-	                           SENSOR_TASK_CALIBRATION_VERSION);
+	accepted.condition = LATEST_VALUE_SAMPLE_OK;
+	accepted.status = sample.status;
+	accepted.raw_angle_counts = sample.raw_angle;
+	accepted.magnitude = sample.magnitude;
+	accepted.agc = sample.agc;
+	accepted.timestamp_us = sample.timestamp_us;
+	(void)LatestValue_AcceptSample(channel, &accepted);
 }
 
 void SensorTask_Init(void)
@@ -212,10 +203,6 @@ void SensorTask_Init(void)
 	{
 		AS5600_InitDevice(&s_encoders[record_index], record_index);
 		s_axis_fitted[record_index] = true;
-		SensorLatestValue_Init(&s_latest_values[record_index],
-		                       record_index,
-		                       record_index,
-		                       SENSOR_TASK_CALIBRATION_VERSION);
 	}
 
 	s_diag_word = SensorTask_PackDiagWord();
@@ -284,10 +271,6 @@ bool SensorTask_ConfigureFittedAxes(const bool *encoder_fitted, size_t count)
 	for (axis = 0u; axis < count; ++axis)
 	{
 		s_axis_fitted[axis] = encoder_fitted[axis];
-		if (!s_axis_fitted[axis])
-		{
-			SensorLatestValue_SetNotFitted(&s_latest_values[axis], TimeService_NowUs());
-		}
 	}
 
 	return true;
@@ -305,7 +288,6 @@ Lifecycle_State SensorTask_GetLifecycleState(void)
 
 void SensorTask_Process(void)
 {
-	TimeService_SyncSnapshot time_sync_snapshot;
 	uint32_t now_tick = HAL_GetTick();
 	uint8_t channel;
 
@@ -327,8 +309,6 @@ void SensorTask_Process(void)
 		return;
 	}
 
-	TimeService_GetSyncSnapshot(&time_sync_snapshot);
-
 	/*
 	 * The loop index is the logical axis and record position, not the mux
 	 * channel. The mux channel is whatever the bound encoder carries.
@@ -337,11 +317,10 @@ void SensorTask_Process(void)
 	{
 		if (!s_axis_fitted[channel])
 		{
-			SensorLatestValue_SetNotFitted(&s_latest_values[channel], TimeService_NowUs());
 			continue;
 		}
 
-		SensorTask_ProcessChannel(channel, &time_sync_snapshot);
+		SensorTask_ProcessChannel(channel);
 	}
 
 	s_diag_word = SensorTask_PackDiagWord();
@@ -366,14 +345,4 @@ uint32_t SensorTask_GetBringupDiagWord(void)
 uint8_t SensorTask_IsActive(void)
 {
 	return s_snapshot.is_active;
-}
-
-const Sensor_LatestValue *SensorTask_GetLatestValues(size_t *record_count)
-{
-	if (record_count != NULL)
-	{
-		*record_count = SENSOR_TASK_RECORD_COUNT;
-	}
-
-	return s_latest_values;
 }

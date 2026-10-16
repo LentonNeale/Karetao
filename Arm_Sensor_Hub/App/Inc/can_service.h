@@ -10,11 +10,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "motor_latest_value.h"
 #include "mks_api.h"
 #include "lifecycle.h"
 
 #define CAN_SERVICE_MAX_MKS_MOTORS 8u
+/**
+ * Poll scheduler period (PRM-CAN-05): each tick sends one request, alternating 30H and 32H per
+ * motor round-robin, so a motor's position interval is 2 x this x registered motors. The motor
+ * freshness window derives from it (app_init.c); CanService_SetPollPeriodMs does not move it.
+ */
+#define CAN_SERVICE_DEFAULT_POLL_PERIOD_MS 20u
 
 typedef enum {
 	CAN_SERVICE_MKS_SERVO42 = 0,
@@ -42,9 +47,11 @@ Lifecycle_State CanService_GetLifecycleState(void);
  */
 void CanService_Process(void);
 
+/**
+ * Registers a drive in a slot. The record identity it publishes (logical joint, configuration
+ * version) is a latest-value slot property, set by LatestValue_Configure from the same table.
+ */
 MksStatus CanService_RegisterMotor(uint8_t motor_index,
-								   uint8_t logical_joint_id,
-								   uint32_t configuration_version,
 								   CanService_MksModel model,
 								   uint16_t can_id);
 
@@ -99,7 +106,6 @@ uint32_t CanService_GetRxOkCount(uint8_t motor_index);
  * @brief Executes service get rx decode error count.
  */
 uint32_t CanService_GetRxDecodeErrorCount(uint8_t motor_index);
-const Motor_LatestValue *CanService_GetLatestMotorValues(size_t *record_count);
 
 #ifdef __cplusplus
 }

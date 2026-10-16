@@ -41,6 +41,8 @@ from spi.spi_protocol import (  # noqa: E402
     VersionInfo,
     decode_command_reply,
     decode_snapshot_sensor_records,
+    SENSOR_VALIDITY_NOT_FITTED,
+    SENSOR_VALIDITY_SAMPLE_VALID,
 )
 
 
@@ -150,6 +152,16 @@ class GoldenVectorTests(unittest.TestCase):
                 self.assertEqual([record.sensor_id for record in records], list(range(len(records))))
                 self.assertTrue(any(record.is_valid for record in records))
                 self.assertTrue(any(record.is_not_fitted for record in records))
+                for record in records:
+                    # The latest-value store's output (make_vectors.py): a valid record carries
+                    # SAMPLE_VALID alone (bit 5 retired, R16) and RAW ANGLE scaled to millidegrees
+                    # (R6); a not-fitted record carries NOT_FITTED alone and no angle.
+                    if record.is_valid:
+                        self.assertEqual(record.validity_flags, SENSOR_VALIDITY_SAMPLE_VALID)
+                        self.assertEqual(record.processed_angle_mdeg, record.raw_angle * 360_000 // 4096)
+                    else:
+                        self.assertEqual(record.validity_flags, SENSOR_VALIDITY_NOT_FITTED)
+                        self.assertEqual((record.raw_angle, record.processed_angle_mdeg), (0, 0))
                 checked += 1
         self.assertGreater(checked, 0)
 

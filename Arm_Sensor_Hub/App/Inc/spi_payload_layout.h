@@ -80,6 +80,14 @@
 #define SPI_SENSOR_RECORD_OFFSET_AGC UINT16_C(20)
 #define SPI_SENSOR_RECORD_OFFSET_RESERVED UINT16_C(21)
 #define SPI_SENSOR_RECORD_OFFSET_RESERVED_2 UINT16_C(22)
+/* Sensor validity bits (SPI_PAYLOAD_SCHEMA.md, SNAPSHOT). Bit 5, timestamp synchronized, is
+ * retired by ruling R16 and written zero; bits 5 and 7-15 are reserved. A stale sample is sent
+ * with bit 0 clear and its last values and timestamp kept. */
+#define SPI_SENSOR_VALIDITY_SAMPLE_VALID UINT16_C(0x0001)
+#define SPI_SENSOR_VALIDITY_COMMUNICATION_ERROR UINT16_C(0x0002)
+#define SPI_SENSOR_VALIDITY_MAGNET_NOT_DETECTED UINT16_C(0x0004)
+#define SPI_SENSOR_VALIDITY_MAGNET_TOO_WEAK UINT16_C(0x0008)
+#define SPI_SENSOR_VALIDITY_MAGNET_TOO_STRONG UINT16_C(0x0010)
 /** Sensor validity bit 6: axis has no encoder in the commissioning table (SPI_PAYLOAD_SCHEMA.md). */
 #define SPI_SENSOR_VALIDITY_NOT_FITTED UINT16_C(0x0040)
 
@@ -93,6 +101,12 @@
 #define SPI_MOTOR_RECORD_OFFSET_PAYLOAD_LENGTH UINT16_C(7)
 #define SPI_MOTOR_RECORD_OFFSET_MEASUREMENT_TIMESTAMP_US UINT16_C(8)
 #define SPI_MOTOR_RECORD_OFFSET_PAYLOAD UINT16_C(16)
+/* Motor validity bits, schema v1 as built. Bit 2, timestamp synchronized, is retired by ruling
+ * R16 and written zero. A stale position is sent with bit 0 clear. Bit 1 is never set as built:
+ * no polled reply carries a drive status. Ruling R10's bit set (STALE, FAULT) arrives with the
+ * motor-record work of GitHub #61. */
+#define SPI_MOTOR_VALIDITY_FEEDBACK_VALID UINT16_C(0x0001)
+#define SPI_MOTOR_VALIDITY_CONTROLLER_STATUS_VALID UINT16_C(0x0002)
 
 /** Number of logical joint sensor records published in each snapshot. */
 #define SPI_SNAPSHOT_SENSOR_RECORD_COUNT UINT16_C(6)

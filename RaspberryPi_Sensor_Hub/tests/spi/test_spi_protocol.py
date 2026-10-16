@@ -32,7 +32,6 @@ from spi.spi_protocol import (
     SENSOR_VALIDITY_MAGNET_TOO_WEAK,
     SENSOR_VALIDITY_NOT_FITTED,
     SENSOR_VALIDITY_SAMPLE_VALID,
-    SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED,
     SensorRecord,
     decode_snapshot_sensor_records,
 )
@@ -295,7 +294,6 @@ class TimeSyncFrameExtensionTests(unittest.TestCase):
         self.assertEqual(SENSOR_VALIDITY_MAGNET_NOT_DETECTED, 0x0004)
         self.assertEqual(SENSOR_VALIDITY_MAGNET_TOO_WEAK, 0x0008)
         self.assertEqual(SENSOR_VALIDITY_MAGNET_TOO_STRONG, 0x0010)
-        self.assertEqual(SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED, 0x0020)
         self.assertEqual(SENSOR_VALIDITY_NOT_FITTED, 0x0040)
         self.assertEqual(struct.calcsize('<BBHQHiHBBH'), SENSOR_RECORD_BYTES)
 
@@ -308,7 +306,7 @@ class TimeSyncFrameExtensionTests(unittest.TestCase):
         self.assertEqual(record.processed_angle_mdeg, 0)
 
     def test_sensor_record_valid_round_trip(self) -> None:
-        flags = SENSOR_VALIDITY_SAMPLE_VALID | SENSOR_VALIDITY_TIMESTAMP_SYNCHRONIZED
+        flags = SENSOR_VALIDITY_SAMPLE_VALID
         record = SensorRecord.decode(_sensor_record(1, flags, 123456789, 2048, -45000, 1500, 90))
         self.assertTrue(record.is_valid)
         self.assertFalse(record.is_not_fitted)

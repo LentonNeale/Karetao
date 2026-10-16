@@ -14,6 +14,10 @@
  * `key = value` lines fill it, `#` starts a comment, hex values are wire-order byte strings.
  * Checks report the vector and the failing comparison instead of a bare assert, so a mismatch
  * names the byte that differs.
+ *
+ * The staged snapshot of `get_snapshot_staged` is also what the latest-value store produces
+ * (latest_value.c, serialised by SpiProtocol_SerializeSnapshot) for the inputs in
+ * CheckStoreReproducesStaged; make_vectors.py builds the vector from the same inputs.
  */
 
 #include <stdbool.h>
@@ -25,6 +29,7 @@
 #include "host_test_assert.h"
 
 #include "crc32_iso_hdlc.h"
+#include "latest_value.h"
 #include "spi_payload_layout.h"
 #include "spi_protocol.h"
 
@@ -331,6 +336,76 @@ static void CheckVectorShape(const GoldenVector *vector)
     }
 }
 
+#define GOLDEN_STORE_VECTOR "get_snapshot_staged"
+/* SNAPSHOT_COPY_US in make_vectors.py. */
+#define GOLDEN_STORE_COPY_US UINT64_C(1000700)
+
+static bool s_store_vector_checked;
+
+static void AcceptGoldenSample(uint8_t axis, uint16_t raw, uint16_t magnitude, uint8_t agc, uint64_t timestamp_us)
+{
+    LatestValue_Sample sample;
+
+    memset(&sample, 0, sizeof(sample));
+    sample.condition = LATEST_VALUE_SAMPLE_OK;
+    sample.status = 0x20u;
+    sample.raw_angle_counts = raw;
+    sample.magnitude = magnitude;
+    sample.agc = agc;
+    sample.timestamp_us = timestamp_us;
+    if (LatestValue_AcceptSample(axis, &sample) != LATEST_VALUE_OK) {
+        fprintf(stderr, "spi_golden_vector_tests: the store refused the sample for axis %u\n", axis);
+        exit(EXIT_FAILURE);
+    }
+}
+
+/* Feeds the store the vector's inputs (make_vectors.py snapshot_payload), copies, serialises the
+ * copy and compares it with the staged payload: the C side of the Python decode of the same bytes. */
+static void CheckStoreReproducesStaged(const GoldenVector *vector)
+{
+    static const uint8_t reply[LATEST_VALUE_POSITION_REPLY_BYTES] = {0x00u, 0x00u, 0x00u, 0x48u, 0x34u, 0x56u};
+    static LatestValue_Snapshot copy;
+    static uint8_t payload[SPI_SNAPSHOT_MAX_PAYLOAD_BYTES];
+    LatestValue_Config config;
+    LatestValue_Feedback feedback;
+    uint16_t length = 0u;
+    size_t offset;
+
+    if (!vector->has_staged) Fail(vector, "the store vector has no stm32.staged_snapshot");
+    memset(&config, 0, sizeof(config));
+    config.sensor_fitted[0] = true;
+    config.sensor_fitted[1] = true;
+    config.sensor_fitted[2] = true;
+    config.motors[0].registered = true;
+    config.motors[0].can_id = 0x001u;
+    config.sensor_window_us = UINT64_C(100000);
+    config.motor_window_us = UINT64_C(200000);
+    if (LatestValue_Configure(&config) != LATEST_VALUE_OK) Fail(vector, "LatestValue_Configure refused the config");
+
+    AcceptGoldenSample(0u, 0x0123u, 1480u, 96u, UINT64_C(1000100));
+    AcceptGoldenSample(1u, 0x0800u, 1502u, 93u, UINT64_C(1000250));
+    AcceptGoldenSample(2u, 0x0FFFu, 1431u, 101u, UINT64_C(1000400));
+    memset(&feedback, 0, sizeof(feedback));
+    feedback.kind = LATEST_VALUE_FEEDBACK_POSITION;
+    feedback.timestamp_us = UINT64_C(1000600);
+    feedback.position_counts = (INT64_C(0x48) * 0x4000) + 0x3456;
+    feedback.position_command_code = 0x30u;
+    memcpy(feedback.position_reply, reply, sizeof(reply));
+    if (LatestValue_AcceptFeedback(0u, &feedback) != LATEST_VALUE_OK) Fail(vector, "the store refused the feedback");
+
+    LatestValue_CopySnapshot(GOLDEN_STORE_COPY_US, &copy);
+    if (SpiProtocol_SerializeSnapshot(&copy, 0u, payload, &length) != SPI_PROTOCOL_OK) {
+        Fail(vector, "SpiProtocol_SerializeSnapshot failed");
+    }
+    if (length != vector->staged_length) Fail(vector, "the store's snapshot length differs from stm32.staged_snapshot");
+    for (offset = 0u; offset < length; ++offset) {
+        if (payload[offset] != vector->staged[offset]) {
+            FailAt(vector, "store snapshot", offset, payload[offset], vector->staged[offset]);
+        }
+    }
+    s_store_vector_checked = true;
+}
+
 static void RunVector(const GoldenVector *vector)
 {
     SpiProtocol_State state;
@@ -340,6 +415,10 @@ static void RunVector(const GoldenVector *vector)
     uint8_t response[SPI_FRAME_MAX_BYTES];
     uint8_t expected_response[SPI_FRAME_MAX_BYTES];
     size_t offset;
+
+    if (strcmp(vector->name, GOLDEN_STORE_VECTOR) == 0) {
+        CheckStoreReproducesStaged(vector);
+    }
 
     if (!vector->has_next_tx_seq || !vector->has_now_us || !vector->has_last_request_seq_key) {
         Fail(vector, "stm32.next_tx_seq, stm32.last_request_seq and stm32.now_us are required");
@@ -479,6 +558,10 @@ int main(int argc, char **argv)
 
     if (count == 0u) {
         fprintf(stderr, "spi_golden_vector_tests: %s holds no vectors\n", argv[1]);
+        return EXIT_FAILURE;
+    }
+    if (!s_store_vector_checked) {
+        fprintf(stderr, "spi_golden_vector_tests: %s has no [%s] vector for the store check\n", argv[1], GOLDEN_STORE_VECTOR);
         return EXIT_FAILURE;
     }
     printf("spi_golden_vector_tests: %u vectors asserted from %s\n", count, argv[1]);

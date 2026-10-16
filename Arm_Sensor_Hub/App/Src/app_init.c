@@ -5,10 +5,13 @@
 
 #include "app_init.h"
 
+#include <string.h>
+
 #include "can_service.h"
 #include "health_monitor.h"
 #include "i2c_manager.h"
 #include "joint_mapping.h"
+#include "latest_value.h"
 #include "sensor_task.h"
 #include "spi_slave_service.h"
 #include "tca9548a_mux.h"
@@ -22,7 +25,8 @@ typedef struct {
     uint16_t can_id;
 } App_MksMotorConfig;
 
-/* Update this table as motors are commissioned on the CAN bus. */
+/* Update this table as motors are commissioned on the CAN bus. A row's logical joint and
+ * configuration version are the identity its snapshot record carries (latest-value slot). */
 static const App_MksMotorConfig s_mks_motors[] = {
     {0u, 0u, JOINT_MAPPING_SCHEMA_VERSION, CAN_SERVICE_MKS_SERVO57, 0x001u}
 };
@@ -72,9 +76,29 @@ static const JointMapping_Record s_joint_mapping[] = {
     }
 };
 
+#define APP_MKS_MOTOR_COUNT (sizeof(s_mks_motors) / sizeof(s_mks_motors[0]))
+
+/* Freshness windows of the latest-value store. Sensor: PRM-ACQ-07, 5 x the sweep period
+ * PRM-ACQ-05. Motor: PRM-MOT-01, 5 x the feedback period, which as built is the position-poll
+ * interval of the scheduler (2 x PRM-CAN-05 x the registered motors; can_service.h) until
+ * GitHub #61 commissions a feedback period (ruling R11). */
+#define APP_FRESHNESS_WINDOW_PERIODS 5u
+#define APP_SENSOR_WINDOW_US \
+    ((uint64_t)APP_FRESHNESS_WINDOW_PERIODS * SENSOR_TASK_BRINGUP_POLL_PERIOD_MS * 1000u)
+
+static uint64_t App_MotorWindowUs(uint32_t registered_motors)
+{
+    /* With none registered no motor record is published; one period keeps the window non-zero. */
+    uint32_t motors = (registered_motors == 0u) ? 1u : registered_motors;
+    uint64_t feedback_period_ms = 2u * (uint64_t)CAN_SERVICE_DEFAULT_POLL_PERIOD_MS * motors;
+    return APP_FRESHNESS_WINDOW_PERIODS * feedback_period_ms * 1000u;
+}
+
 volatile uint32_t g_app_mks_register_failures_dbg;
 volatile uint32_t g_app_lifecycle_activation_failures_dbg;
 volatile uint32_t g_app_sensor_configure_failures_dbg;
+/* LatestValue_Configure refused the commissioning tables (read over SWD). */
+volatile uint32_t g_app_store_configure_failures_dbg;
 static bool s_start_requested;
 static bool s_mapping_valid;
 static bool s_sensor_channels_valid;
@@ -82,20 +106,32 @@ static bool s_sensor_channels_valid;
 /**
  * @brief Executes register mks motors.
  */
-static void App_RegisterMksMotors(void)
+/* Registers each row with the CAN service and its identity in the store config; returns how
+ * many slots registered. A bad row (joint above LATEST_VALUE_MAX_LOGICAL_JOINT, slot out of
+ * range, or a slot an earlier row already took) is refused alone and counted, so it never
+ * invalidates the whole store config or silently replaces another drive. */
+static uint32_t App_RegisterMksMotors(LatestValue_Config *store_config)
 {
     uint32_t i;
+    uint32_t registered = 0u;
 
     g_app_mks_register_failures_dbg = 0u;
-    for (i = 0u; i < (sizeof(s_mks_motors) / sizeof(s_mks_motors[0])); ++i) {
-        if (CanService_RegisterMotor(s_mks_motors[i].motor_index,
-                         s_mks_motors[i].logical_joint_id,
-                         s_mks_motors[i].configuration_version,
-                         s_mks_motors[i].model,
-                         s_mks_motors[i].can_id) != MKS_OK) {
+    for (i = 0u; i < APP_MKS_MOTOR_COUNT; ++i) {
+        const App_MksMotorConfig *motor = &s_mks_motors[i];
+        if ((motor->logical_joint_id > LATEST_VALUE_MAX_LOGICAL_JOINT) ||
+            (motor->motor_index >= LATEST_VALUE_MOTOR_COUNT) ||
+            store_config->motors[motor->motor_index].registered ||
+            (CanService_RegisterMotor(motor->motor_index, motor->model, motor->can_id) != MKS_OK)) {
             g_app_mks_register_failures_dbg++;
+            continue;
         }
+        registered++;
+        store_config->motors[motor->motor_index].registered = true;
+        store_config->motors[motor->motor_index].logical_joint_id = motor->logical_joint_id;
+        store_config->motors[motor->motor_index].can_id = motor->can_id;
+        store_config->motors[motor->motor_index].configuration_version = motor->configuration_version;
     }
+    return registered;
 }
 
 /**
@@ -103,8 +139,14 @@ static void App_RegisterMksMotors(void)
  */
 void App_Init(void)
 {
+    /* Static: the store config is larger than the rest of this call path needs on main's stack. */
+    static LatestValue_Config store_config;
+    uint32_t axis;
+    uint32_t registered_motors = 0u;
+
     g_app_lifecycle_activation_failures_dbg = 0u;
     g_app_sensor_configure_failures_dbg = 0u;
+    g_app_store_configure_failures_dbg = 0u;
     s_start_requested = false;
     s_sensor_channels_valid = false;
     s_mapping_valid = JointMapping_Validate(s_joint_mapping,
@@ -127,10 +169,23 @@ void App_Init(void)
         s_sensor_channels_valid = false;
     }
     CanService_Init();
+    memset(&store_config, 0, sizeof(store_config));
     if (s_mapping_valid) {
-        App_RegisterMksMotors();
+        registered_motors = App_RegisterMksMotors(&store_config);
     } else {
         g_app_mks_register_failures_dbg++;
+    }
+
+    /* The latest-value slots come from the same commissioning tables, before any producer runs. */
+    for (axis = 0u; axis < SENSOR_TASK_AXIS_COUNT; ++axis) {
+        store_config.sensor_fitted[axis] = s_sensor_encoder_fitted[axis];
+    }
+    store_config.sensor_window_us = APP_SENSOR_WINDOW_US;
+    store_config.motor_window_us = App_MotorWindowUs(registered_motors);
+    if (LatestValue_Configure(&store_config) != LATEST_VALUE_OK) {
+        /* No sample could be published, so the sensor sweep is not started. */
+        g_app_store_configure_failures_dbg++;
+        s_sensor_channels_valid = false;
     }
     SpiSlaveService_Init();
     HealthMonitor_Init();
