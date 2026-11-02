@@ -43,10 +43,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 from spi.data_ready import DataReadyWatcher  # noqa: E402
 from spi.exchange import (  # noqa: E402
-    CSV_FIELDS, GET_REQUEST_PAYLOAD, ExchangeSession, Outcome, Request, nack_codes)
+    CSV_FIELDS, GET_REQUESTS, GET_VERSION, MIN_EXCHANGE_BUDGET, ExchangeSession, Outcome, Request)
 from spi.fake_backend import FakeFirmware  # noqa: E402
 from spi.spi_bus import SpiBus, SpiBusConfig  # noqa: E402
-from spi.spi_protocol import MessageType, NackReason, VersionInfo  # noqa: E402
+from spi.spi_protocol import MessageType, VersionInfo  # noqa: E402
 
 DEFAULT_MIN_INTERVAL_MS = 10.0
 
@@ -56,12 +56,11 @@ DEFAULT_MESSAGES = 'GET_STATUS,GET_VERSION'
 # Most transactions the firmware-identity read may clock, its own request included (eight, as
 # SpiDevice.get_version allowed before #102 replaced it with the exchange session).
 DEFAULT_VERSION_BUDGET = 8
-GET_REQUESTS = frozenset({MessageType.GET_STATUS, MessageType.GET_VERSION, MessageType.GET_SNAPSHOT})
 
 
 def request_for(message_type: MessageType) -> Request:
     """The request a block clocks: a GET carries the session's GET payload (ruling R1, #88)."""
-    return Request(message_type, GET_REQUEST_PAYLOAD if message_type in GET_REQUESTS else b'')
+    return GET_REQUESTS.get(message_type) or Request(message_type)
 
 
 # --------------------------------------------------------------------------
@@ -222,6 +221,13 @@ class BlockResult:
     ctxt_nonvoluntary_delta: int = 0
 
 
+def open_session(args, bus, block_id: str, data_ready) -> ExchangeSession:
+    return ExchangeSession(
+        bus=bus, block_id=block_id, data_ready=data_ready,
+        data_ready_timeout_s=args.data_ready_timeout_ms / 1000.0,
+        min_interval_s=args.min_interval_ms / 1000.0)
+
+
 def run_block(args, clock_hz: int, workers: int, message_type: MessageType,
               backend, data_ready) -> BlockResult:
     block_id = f'{clock_hz}hz_load{workers}_{message_type.name}'
@@ -244,11 +250,7 @@ def run_block(args, clock_hz: int, workers: int, message_type: MessageType,
 
         bus.open()
         try:
-            session = ExchangeSession(
-                bus=bus, block_id=block_id, data_ready=data_ready,
-                data_ready_timeout_s=args.data_ready_timeout_ms / 1000.0,
-                min_interval_s=0.0 if data_ready is not None else args.min_interval_ms / 1000.0,
-            )
+            session = open_session(args, bus, block_id, data_ready)
             for _ in range(args.warmup):
                 session.transact(request)
             session.reset_counters()
@@ -288,10 +290,7 @@ def collect_metadata(args, backend, data_ready=None) -> dict:
         bus.open()
         try:
             # Paced like the blocks: unpaced back-to-back transfers return stale or zeroed frames.
-            session = ExchangeSession(
-                bus=bus, block_id='identity', data_ready=data_ready,
-                data_ready_timeout_s=args.data_ready_timeout_ms / 1000.0,
-                min_interval_s=0.0 if data_ready is not None else args.min_interval_ms / 1000.0)
+            session = open_session(args, bus, 'identity', data_ready)
             version = read_version(session, args.version_budget)
         finally:
             bus.close()
@@ -314,14 +313,10 @@ def collect_metadata(args, backend, data_ready=None) -> dict:
 
 def read_version(session: ExchangeSession, budget: int) -> VersionInfo:
     """The firmware's build identity, or an exception naming why it could not be read."""
-    request = request_for(MessageType.GET_VERSION)
-    result = session.exchange(request, budget=budget)
+    result = session.exchange(GET_VERSION, budget=budget)
     if result.outcome is Outcome.REFUSED:
-        status_code, _ = nack_codes(result.reply)
-        if status_code is None:
-            raise RuntimeError(f'firmware refused GET_VERSION seq {result.request_seq} with an undecodable NACK')
         raise RuntimeError(f'firmware refused GET_VERSION seq {result.request_seq} with '
-                           f'{NackReason.describe(status_code)}. {NackReason.remedy(status_code)}'.strip())
+                           f'{result.refusal_reason()}')
     if result.outcome is Outcome.EXHAUSTED:
         raise TimeoutError(f'no reply to GET_VERSION seq {result.request_seq} within {budget} transactions')
     if result.reply.message_type is not MessageType.VERSION:
@@ -480,8 +475,8 @@ def main(argv=None) -> int:
         except Exception as exc:  # noqa: BLE001 - report and fail; pacing silently disabled would be worse
             parser.error(f'could not set up DATA_READY on line {args.data_ready_line}: {exc}')
 
-    if args.version_budget < 2:
-        parser.error('--version-budget must be at least 2: the reply arrives one transaction late')
+    if args.version_budget < MIN_EXCHANGE_BUDGET:
+        parser.error(f'--version-budget must be at least {MIN_EXCHANGE_BUDGET}: the reply arrives one transaction late')
 
     backend = FakeFirmware() if args.fake else None
     run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')

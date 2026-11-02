@@ -38,6 +38,7 @@ from .spi_protocol import (
     SNAPSHOT_OFFSET_RESPONSE_TO_SEQ,
     VERSION_OFFSET_RESPONSE_TO_SEQ,
     MessageType,
+    NackReason,
     Sequencer,
     SpiFrame,
     decode_command_reply,
@@ -107,6 +108,12 @@ class Request:
 
 
 GET_STATUS = Request(MessageType.GET_STATUS, GET_REQUEST_PAYLOAD)
+GET_VERSION = Request(MessageType.GET_VERSION, GET_REQUEST_PAYLOAD)
+GET_SNAPSHOT = Request(MessageType.GET_SNAPSHOT, GET_REQUEST_PAYLOAD)
+GET_REQUESTS = {r.message_type: r for r in (GET_STATUS, GET_VERSION, GET_SNAPSHOT)}
+
+# The reply cannot arrive before the transaction after the request.
+MIN_EXCHANGE_BUDGET = 2
 
 
 @dataclass(frozen=True)
@@ -187,6 +194,14 @@ class ExchangeResult:
     reply: Optional[SpiFrame]  # the correlated reply or NACK; None when exhausted
     records: tuple[TransactionRecord, ...]
 
+    def refusal_reason(self) -> str:
+        """For a REFUSED exchange: the NACK's reason as a sentence end, then its remedy if any."""
+        status = self.records[-1].nack_status_code
+        if status is None:
+            return 'an undecodable NACK.'
+        remedy = NackReason.remedy(status)
+        return f'{NackReason.describe(status)}. {remedy}' if remedy else f'{NackReason.describe(status)}.'
+
 
 @dataclass
 class ExchangeSession:
@@ -243,8 +258,8 @@ class ExchangeSession:
         It has no default because no register row sets one; it must be at least two, since the
         reply cannot arrive before the transaction after the request.
         """
-        if budget < 2:
-            raise ValueError('an exchange needs a budget of at least two transactions')
+        if budget < MIN_EXCHANGE_BUDGET:
+            raise ValueError(f'an exchange needs a budget of at least {MIN_EXCHANGE_BUDGET} transactions')
         record, frame = self._transact(request)
         records = [record]
         sequence = record.request_seq
@@ -295,15 +310,14 @@ class ExchangeSession:
         # response correlates back to it.
         self._remember_pending(sequence, t1)
         self.counters.transactions += 1
-        timing = dict(t_realtime=t_realtime, t0=t0, t1=t1, t2=t2,
-                      data_ready_wait_ns=data_ready_wait_ns, data_ready_timed_out=data_ready_timed_out)
 
         try:
             response = SpiFrame.decode(raw)
         except ValueError as exc:
             self.counters.decode_failures += 1
-            record = self._record(sequence, request.message_type, t3=now_ns(), ok=False, error=str(exc),
-                                  raw_response=bytes(raw), **timing)
+            record = self._record(sequence, request.message_type, t_realtime, t0, t1, t2, now_ns(),
+                                  data_ready_wait_ns, data_ready_timed_out,
+                                  ok=False, error=str(exc), raw_response=bytes(raw))
             return (record, None)
 
         t3 = now_ns()
@@ -325,9 +339,10 @@ class ExchangeSession:
         if response.message_type is MessageType.NACK:
             self.counters.nacks += 1
 
-        record = self._record(sequence, request.message_type, t3=t3, ok=True, response=response,
-                              correlated=correlated, sent_ns=sent_ns, hub_delta=hub_delta,
-                              status_code=status_code, detail_code=detail_code, **timing)
+        record = self._record(sequence, request.message_type, t_realtime, t0, t1, t2, t3,
+                              data_ready_wait_ns, data_ready_timed_out,
+                              ok=True, response=response, correlated=correlated, sent_ns=sent_ns,
+                              hub_delta=hub_delta, status_code=status_code, detail_code=detail_code)
         return (record, response)
 
     def _remember_pending(self, sequence: int, sent_ns: int) -> None:
@@ -335,10 +350,10 @@ class ExchangeSession:
             self._pending.pop(next(iter(self._pending)))
         self._pending[sequence] = sent_ns
 
-    def _record(self, sequence, request_type, *, t_realtime, t0, t1, t2, t3, ok, error='',
-                response=None, correlated=None, sent_ns=None, hub_delta=None, status_code=None,
-                detail_code=None, data_ready_wait_ns=None, data_ready_timed_out=False,
-                raw_response=None) -> TransactionRecord:
+    def _record(self, sequence, request_type, t_realtime, t0, t1, t2, t3,
+                data_ready_wait_ns, data_ready_timed_out, *, ok, error='', response=None,
+                correlated=None, sent_ns=None, hub_delta=None, status_code=None,
+                detail_code=None, raw_response=None) -> TransactionRecord:
         self._index += 1
         return TransactionRecord(
             index=self._index,

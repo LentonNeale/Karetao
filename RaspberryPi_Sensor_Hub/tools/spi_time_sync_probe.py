@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 from spi.data_ready import DataReadyWatcher, DEFAULT_DATA_READY_LINE
-from spi.exchange import ExchangeSession, Outcome, Request, now_ns
+from spi.exchange import MIN_EXCHANGE_BUDGET, ExchangeSession, Outcome, Request, now_ns
 from spi.fake_backend import FakeFirmware
 from spi.spi_bus import SpiBus, SpiBusConfig
 from spi.spi_protocol import (
@@ -56,8 +56,8 @@ def main(argv=None) -> int:
     parser.add_argument('--fake', action='store_true',
                         help='Run against the firmware-rules fake instead of the bus')
     args = parser.parse_args(argv)
-    if args.budget < 2:
-        parser.error('--budget must be at least 2: the reply arrives one transaction late')
+    if args.budget < MIN_EXCHANGE_BUDGET:
+        parser.error(f'--budget must be at least {MIN_EXCHANGE_BUDGET}: the reply arrives one transaction late')
     if args.data_ready and args.fake:
         parser.error('--data-ready requires real GPIO hardware; incompatible with --fake')
 
@@ -77,7 +77,7 @@ def main(argv=None) -> int:
         session = TimeSyncSession(initial_offset_us=0, drift_limit_us_per_sec=1000.0)
         exchanges = ExchangeSession(
             bus=bus, block_id='time_sync', data_ready=data_ready,
-            min_interval_s=0.0 if data_ready is not None else args.interval_ms / 1000.0)
+            min_interval_s=args.interval_ms / 1000.0)
 
         print(f'device={"fake" if args.fake else args.device} speed={args.speed_hz} Hz')
         print(f'transactions={args.transactions} interval_ms={args.interval_ms} budget={args.budget}')

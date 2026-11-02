@@ -29,11 +29,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 from spi.data_ready import DataReadyWatcher, DEFAULT_DATA_READY_LINE  # noqa: E402
 from spi.exchange import (  # noqa: E402
-    GET_REQUEST_PAYLOAD,
+    GET_SNAPSHOT,
+    GET_VERSION,
+    MIN_EXCHANGE_BUDGET,
     ExchangeResult,
     ExchangeSession,
     Outcome,
-    Request,
     TransactionRecord,
 )
 from spi.fake_backend import FakeFirmware  # noqa: E402
@@ -54,8 +55,6 @@ from spi.spi_protocol import (  # noqa: E402
 )
 
 MAGIC_LE = struct.pack('<H', MAGIC)
-GET_VERSION = Request(MessageType.GET_VERSION, GET_REQUEST_PAYLOAD)
-GET_SNAPSHOT = Request(MessageType.GET_SNAPSHOT, GET_REQUEST_PAYLOAD)
 
 VALIDITY_FLAG_NAMES = (
     (SENSOR_VALIDITY_SAMPLE_VALID, 'SAMPLE_VALID'),
@@ -150,11 +149,8 @@ def verdict(version: ExchangeResult) -> str:
     if version.outcome is Outcome.REPLIED and version.reply.message_type is MessageType.VERSION:
         return 'VERDICT: firmware answered GET_VERSION. The link works.'
     if version.outcome is Outcome.REFUSED:
-        status = version.records[-1].nack_status_code
-        reason = NackReason.describe(status) if status is not None else 'an undecodable NACK'
-        text = f'VERDICT: firmware is alive and framing correctly but refused GET_VERSION with {reason}.'
-        remedy = NackReason.remedy(status) if status is not None else ''
-        return f'{text} {remedy}' if remedy else text
+        return ('VERDICT: firmware is alive and framing correctly but refused GET_VERSION with '
+                f'{version.refusal_reason()}')
     if version.outcome is Outcome.REPLIED:
         return (f'VERDICT: firmware answered GET_VERSION with {version.reply.message_type.name}, '
                 f'not VERSION.')
@@ -209,8 +205,8 @@ def main(argv=None) -> int:
     parser.add_argument('--fake', action='store_true',
                         help='Run against the firmware-rules fake instead of the bus.')
     args = parser.parse_args(argv)
-    if args.transactions < 2:
-        parser.error('--transactions must be at least 2: the reply arrives one transaction late')
+    if args.transactions < MIN_EXCHANGE_BUDGET:
+        parser.error(f'--transactions must be at least {MIN_EXCHANGE_BUDGET}: the reply arrives one transaction late')
     if args.data_ready and args.fake:
         parser.error('--data-ready requires real GPIO hardware; incompatible with --fake')
 
@@ -218,7 +214,7 @@ def main(argv=None) -> int:
     bus = SpiBus(SpiBusConfig(max_speed_hz=args.speed_hz), backend=FakeFirmware() if args.fake else None)
     bus.open()
     session = ExchangeSession(bus=bus, block_id='probe', data_ready=data_ready,
-                              min_interval_s=0.0 if data_ready is not None else args.interval_ms / 1000.0)
+                              min_interval_s=args.interval_ms / 1000.0)
 
     print(f'device={"fake" if args.fake else bus.config.device} speed={args.speed_hz} Hz '
           f'start_seq={session.sequencer.peek()} budget={args.transactions}\n')
